@@ -1,4 +1,10 @@
-// Mock faculty database - in production this would come from a real database
+/**
+ * Faculty Database - Mock Data
+ * 
+ * This is sample data for development and testing purposes.
+ * In production, this would be replaced with actual database queries
+ * using something like Prisma, MongoDB, or your preferred database solution.
+ */
 export const facultyDatabase = [
   {
     id: 'aamir-hussain',
@@ -53,10 +59,18 @@ export const facultyDatabase = [
   },
 ];
 
+/**
+ * Finds a faculty member by their unique ID
+ * Returns undefined if no match is found
+ */
 export function getFacultyById(id: string) {
   return facultyDatabase.find(faculty => faculty.id === id);
 }
 
+/**
+ * Returns the complete list of all faculty members
+ * Useful for dashboard views and reports
+ */
 export function getAllFaculty() {
   return facultyDatabase;
 }

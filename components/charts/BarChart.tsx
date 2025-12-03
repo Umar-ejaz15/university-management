@@ -10,7 +10,12 @@ interface BarChartProps {
   };
 }
 
+/**
+ * Bar chart component using ECharts
+ * Great for comparing values across different categories
+ */
 export default function BarChart({ data }: BarChartProps) {
+  // ECharts configuration object - defines how the chart looks and behaves
   const option = {
     tooltip: {
       trigger: 'axis',

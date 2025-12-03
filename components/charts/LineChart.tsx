@@ -10,7 +10,12 @@ interface LineChartProps {
   };
 }
 
+/**
+ * Line chart with smooth curves and shaded area
+ * Perfect for showing trends over time
+ */
 export default function LineChart({ data }: LineChartProps) {
+  // Chart settings with smooth line and subtle area fill
   const option = {
     tooltip: {
       trigger: 'axis'

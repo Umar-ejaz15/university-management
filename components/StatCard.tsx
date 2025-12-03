@@ -4,6 +4,10 @@ interface StatCardProps {
   className?: string;
 }
 
+/**
+ * Stat card component for displaying key metrics
+ * Used on the dashboard to show numbers like total faculty, projects, etc.
+ */
 export default function StatCard({ title, value, className = '' }: StatCardProps) {
   return (
     <div className={`bg-white rounded-xl shadow-sm p-6 ${className}`}>

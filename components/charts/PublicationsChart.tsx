@@ -9,7 +9,12 @@ interface PublicationsChartProps {
   };
 }
 
+/**
+ * Specialized bar chart for showing publication history
+ * Displays a faculty member's publications year by year
+ */
 export default function PublicationsChart({ data }: PublicationsChartProps) {
+  // Bar chart configuration optimized for publication data
   const option = {
     tooltip: {
       trigger: 'axis',

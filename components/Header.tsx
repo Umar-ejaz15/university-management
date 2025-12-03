@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+/**
+ * Main navigation items for the application
+ * These appear in the header across all pages
+ */
 const navItems = [
   { label: 'Dashboard', href: '/uni-dashboard' },
   { label: 'Add Faculty', href: '/add-faculty' },
@@ -10,6 +14,10 @@ const navItems = [
   { label: 'My Profile', href: '/faculty' },
 ];
 
+/**
+ * Main header component with logo, navigation, and login button
+ * Highlights the current page based on the URL path
+ */
 export default function Header() {
   const pathname = usePathname();
 
@@ -17,7 +25,8 @@ export default function Header() {
     <header className="bg-[#2d6a4f] text-white">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo and Title */}
+          
+          {/* University logo and app title */}
           <Link href="/" className="flex items-center gap-3">
             <img 
               src="/logo.png" 
@@ -27,7 +36,7 @@ export default function Header() {
             <span className="text-xl font-semibold">Faculty Management</span>
           </Link>
 
-          {/* Navigation */}
+          {/* Main navigation links and auth button */}
           <nav className="flex items-center gap-6">
             {navItems.map((item) => (
               <Link

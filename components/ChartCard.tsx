@@ -4,6 +4,10 @@ interface ChartCardProps {
   className?: string;
 }
 
+/**
+ * Wrapper component for charts
+ * Provides consistent styling and spacing for all chart visualizations
+ */
 export default function ChartCard({ title, children, className = '' }: ChartCardProps) {
   return (
     <div className={`bg-white rounded-xl shadow-sm p-6 ${className}`}>

@@ -12,6 +12,10 @@ interface DataTableProps {
   className?: string;
 }
 
+/**
+ * Flexible table component that works with any data structure
+ * Handles empty states and alternating row colors automatically
+ */
 export default function DataTable({
   columns,
   data = [],
