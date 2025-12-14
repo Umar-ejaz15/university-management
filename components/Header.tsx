@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
  */
 const navItems = [
   { label: 'Dashboard', href: '/uni-dashboard' },
+  { label: 'Faculties', href: '/faculties' },
   { label: 'Add Faculty', href: '/add-faculty' },
   { label: 'Admin Review', href: '/admin-review' },
   { label: 'My Profile', href: '/faculty' },
