@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// University Faculty (e.g., Faculty of Social Sciences, Faculty of Engineering)
+model Faculty {
+  id               String       @id @default(cuid())
+  name             String       @unique
+  shortName        String       @unique
+  dean             String
+  establishedYear  Int
+  description      String?
+  departments      Department[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+// Department within a Faculty
+model Department {
+  id               String         @id @default(cuid())
+  name             String
+  head             String
+  establishedYear  Int
+  totalStudents    Int            @default(0)
+  description      String?
+  facultyId        String
+  faculty          Faculty        @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  staff            Staff[]
+  programs         Program[]
+  researchAreas    ResearchArea[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([name, facultyId])
+}
+
+// Academic Programs (BS, MS, PhD)
+model Program {
+  id           String     @id @default(cuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([name, departmentId])
+}
+
+// Research Areas for departments
+model ResearchArea {
+  id           String     @id @default(cuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([name, departmentId])
+}
+
+// Staff members (Professors, Lecturers, etc.)
+model Staff {
+  id                  String              @id @default(cuid())
+  name                String
+  email               String              @unique
+  designation         String
+  departmentId        String
+  department          Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  status              StaffStatus         @default(APPROVED)
+  studentsSupervised  Int                 @default(0)
+  publications        Publication[]
+  projects            Project[]
+  courses             Course[]
+  specialization      String?
+  experienceYears     String?
+  qualifications      String?
+  bio                 String?
+  profileImage        String?
+  teachingLoad        Json?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+enum StaffStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+// Publications by staff members
+model Publication {
+  id          String   @id @default(cuid())
+  title       String
+  year        Int
+  journal     String?
+  staffId     String
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Research Projects
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      ProjectStatus @default(ONGOING)
+  startDate   DateTime?
+  endDate     DateTime?
+  staffId     String
+  staff       Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum ProjectStatus {
+  ONGOING
+  COMPLETED
+  PENDING
+}
+
+// Courses taught by staff
+model Course {
+  id        String   @id @default(cuid())
+  name      String
+  credits   Int
+  students  Int      @default(0)
+  staffId   String
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, staffId])
+}
+
+// User authentication
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Hashed password (bcrypt)
+  name          String
+  role          UserRole  @default(FACULTY)
+  staffId       String?   @unique
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  FACULTY
+  STUDENT
+}
