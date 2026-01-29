@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 
 // Admin-only routes (require ADMIN role)
 const adminRoutes = ['/admin'];
@@ -86,44 +85,25 @@ export async function middleware(request: NextRequest) {
   }
 
   // =================================================================
-  // 4. FACULTY STATUS CHECK (PENDING/REJECTED)
+  // 4. VERIFY TOKEN FOR PROTECTED ROUTES
   // =================================================================
+  // Note: Faculty status checks (PENDING/REJECTED) are now handled in the
+  // individual pages/components since middleware runs in Edge Runtime and
+  // cannot access the database via Prisma.
   if (isProtectedRoute && token) {
     try {
       const user = await verifyToken(token);
 
-      if (user && user.role === 'FACULTY') {
-        // Get user's staff status from database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.userId },
-          select: { staffId: true },
-        });
+      if (!user) {
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('error', 'session_invalid');
 
-        if (dbUser?.staffId) {
-          const staff = await prisma.staff.findUnique({
-            where: { id: dbUser.staffId },
-            select: { status: true },
-          });
-
-          // If pending, redirect to pending approval page
-          if (staff?.status === 'PENDING' && !pathname.startsWith('/pending-approval')) {
-            return NextResponse.redirect(new URL('/pending-approval', request.url));
-          }
-
-          // If rejected, clear session and redirect to login with message
-          if (staff?.status === 'REJECTED') {
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('error', 'rejected');
-            loginUrl.searchParams.set('message', 'Your application has been rejected');
-
-            const response = NextResponse.redirect(loginUrl);
-            response.cookies.delete('auth-token');
-            return response;
-          }
-        }
+        const response = NextResponse.redirect(loginUrl);
+        response.cookies.delete('auth-token');
+        return response;
       }
     } catch (error) {
-      // Invalid token or database error - redirect to login
+      // Invalid token - redirect to login
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('error', 'session_invalid');
 
