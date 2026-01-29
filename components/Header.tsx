@@ -12,13 +12,34 @@ interface User {
   staffId?: string;
 }
 
-const navItems = [
+// Public navigation items (shown to everyone)
+const publicNavItems = [
   { label: 'Dashboard', href: '/uni-dashboard' },
   { label: 'Faculties', href: '/faculties' },
-  { label: 'Add Faculty', href: '/add-faculty' },
-  { label: 'Admin Review', href: '/admin-review' },
-  { label: 'My Profile', href: '/faculty' },
+  { label: 'Faculty Members', href: '/staff' },
 ];
+
+// Additional role-based navigation items
+const getAdditionalNavItems = (role: string) => {
+  if (role === 'ADMIN') {
+    return [
+      { label: 'Admin Panel', href: '/admin' },
+    ];
+  } else if (role === 'FACULTY') {
+    return [
+      { label: 'My Profile', href: '/faculty' },
+    ];
+  }
+  return [];
+};
+
+// Get all navigation items for a user
+const getNavItemsForUser = (user: User | null) => {
+  if (!user) {
+    return publicNavItems; // Show only public items when not logged in
+  }
+  return [...publicNavItems, ...getAdditionalNavItems(user.role)];
+};
 
 export default function Header() {
   const pathname = usePathname();
@@ -76,12 +97,12 @@ export default function Header() {
               alt="MNSUAM Logo"
               className="w-12 h-12"
             />
-            <span className="text-xl font-semibold">Faculty Management</span>
+            <span className="text-xl font-semibold">peer to peer</span>
           </Link>
 
           {/* Main navigation links and auth button */}
           <nav className="flex items-center gap-6">
-            {navItems.map((item) => (
+            {getNavItemsForUser(user).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -126,13 +147,15 @@ export default function Header() {
                           {user.role}
                         </span>
                       </div>
-                      <Link
-                        href="/faculty"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        My Profile
-                      </Link>
+                      {user.role === 'FACULTY' && (
+                        <Link
+                          href="/faculty"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          My Profile
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
