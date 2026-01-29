@@ -156,10 +156,10 @@ export default function TeacherOnboarding() {
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to MNSUAM!</h2>
               <p className="text-gray-600 mb-4">
-                Let's set up your faculty profile. This will only take a few minutes.
+                Let&apos;s set up your faculty profile. This will only take a few minutes.
               </p>
               <p className="text-sm text-gray-500">
-                We'll ask you about your academic role, department, and expertise to help you get started.
+                We&apos;ll ask you about your academic role, department, and expertise to help you get started.
               </p>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function TeacherOnboarding() {
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">What's your academic role?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">What&apos;s your academic role?</h2>
               <p className="text-gray-600">Select the designation that best describes your position</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -233,7 +233,7 @@ export default function TeacherOnboarding() {
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">What's your specialization?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">What&apos;s your specialization?</h2>
               <p className="text-gray-600">Tell us about your area of expertise or research focus</p>
             </div>
             <div>

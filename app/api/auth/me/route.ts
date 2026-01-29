@@ -48,9 +48,12 @@ export async function GET() {
             },
           });
 
-          rejectionReason = rejectionLog?.metadata
-            ? (rejectionLog.metadata as any).rejectionReason
-            : null;
+          rejectionReason =
+            rejectionLog?.metadata &&
+            typeof rejectionLog.metadata === 'object' &&
+            'rejectionReason' in rejectionLog.metadata
+              ? (rejectionLog.metadata as { rejectionReason: string }).rejectionReason
+              : null;
         }
 
         staffData = {

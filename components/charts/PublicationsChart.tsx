@@ -28,7 +28,7 @@ export default function PublicationsChart({ data }: PublicationsChartProps) {
         color: '#333',
         fontSize: 13
       },
-      formatter: (params: any) => {
+      formatter: (params: { axisValue: string; value: number }[]) => {
         const data = params[0];
         const count = data.value;
         const plural = count === 1 ? '' : 's';
@@ -127,7 +127,7 @@ export default function PublicationsChart({ data }: PublicationsChartProps) {
           fontSize: 12,
           color: '#666',
           fontWeight: 'bold',
-          formatter: (params: any) => {
+          formatter: (params: { value: number }) => {
             return params.value > 0 ? params.value : '';
           }
         }

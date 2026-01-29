@@ -100,9 +100,11 @@ export default async function FacultyPage({ params }: PageProps) {
     : [];
 
   // Prepare project-student data if available
+  type ProjectWithStudentCount = { title: string; studentCount?: number | null };
+
   const projectStudentData = {
     categories: staff.projects.map(p => p.title),
-    values: staff.projects.map(p => (p as any).studentCount ?? 0),
+    values: staff.projects.map(p => (p as ProjectWithStudentCount).studentCount ?? 0),
   };
   const showProjectStudentsChart = projectStudentData.values.some(v => v > 0);
 

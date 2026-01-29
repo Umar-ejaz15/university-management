@@ -1,11 +1,12 @@
 import { prisma } from './db';
+import { Prisma } from '@prisma/client';
 
 export interface AuditLogEntry {
   action: string;
   performedBy: string;
   targetType: string;
   targetId: string;
-  metadata?: any;
+  metadata?: Prisma.JsonValue;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -59,7 +60,7 @@ export async function getAuditLogs(filters: AuditLogFilters = {}) {
     limit = 50,
   } = filters;
 
-  const where: any = {};
+  const where: Prisma.AuditLogWhereInput = {};
 
   if (action) where.action = action;
   if (performedBy) where.performedBy = performedBy;

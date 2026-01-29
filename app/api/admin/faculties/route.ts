@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ message: 'Faculty created successfully', faculty }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating faculty:', error);
 
-    if (error.code === 'P2002') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
         { error: 'A faculty with this name or short name already exists' },
         { status: 409 }

@@ -35,7 +35,7 @@ export default function BarChart({
         color: '#333',
         fontSize: 13
       },
-      formatter: (params: any) => {
+      formatter: (params: { axisValue: string; seriesName?: string; value: number }[]) => {
         const data = params[0];
         return `
           <div style="padding: 5px;">
@@ -142,7 +142,7 @@ export default function BarChart({
           fontSize: 11,
           color: '#666',
           fontWeight: 'bold',
-          formatter: (params: any) => {
+          formatter: (params: { value: number }) => {
             return params.value > 0 ? params.value : '';
           }
         } : undefined

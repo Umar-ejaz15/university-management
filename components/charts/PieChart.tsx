@@ -37,7 +37,7 @@ export default function PieChart({
         color: '#333',
         fontSize: 13
       },
-      formatter: (params: any) => {
+      formatter: (params: { color: string; name: string; value: number; percent: number }) => {
         return `
           <div style="padding: 5px;">
             <div style="display: flex; align-items: center; gap: 8px;">

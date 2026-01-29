@@ -183,8 +183,8 @@ export default function TeacherOnboarding() {
               Welcome to Faculty Onboarding
             </h2>
             <p className="text-gray-600 max-w-md mx-auto">
-              Let's set up your faculty profile. This will only take a few minutes.
-              We'll guide you through each step.
+              Let&apos;s set up your faculty profile. This will only take a few minutes.
+              We&apos;ll guide you through each step.
             </p>
           </div>
         );

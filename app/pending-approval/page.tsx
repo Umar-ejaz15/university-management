@@ -195,7 +195,7 @@ export default function PendingApprovalPage() {
                     </div>
                     <div className="flex-1 pt-2">
                       <p className="font-medium text-gray-400">Decision & Notification</p>
-                      <p className="text-sm text-gray-500">You'll be notified via email</p>
+                      <p className="text-sm text-gray-500">You&apos;ll be notified via email</p>
                     </div>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function PendingApprovalPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
-                    <span>Once approved, you'll gain full access to the faculty portal</span>
+                    <span>Once approved, you&apos;ll gain full access to the faculty portal</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
@@ -312,7 +312,7 @@ export default function PendingApprovalPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">4.</span>
-                    <span>Click "Reapply" below to submit your application again</span>
+                    <span>Click &quot;Reapply&quot; below to submit your application again</span>
                   </li>
                 </ul>
               </div>

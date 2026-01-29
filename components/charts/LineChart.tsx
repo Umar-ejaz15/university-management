@@ -32,7 +32,7 @@ export default function LineChart({
         color: '#333',
         fontSize: 13
       },
-      formatter: (params: any) => {
+      formatter: (params: { axisValue: string; seriesName?: string; value: number }[]) => {
         const data = params[0];
         return `
           <div style="padding: 5px;">

@@ -39,40 +39,52 @@ export default async function UniDashboard() {
   const ongoingProjects = await prisma.project.count({ where: { status: 'ONGOING' } });
 
   // Defensive helpers for department names
-  const safeDeptName = (d: any) => ((d?.name ?? '') as string).replace('Department of ', '') || 'Unknown';
+  type DepartmentWithStaff = {
+    name: string;
+    staff: Array<{
+      publications?: Array<unknown>;
+      projects?: Array<unknown>;
+      studentsSupervised?: number | null;
+    }>;
+  };
+
+  const safeDeptName = (d: DepartmentWithStaff) => ((d?.name ?? '') as string).replace('Department of ', '') || 'Unknown';
 
   const publicationsByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: any) => d.staff.reduce((sum: number, s: any) => sum + (s.publications?.length || 0), 0)),
+    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.publications?.length || 0), 0)),
   };
 
   const staffByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: any) => d.staff.length),
+    values: departments.map((d: DepartmentWithStaff) => d.staff.length),
   };
 
   const projectsByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: any) => d.staff.reduce((sum: number, s: any) => sum + (s.projects?.length || 0), 0)),
+    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.projects?.length || 0), 0)),
   };
 
   const studentsByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: any) => d.staff.reduce((sum: number, s: any) => sum + (s.studentsSupervised ?? 0), 0)),
+    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.studentsSupervised ?? 0), 0)),
   };
+
+  type PublicationByYear = { year: number; _count: { id: number } };
+  type ProjectByStatus = { status: string; _count: { id: number } };
 
   const years = Array.from({ length: 6 }, (_, i) => currentYear - 5 + i);
   const publicationsTimeline = {
     categories: years.map(String),
     values: years.map((year) => {
-      const found = publicationsByYear.find((p: any) => p.year === year);
+      const found = publicationsByYear.find((p: PublicationByYear) => p.year === year);
       return found ? found._count.id : 0;
     }),
   };
 
-  const ongoingCount = projectsByStatus.find((p: any) => p.status === 'ONGOING')?._count.id || 0;
-  const completedCount = projectsByStatus.find((p: any) => p.status === 'COMPLETED')?._count.id || 0;
-  const pendingCount = projectsByStatus.find((p: any) => p.status === 'PENDING')?._count.id || 0;
+  const ongoingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'ONGOING')?._count.id || 0;
+  const completedCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'COMPLETED')?._count.id || 0;
+  const pendingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'PENDING')?._count.id || 0;
 
   const projectsStatusPieData = [
     { name: 'Ongoing', value: ongoingCount },
@@ -80,9 +92,11 @@ export default async function UniDashboard() {
     { name: 'Pending', value: pendingCount },
   ];
 
+  type DeptDistribution = { name: string; value: number };
+
   const departmentDistribution = departments
-    .map((d: any) => ({ name: safeDeptName(d), value: d.staff.length }))
-    .sort((a: any, b: any) => b.value - a.value);
+    .map((d: DepartmentWithStaff) => ({ name: safeDeptName(d), value: d.staff.length }))
+    .sort((a: DeptDistribution, b: DeptDistribution) => b.value - a.value);
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">

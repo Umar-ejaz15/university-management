@@ -53,10 +53,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ message: 'Faculty updated successfully', faculty });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating faculty:', error);
 
-    if (error.code === 'P2025') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Faculty not found' }, { status: 404 });
     }
 
@@ -112,10 +112,10 @@ export async function DELETE(
     });
 
     return NextResponse.json({ message: 'Faculty deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting faculty:', error);
 
-    if (error.code === 'P2003') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2003') {
       return NextResponse.json(
         { error: 'Cannot delete faculty with existing departments' },
         { status: 400 }

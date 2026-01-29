@@ -7,7 +7,7 @@ interface Column {
 
 interface DataTableProps {
   columns: Column[];
-  data?: any[];
+  data?: Record<string, React.ReactNode>[];
   emptyMessage?: string;
   className?: string;
 }

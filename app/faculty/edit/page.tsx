@@ -172,7 +172,7 @@ export default function EditProfilePage() {
     }
   };
 
-  const update = (key: string, value: any) => {
+  const update = (key: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setError('');
     setSuccess('');
@@ -515,7 +515,7 @@ export default function EditProfilePage() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students')}
                   className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                     activeTab === tab.id
                       ? 'border-[#2d6a4f] text-[#2d6a4f]'
@@ -1287,7 +1287,7 @@ export default function EditProfilePage() {
         {activeTab === 'administrative' && (
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Administrative Duties</h3>
-            <p className="text-sm text-gray-500 mb-3">Enter one duty per line. We'll normalize to bullets on save.</p>
+            <p className="text-sm text-gray-500 mb-3">Enter one duty per line. We&apos;ll normalize to bullets on save.</p>
             <textarea
               value={form.administrativeDuties}
               onChange={(e) => update('administrativeDuties', e.target.value)}

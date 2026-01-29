@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
-// Admin-only routes (require ADMIN role)
-const adminRoutes = ['/admin'];
-
 // Protected routes that require authentication and approval
 const protectedRoutes = [
   '/faculty/edit', // Edit profile requires authentication
@@ -12,16 +9,6 @@ const protectedRoutes = [
 
 // Auth routes that should redirect to dashboard if already logged in
 const authRoutes = ['/login', '/signup'];
-
-// Public routes that don't require authentication
-const publicRoutes = [
-  '/uni-dashboard', // Allow everyone to view the main dashboard
-  '/faculties', // Allow everyone to browse faculties
-  '/faculty', // Allow everyone to view faculty profiles
-  '/staff', // Allow everyone to view staff listing
-  '/onboarding/teacher',
-  '/pending-approval',
-];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,7 +33,7 @@ export async function middleware(request: NextRequest) {
         dashboardUrl.searchParams.set('error', 'forbidden');
         return NextResponse.redirect(dashboardUrl);
       }
-    } catch (error) {
+    } catch (_error) {
       // Invalid token
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('error', 'unauthorized');
@@ -74,10 +61,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  const isPublicRoute = publicRoutes.some(route =>
-    pathname.startsWith(route)
-  );
-
   if (isProtectedRoute && !token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
@@ -102,7 +85,7 @@ export async function middleware(request: NextRequest) {
         response.cookies.delete('auth-token');
         return response;
       }
-    } catch (error) {
+    } catch (_error) {
       // Invalid token - redirect to login
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('error', 'session_invalid');
@@ -130,7 +113,7 @@ export async function middleware(request: NextRequest) {
 
           return NextResponse.redirect(redirectUrl);
         }
-      } catch (error) {
+      } catch (_error) {
         // Invalid token, allow access to auth routes
       }
     }
@@ -151,7 +134,7 @@ export async function middleware(request: NextRequest) {
       if (user && user.role !== 'FACULTY') {
         return NextResponse.redirect(new URL('/uni-dashboard', request.url));
       }
-    } catch (error) {
+    } catch (_error) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
