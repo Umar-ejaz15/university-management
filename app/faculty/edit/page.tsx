@@ -8,6 +8,8 @@ import {
   BookOpen,
   FlaskConical,
   GraduationCap,
+  Briefcase,
+  Users,
   Trash2,
   Eye,
   Loader2,
@@ -37,6 +39,7 @@ interface Project {
   status: 'ONGOING' | 'COMPLETED' | 'PENDING';
   startDate: string;
   endDate: string;
+  studentCount?: number;
 }
 
 interface Course {
@@ -70,7 +73,7 @@ export default function EditProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'publications' | 'projects' | 'courses'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students'>('profile');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -85,7 +88,12 @@ export default function EditProfilePage() {
     bio: '',
     profileImage: '',
     studentsSupervised: 0,
+    administrativeDuties: '',
   });
+
+  // Detailed supervised students list
+  const [studentsDetails, setStudentsDetails] = useState<Array<{ name: string; email?: string; departmentId?: string }>>([]);
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', departmentId: '' });
 
   // Publications state
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -105,6 +113,7 @@ export default function EditProfilePage() {
     status: 'ONGOING',
     startDate: '',
     endDate: '',
+    studentCount: 0,
   });
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
@@ -143,7 +152,9 @@ export default function EditProfilePage() {
           bio: s.bio || '',
           profileImage: s.profileImage || '',
           studentsSupervised: s.studentsSupervised || 0,
+          administrativeDuties: s.administrativeDuties || '',
         });
+        setStudentsDetails(s.studentsSupervisedDetails || []);
         setPublications(s.publications || []);
         setProjects(s.projects || []);
         setCourses(s.courses || []);
@@ -173,10 +184,21 @@ export default function EditProfilePage() {
     setSaving(true);
 
     try {
+      // Normalize administrative duties to one bullet per line starting with '- '
+      const duties = (form.administrativeDuties || '')
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0)
+        .map((l) => l.replace(/^[-*•]\s*/, '').trim())
+        .map((l) => `- ${l}`)
+        .join('\n');
+
+      const payload = { ...form, administrativeDuties: duties, studentsSupervisedDetails: studentsDetails, studentsSupervised: (studentsDetails?.length || form.studentsSupervised) };
+
       const res = await fetch('/api/teacher/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -309,6 +331,7 @@ export default function EditProfilePage() {
       ...project,
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
+      studentCount: project.studentCount || 0,
     });
   };
 
@@ -446,7 +469,7 @@ export default function EditProfilePage() {
     <div className="min-h-screen bg-[#f0f0ed]">
       <Header />
 
-      <main className="container mx-auto px-6 py-8 max-w-5xl">
+      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -487,6 +510,8 @@ export default function EditProfilePage() {
                 { id: 'publications', label: `Publications (${publications.length})`, Icon: BookOpen },
                 { id: 'projects', label: `Projects (${projects.length})`, Icon: FlaskConical },
                 { id: 'courses', label: `Courses (${courses.length})`, Icon: GraduationCap },
+                { id: 'administrative', label: 'Administrative Duties', Icon: Briefcase },
+                { id: 'students', label: `Students (${studentsDetails.length})`, Icon: Users },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -628,6 +653,8 @@ export default function EditProfilePage() {
                     rows={4}
                   />
                 </div>
+
+                
 
                 {/* Profile Image */}
                 <div>
@@ -868,6 +895,18 @@ export default function EditProfilePage() {
                   </div>
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
+                      <input
+                        type="number"
+                        placeholder="Student Count (optional)"
+                        value={newProject.studentCount}
+                        onChange={(e) => setNewProject({ ...newProject, studentCount: parseInt(e.target.value) || 0 })}
+                        min="0"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
                       <label className="block text-sm text-gray-600 mb-1">Start Date</label>
                       <input
                         type="date"
@@ -952,6 +991,18 @@ export default function EditProfilePage() {
                                 rows={2}
                                 placeholder="Description"
                               />
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <input
+                                  type="number"
+                                  value={editProjectData.studentCount || 0}
+                                  onChange={(e) =>
+                                    setEditProjectData({ ...editProjectData, studentCount: parseInt(e.target.value) || 0 })
+                                  }
+                                  min="0"
+                                  className="p-2 border border-gray-300 rounded-lg"
+                                  placeholder="Student Count"
+                                />
+                              </div>
                               <div className="grid grid-cols-2 gap-3">
                                 <input
                                   type="date"
@@ -1011,11 +1062,14 @@ export default function EditProfilePage() {
                                 {project.description && (
                                   <p className="text-sm text-gray-600 mt-1">{project.description}</p>
                                 )}
-                                {(project.startDate || project.endDate) && (
+                                {(project.startDate || project.endDate || project.studentCount) && (
                                   <p className="text-sm text-gray-500 mt-1">
                                     {project.startDate && new Date(project.startDate).toLocaleDateString()}
                                     {project.startDate && project.endDate && ' - '}
                                     {project.endDate && new Date(project.endDate).toLocaleDateString()}
+                                    {project.studentCount !== undefined && (
+                                      <span className="ml-3">• Students: <strong>{project.studentCount}</strong></span>
+                                    )}
                                   </p>
                                 )}
                               </div>
@@ -1228,6 +1282,104 @@ export default function EditProfilePage() {
             )}
           </div>
         </div>
+
+        {/* Administrative Tab */}
+        {activeTab === 'administrative' && (
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Administrative Duties</h3>
+            <p className="text-sm text-gray-500 mb-3">Enter one duty per line. We'll normalize to bullets on save.</p>
+            <textarea
+              value={form.administrativeDuties}
+              onChange={(e) => update('administrativeDuties', e.target.value)}
+              placeholder="- Head of Research Committee\n- Department Coordinator"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent resize-none font-mono text-sm"
+              rows={6}
+            />
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="px-4 py-2 bg-[#2d6a4f] text-white rounded-lg hover:bg-[#245a42] transition-colors disabled:opacity-50 font-medium"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Students Tab */}
+        {activeTab === 'students' && (
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Students Supervised</h3>
+            <p className="text-sm text-gray-500 mb-3">Add individual student entries with optional department.</p>
+
+            <div className="space-y-3 mb-4">
+              {studentsDetails.length === 0 ? (
+                <p className="text-gray-500">No students added yet.</p>
+              ) : (
+                studentsDetails.map((s, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{s.name}</p>
+                      <p className="text-sm text-gray-500">{s.email}{s.departmentId ? ` • Dept: ${departments.find(d=>d.id===s.departmentId)?.name || s.departmentId}` : ''}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setStudentsDetails(studentsDetails.filter((_, i) => i !== idx))}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <input
+                type="text"
+                placeholder="Student Name"
+                value={newStudent.name}
+                onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                className="p-2 border border-gray-300 rounded"
+              />
+              <input
+                type="email"
+                placeholder="Email (optional)"
+                value={newStudent.email}
+                onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                className="p-2 border border-gray-300 rounded"
+              />
+              <select
+                value={newStudent.departmentId}
+                onChange={(e) => setNewStudent({ ...newStudent, departmentId: e.target.value })}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="">Select department (optional)</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  if (!newStudent.name.trim()) return setError('Student name is required');
+                  setStudentsDetails([...studentsDetails, { ...newStudent }]);
+                  setNewStudent({ name: '', email: '', departmentId: '' });
+                  setError('');
+                }}
+                className="px-4 py-2 bg-[#2d6a4f] text-white rounded-lg hover:bg-[#245a42]"
+              >Add Student</button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="px-4 py-2 border border-gray-300 rounded-lg"
+              >Save</button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm py-4">

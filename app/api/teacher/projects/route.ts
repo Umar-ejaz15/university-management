@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, status, startDate, endDate } = body;
+    const { title, description, status, startDate, endDate, studentCount } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
         status: status || 'ONGOING',
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        studentCount: typeof studentCount === 'number' ? studentCount : 0,
         staffId: dbUser.staffId,
       },
     });

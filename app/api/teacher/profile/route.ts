@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     if (!dbUser?.staffId) return NextResponse.json({ error: 'No staff profile' }, { status: 404 });
 
     const body = await request.json();
-    const { designation, departmentId, specialization, experienceYears, qualifications, bio, profileImage, teachingLoad, studentsSupervised } = body;
+    const { designation, departmentId, specialization, experienceYears, qualifications, bio, profileImage, teachingLoad, studentsSupervised, administrativeDuties, studentsSupervisedDetails } = body;
 
     // If departmentId provided, verify it
     if (departmentId) {
@@ -66,6 +66,8 @@ export async function PUT(request: NextRequest) {
         profileImage: profileImage ?? undefined,
         teachingLoad: teachingLoad ?? undefined,
         studentsSupervised: studentsSupervised ?? undefined,
+        administrativeDuties: administrativeDuties ?? undefined,
+        studentsSupervisedDetails: studentsSupervisedDetails ?? undefined,
       },
       include: {
         department: {

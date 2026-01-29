@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         specialization: specialization ?? null,
         experienceYears: experienceYears ?? null,
         qualifications: qualifications ?? null,
-        status: 'APPROVED', // Auto-approve for now
+        status: 'PENDING', // Requires admin approval
         studentsSupervised: 0,
       },
     });

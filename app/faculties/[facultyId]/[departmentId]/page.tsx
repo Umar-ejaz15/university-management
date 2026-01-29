@@ -47,7 +47,7 @@ export default function DepartmentPage({ params }: PageProps) {
     <div className="min-h-screen bg-[#f0f0ed]">
       <Header />
       
-      <main className="container mx-auto px-6 py-8">
+      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="mb-6 text-sm text-[#666666]">
           <Link href="/faculties" className="hover:text-[#4169E1]">
@@ -136,17 +136,17 @@ export default function DepartmentPage({ params }: PageProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
               <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-[#4169E1] rounded"></span>
+                <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
                 Publications by Faculty
               </h2>
-              <BarChart data={staffPublicationsData} />
+              <BarChart data={staffPublicationsData} color="#2d6a4f" />
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
               <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-[#22c55e] rounded"></span>
+                <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
                 Research Projects by Faculty
               </h2>
-              <BarChart data={staffProjectsData} />
+              <BarChart data={staffProjectsData} color="#2d6a4f" />
             </div>
           </div>
         )}

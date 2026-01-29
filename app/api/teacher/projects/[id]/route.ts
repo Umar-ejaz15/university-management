@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, status, startDate, endDate } = body;
+    const { title, description, status, startDate, endDate, studentCount } = body;
 
     // Verify ownership
     const existing = await prisma.project.findUnique({
@@ -81,6 +81,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         status: status ?? existing.status,
         startDate: startDate ? new Date(startDate) : existing.startDate,
         endDate: endDate ? new Date(endDate) : existing.endDate,
+        studentCount: typeof studentCount === 'number' ? studentCount : existing.studentCount,
       },
     });
 

@@ -56,16 +56,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent creation of additional admin accounts
+    // Admin accounts can only be created via seed script
+    if (body.role === 'ADMIN') {
+      const adminCount = await prisma.user.count({
+        where: { role: 'ADMIN' },
+      });
+
+      if (adminCount > 0) {
+        return NextResponse.json(
+          { error: 'Admin account already exists. Contact system administrator.' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Hash password with bcrypt
     const hashedPassword = await hashPassword(password);
 
-    // Create user
+    // Create user (always FACULTY role for public registration)
     const user = await prisma.user.create({
       data: {
         email: sanitizedEmail,
         password: hashedPassword,
         name: sanitizedName,
-        role: 'FACULTY',
+        role: 'FACULTY', // Public registration only creates FACULTY accounts
       },
       select: {
         id: true,

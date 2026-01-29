@@ -36,7 +36,7 @@ export default function FacultiesPage() {
     <div className="min-h-screen bg-[#f0f0ed]">
       <Header />
       
-      <main className="container mx-auto px-6 py-8">
+      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2">
@@ -70,16 +70,18 @@ export default function FacultiesPage() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
               Students by Faculty
             </h2>
-            <BarChart data={facultyStudentsData} />
+            <BarChart data={facultyStudentsData} color="#2d6a4f" />
           </div>
           <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
               Staff by Faculty
             </h2>
-            <BarChart data={facultyStaffData} />
+            <BarChart data={facultyStaffData} color="#2d6a4f" />
           </div>
         </div>
 

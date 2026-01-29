@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaNeon } from '@prisma/adapter-neon';
+import { hashPassword } from '../lib/auth';
 import 'dotenv/config';
 
 const prisma = new PrismaClient({
@@ -8,6 +9,60 @@ const prisma = new PrismaClient({
 
 async function main() {
   console.log('Seeding database...');
+
+  // =================================================================
+  // CREATE ADMIN ACCOUNT
+  // =================================================================
+  // IMPORTANT: Replace these values with your actual admin credentials
+  // Email: Use your university email address
+  // Password: Use a strong password (min 8 chars, uppercase, lowercase, number)
+  // Name: Your full name
+  // =================================================================
+
+  const ADMIN_EMAIL = 'admin@mnsuam.edu.pk';
+  const ADMIN_PASSWORD = 'Admin@2024!Secure';
+  const ADMIN_NAME = 'System Administrator';
+
+  console.log('\n📋 Checking for admin account...');
+
+  // Check if admin already exists
+  const existingAdmin = await prisma.user.findFirst({
+    where: { role: 'ADMIN' },
+  });
+
+  if (existingAdmin) {
+    console.log('✓ Admin account already exists');
+    console.log(`  Email: ${existingAdmin.email}`);
+  } else {
+    // Check if email is already in use
+    const existingUser = await prisma.user.findUnique({
+      where: { email: ADMIN_EMAIL },
+    });
+
+    if (existingUser) {
+      console.log(`⚠️  Email ${ADMIN_EMAIL} already exists with role: ${existingUser.role}`);
+    } else {
+      console.log('🔐 Creating admin account...');
+      const hashedPassword = await hashPassword(ADMIN_PASSWORD);
+
+      const admin = await prisma.user.create({
+        data: {
+          email: ADMIN_EMAIL,
+          password: hashedPassword,
+          name: ADMIN_NAME,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+
+      console.log('✅ Admin account created successfully!');
+      console.log(`   Email: ${admin.email}`);
+      console.log(`   Name: ${admin.name}`);
+      console.log(`   ID: ${admin.id}`);
+    }
+  }
+
+  console.log('\n📋 Seeding faculties and departments...');
 
   // Create faculties
   const socialSciences = await prisma.faculty.upsert({

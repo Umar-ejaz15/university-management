@@ -19,11 +19,54 @@ export async function GET() {
       select: { staffId: true },
     });
 
+    // If user has staffId, fetch staff status and rejection reason
+    let staffData = null;
+    if (dbUser?.staffId) {
+      const staff = await prisma.staff.findUnique({
+        where: { id: dbUser.staffId },
+        select: {
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      if (staff) {
+        // Get rejection reason from audit log if rejected
+        let rejectionReason = null;
+        if (staff.status === 'REJECTED') {
+          const rejectionLog = await prisma.auditLog.findFirst({
+            where: {
+              targetType: 'STAFF',
+              targetId: dbUser.staffId,
+              action: 'REJECT_FACULTY',
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            select: {
+              metadata: true,
+            },
+          });
+
+          rejectionReason = rejectionLog?.metadata
+            ? (rejectionLog.metadata as any).rejectionReason
+            : null;
+        }
+
+        staffData = {
+          status: staff.status,
+          createdAt: staff.createdAt,
+          rejectionReason,
+        };
+      }
+    }
+
     return NextResponse.json({
       user: {
         ...user,
         staffId: dbUser?.staffId,
-      }
+      },
+      staff: staffData,
     }, { status: 200 });
   } catch (error) {
     console.error('Auth check error:', error);
