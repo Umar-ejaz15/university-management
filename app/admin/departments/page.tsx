@@ -19,6 +19,8 @@ interface Department {
   description: string | null;
   facultyId: string;
   faculty: Faculty;
+  totalPublications: number;
+  totalProjects: number;
   _count?: {
     staff: number;
     programs: number;
@@ -230,7 +232,7 @@ export default function AdminDepartmentsPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
+                      <div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Established:</span>
                           <p className="font-medium text-gray-900">{department.establishedYear}</p>
@@ -246,6 +248,14 @@ export default function AdminDepartmentsPage() {
                         <div>
                           <span className="text-gray-500">Programs:</span>
                           <p className="font-medium text-gray-900">{department._count?.programs || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Publications:</span>
+                          <p className="font-medium text-gray-900">{department.totalPublications || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Projects:</span>
+                          <p className="font-medium text-gray-900">{department.totalProjects || 0}</p>
                         </div>
                       </div>
 
@@ -278,7 +288,7 @@ export default function AdminDepartmentsPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingDepartment ? 'Edit Department' : 'Add New Department'}
@@ -337,12 +347,16 @@ export default function AdminDepartmentsPage() {
                   Established Year *
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
-                  min="1900"
-                  max={new Date().getFullYear()}
+                  placeholder="e.g., 1995"
                   value={formData.establishedYear}
-                  onChange={(e) => setFormData({ ...formData, establishedYear: parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData({ ...formData, establishedYear: parseInt(val) || new Date().getFullYear() });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
@@ -352,10 +366,15 @@ export default function AdminDepartmentsPage() {
                   Total Students
                 </label>
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="e.g., 450"
                   value={formData.totalStudents}
-                  onChange={(e) => setFormData({ ...formData, totalStudents: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData({ ...formData, totalStudents: parseInt(val) || 0 });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>

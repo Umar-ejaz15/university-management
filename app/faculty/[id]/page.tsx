@@ -135,14 +135,6 @@ export default async function FacultyPage({ params }: PageProps) {
                     <User className="w-16 h-16 text-[#2d6a4f]" />
                   </div>
                 )}
-                {isOwnProfile && (
-                  <Link
-                    href="/faculty/edit"
-                    className="absolute -bottom-2 -right-2 bg-[#2d6a4f] text-white p-2 rounded-full shadow hover:bg-[#1e4d39] transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Link>
-                )}
               </div>
             </div>
 
@@ -154,6 +146,15 @@ export default async function FacultyPage({ params }: PageProps) {
                   <p className="text-sm text-[#2d6a4f] font-semibold mb-1">{staff.designation}</p>
                   <p className="text-sm text-[#666666]">{staff.department.name} • {staff.department.faculty.name}</p>
                 </div>
+                {isOwnProfile && (
+                  <Link
+                    href="/faculty/edit"
+                    className="flex items-center gap-2 bg-[#2d6a4f] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#1e4d39] transition-colors shadow-md hover:shadow-lg"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Profile
+                  </Link>
+                )}
               </div>
 
               {/* Contact and small info */}

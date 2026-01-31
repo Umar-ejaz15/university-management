@@ -52,17 +52,7 @@ export default function PieChart({
         `;
       }
     },
-    legend: {
-      orient: 'vertical',
-      right: '10%',
-      top: 'center',
-      itemGap: 12,
-      textStyle: {
-        color: '#666',
-        fontSize: 12
-      },
-      icon: 'circle'
-    },
+    legend: { show: false },
     series: [
       {
         name: 'Distribution',
@@ -76,9 +66,9 @@ export default function PieChart({
           borderWidth: 2
         },
         label: {
-          show: true,
+          show: donut, // Only show label in center for donut, hide for large pie
           position: donut ? 'center' : 'outside',
-          formatter: donut ? '{d}%\n{b}' : '{b}\n{d}%',
+          formatter: '', // No label for pie chart, only tooltip
           fontSize: donut ? 14 : 12,
           fontWeight: donut ? 'bold' : 'normal',
           color: donut ? '#1a1a1a' : '#666'

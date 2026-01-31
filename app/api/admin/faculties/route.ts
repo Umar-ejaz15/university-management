@@ -27,11 +27,54 @@ export async function GET(request: NextRequest) {
         _count: {
           select: { departments: true },
         },
+        departments: {
+          include: {
+            staff: {
+              where: { status: 'APPROVED' },
+              include: {
+                _count: {
+                  select: {
+                    publications: true,
+                    projects: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json({ faculties });
+    // Add publications and projects counts
+    const facultiesWithStats = faculties.map((faculty) => {
+      const totalPublications = faculty.departments.reduce(
+        (sum, dept) =>
+          sum + dept.staff.reduce((staffSum, staff) => staffSum + staff._count.publications, 0),
+        0
+      );
+      const totalProjects = faculty.departments.reduce(
+        (sum, dept) =>
+          sum + dept.staff.reduce((staffSum, staff) => staffSum + staff._count.projects, 0),
+        0
+      );
+
+      return {
+        id: faculty.id,
+        name: faculty.name,
+        shortName: faculty.shortName,
+        dean: faculty.dean,
+        establishedYear: faculty.establishedYear,
+        description: faculty.description,
+        createdAt: faculty.createdAt,
+        updatedAt: faculty.updatedAt,
+        totalPublications,
+        totalProjects,
+        _count: faculty._count,
+      };
+    });
+
+    return NextResponse.json({ faculties: facultiesWithStats });
   } catch (error) {
     console.error('Error fetching faculties:', error);
     return NextResponse.json({ error: 'Failed to fetch faculties' }, { status: 500 });

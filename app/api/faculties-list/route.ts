@@ -17,6 +17,19 @@ export async function GET() {
                 staff: true,
               },
             },
+            staff: {
+              where: {
+                status: 'APPROVED',
+              },
+              include: {
+                _count: {
+                  select: {
+                    publications: true,
+                    projects: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -26,32 +39,60 @@ export async function GET() {
     });
 
     // Transform data to include calculated statistics
-    const facultiesWithStats = faculties.map((faculty) => ({
-      id: faculty.id,
-      name: faculty.name,
-      shortName: faculty.shortName,
-      dean: faculty.dean,
-      establishedYear: faculty.establishedYear,
-      description: faculty.description,
-      totalDepartments: faculty.departments.length,
-      totalStudents: faculty.departments.reduce(
-        (sum: number, dept) => sum + dept.totalStudents,
+    const facultiesWithStats = faculties.map((faculty) => {
+      const departmentsWithStats = faculty.departments.map((dept) => {
+        const totalPublications = dept.staff.reduce(
+          (sum, staff) => sum + staff._count.publications,
+          0
+        );
+        const totalProjects = dept.staff.reduce(
+          (sum, staff) => sum + staff._count.projects,
+          0
+        );
+
+        return {
+          id: dept.id,
+          name: dept.name,
+          head: dept.head,
+          establishedYear: dept.establishedYear,
+          totalStudents: dept.totalStudents,
+          totalStaff: dept._count.staff,
+          totalPublications,
+          totalProjects,
+          description: dept.description,
+        };
+      });
+
+      const totalPublications = departmentsWithStats.reduce(
+        (sum, dept) => sum + dept.totalPublications,
         0
-      ),
-      totalStaff: faculty.departments.reduce(
-        (sum: number, dept) => sum + dept._count.staff,
+      );
+      const totalProjects = departmentsWithStats.reduce(
+        (sum, dept) => sum + dept.totalProjects,
         0
-      ),
-      departments: faculty.departments.map((dept) => ({
-        id: dept.id,
-        name: dept.name,
-        head: dept.head,
-        establishedYear: dept.establishedYear,
-        totalStudents: dept.totalStudents,
-        totalStaff: dept._count.staff,
-        description: dept.description,
-      })),
-    }));
+      );
+
+      return {
+        id: faculty.id,
+        name: faculty.name,
+        shortName: faculty.shortName,
+        dean: faculty.dean,
+        establishedYear: faculty.establishedYear,
+        description: faculty.description,
+        totalDepartments: faculty.departments.length,
+        totalStudents: faculty.departments.reduce(
+          (sum: number, dept) => sum + dept.totalStudents,
+          0
+        ),
+        totalStaff: faculty.departments.reduce(
+          (sum: number, dept) => sum + dept._count.staff,
+          0
+        ),
+        totalPublications,
+        totalProjects,
+        departments: departmentsWithStats,
+      };
+    });
 
     return NextResponse.json({ faculties: facultiesWithStats });
   } catch (error) {

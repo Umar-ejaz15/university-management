@@ -11,6 +11,8 @@ interface Faculty {
   dean: string;
   establishedYear: number;
   description: string | null;
+  totalPublications: number;
+  totalProjects: number;
   _count?: {
     departments: number;
   };
@@ -198,7 +200,7 @@ export default function AdminFacultiesPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Established:</span>
                           <p className="font-medium text-gray-900">{faculty.establishedYear}</p>
@@ -206,6 +208,14 @@ export default function AdminFacultiesPage() {
                         <div>
                           <span className="text-gray-500">Departments:</span>
                           <p className="font-medium text-gray-900">{faculty._count?.departments || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Publications:</span>
+                          <p className="font-medium text-gray-900">{faculty.totalPublications || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Projects:</span>
+                          <p className="font-medium text-gray-900">{faculty.totalProjects || 0}</p>
                         </div>
                       </div>
 
@@ -238,7 +248,7 @@ export default function AdminFacultiesPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingFaculty ? 'Edit Faculty' : 'Add New Faculty'}
@@ -292,12 +302,16 @@ export default function AdminFacultiesPage() {
                   Established Year *
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
-                  min="1900"
-                  max={new Date().getFullYear()}
+                  placeholder="e.g., 1990"
                   value={formData.establishedYear}
-                  onChange={(e) => setFormData({ ...formData, establishedYear: parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData({ ...formData, establishedYear: parseInt(val) || new Date().getFullYear() });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>

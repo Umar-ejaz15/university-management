@@ -1,11 +1,38 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { use } from 'react';
 import Header from '@/components/Header';
 import BarChart from '@/components/charts/BarChart';
-import { getFacultyById } from '@/lib/department-data';
+
+interface Department {
+  id: string;
+  name: string;
+  head: string;
+  establishedYear: number;
+  totalStudents: number;
+  totalStaff: number;
+  totalPublications: number;
+  totalProjects: number;
+  description: string | null;
+}
+
+interface Faculty {
+  id: string;
+  name: string;
+  shortName: string;
+  dean: string;
+  establishedYear: number;
+  description: string | null;
+  totalDepartments: number;
+  totalStudents: number;
+  totalStaff: number;
+  totalPublications: number;
+  totalProjects: number;
+  departments: Department[];
+}
 
 interface PageProps {
   params: Promise<{
@@ -15,16 +42,70 @@ interface PageProps {
 
 /**
  * Faculty Detail Page
- * 
+ *
  * Shows information about a specific faculty and lists all its departments
  * Displays faculty stats and provides links to individual department pages
  */
 export default function FacultyDetailPage({ params }: PageProps) {
   const { facultyId } = use(params);
-  const faculty = getFacultyById(facultyId);
+  const [faculty, setFaculty] = useState<Faculty | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!faculty) {
-    notFound();
+  useEffect(() => {
+    async function fetchFaculty() {
+      try {
+        const res = await fetch('/api/faculties-list');
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to fetch faculty');
+        }
+
+        const foundFaculty = data.faculties.find((f: Faculty) => f.id === facultyId);
+
+        if (!foundFaculty) {
+          notFound();
+        }
+
+        setFaculty(foundFaculty);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchFaculty();
+  }, [facultyId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5]">
+        <Header />
+        <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6a4f] mx-auto mb-4"></div>
+              <p className="text-sm text-[#666666]">Loading faculty details...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !faculty) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5]">
+        <Header />
+        <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+            <p className="text-red-800">{error || 'Faculty not found'}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Prepare chart data
@@ -39,10 +120,10 @@ export default function FacultyDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f0ed]">
+    <div className="min-h-screen bg-[#f5f5f5]">
       <Header />
-      
-      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Breadcrumb */}
         <div className="mb-6 text-sm text-[#666666]">
           <Link href="/faculties" className="hover:text-[#4169E1]">
@@ -53,181 +134,205 @@ export default function FacultyDetailPage({ params }: PageProps) {
         </div>
 
         {/* Faculty Header */}
-        <div className="bg-gradient-to-br from-white to-[#f8f9fa] rounded-lg p-8 shadow-md border border-[#e0e0e0] mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#e5e5e5] mb-6">
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#2d6a4f] to-[#1e4d39] rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+              <div className="w-16 h-16 bg-[#e8f5e9] rounded-xl flex items-center justify-center text-[#2d6a4f] font-bold text-2xl">
                 {faculty.shortName.charAt(0)}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2">
+                <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">
                   {faculty.name}
                 </h1>
-                <p className="text-[#666666] max-w-3xl">
+                <p className="text-sm text-[#666666] max-w-3xl">
                   {faculty.description}
                 </p>
               </div>
             </div>
-            <span className="text-sm bg-white text-[#666666] px-4 py-2 rounded-full whitespace-nowrap shadow-sm border border-[#e0e0e0]">
+            <span className="text-xs font-semibold bg-[#f5f5f5] text-[#666666] px-3 py-1 rounded-full whitespace-nowrap">
               Est. {faculty.establishedYear}
             </span>
           </div>
 
           {/* Dean Info */}
-          <div className="mb-6 pb-6 border-b border-[#e0e0e0] bg-white rounded-lg p-4">
-            <p className="text-sm text-[#888888] mb-1">Dean</p>
-            <p className="text-lg font-semibold text-[#1a1a1a]">
+          <div className="mb-6 pb-6 border-b border-[#e5e5e5]">
+            <p className="text-xs text-[#666666] mb-1">Dean</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">
               {faculty.dean}
             </p>
           </div>
 
           {/* Faculty Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-[#2d6a4f] to-[#1e4d39] rounded-lg shadow-md text-white">
-              <p className="text-4xl font-bold mb-2">
-                {faculty.totalDepartments}
-              </p>
-              <p className="text-sm opacity-90">Departments</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#e8f5e9] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#2d6a4f]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalDepartments}</p>
+              <p className="text-sm text-[#666666]">Departments</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-[#4169E1] to-[#2a4fb8] rounded-lg shadow-md text-white">
-              <p className="text-4xl font-bold mb-2">
-                {faculty.totalStudents.toLocaleString()}
-              </p>
-              <p className="text-sm opacity-90">Students</p>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#f3e5f5] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#7b1fa2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalStudents.toLocaleString()}</p>
+              <p className="text-sm text-[#666666]">Students</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-[#22c55e] to-[#16a34a] rounded-lg shadow-md text-white">
-              <p className="text-4xl font-bold mb-2">
-                {faculty.totalStaff}
-              </p>
-              <p className="text-sm opacity-90">Faculty Staff</p>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#fff3e0] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#e65100]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalStaff}</p>
+              <p className="text-sm text-[#666666]">Faculty Staff</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-[#c9a961] to-[#a68c4d] rounded-lg shadow-md text-white">
-              <p className="text-4xl font-bold mb-2">
-                {faculty.departments.reduce((sum, dept) => sum + dept.programs.length, 0)}
-              </p>
-              <p className="text-sm opacity-90">Programs</p>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#fce4ec] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#c2185b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalPublications.toLocaleString()}</p>
+              <p className="text-sm text-[#666666]">Publications</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#e0f2f1] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#00897b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalProjects}</p>
+              <p className="text-sm text-[#666666]">Projects</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
+              <div className="flex items-center justify-between mb-5">
+                <div className="bg-[#e3f2fd] p-3 rounded-xl">
+                  <svg className="w-8 h-8 text-[#1976d2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.departments.length}</p>
+              <p className="text-sm text-[#666666]">Depts</p>
             </div>
           </div>
         </div>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
-              Students Distribution by Department
-            </h2>
-            <BarChart data={departmentStudentsData} color="#2d6a4f" />
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-6 flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-[#2d6a4f] rounded-full" />
+            Department Analytics
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
+              <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Students by Department</h3>
+              <BarChart data={departmentStudentsData} color="#2d6a4f" />
+            </div>
+            <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
+              <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Staff by Department</h3>
+              <BarChart data={departmentStaffData} color="#1976d2" />
+            </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#e0e0e0]">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-[#2d6a4f] rounded"></span>
-              Staff Distribution by Department
-            </h2>
-            <BarChart data={departmentStaffData} color="#2d6a4f" />
-          </div>
-        </div>
+        </section>
 
         {/* Departments Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-4">
-            Departments
+        <section className="mb-8">
+          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-6 flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-[#2d6a4f] rounded-full" />
+            All Departments
           </h2>
-        </div>
 
-        {/* Departments Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {faculty.departments.map((department, index) => {
-            const colors = [
-              'from-[#2d6a4f] to-[#1e4d39]',
-              'from-[#4169E1] to-[#2a4fb8]',
-              'from-[#c9a961] to-[#a68c4d]',
-              'from-[#22c55e] to-[#16a34a]',
-              'from-[#ef4444] to-[#dc2626]',
-            ];
-            const colorClass = colors[index % colors.length];
-
-            return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {faculty.departments.map((department) => (
               <Link
                 key={department.id}
                 href={`/faculties/${facultyId}/${department.id}`}
                 className="block group"
               >
-                <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all border border-[#e0e0e0] h-full group-hover:border-[#2d6a4f]">
-                  {/* Colored Header Bar */}
-                  <div className={`h-2 bg-gradient-to-r ${colorClass}`}></div>
-                  
-                  <div className="p-6">
-                    {/* Department Header */}
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold text-[#1a1a1a] mb-2 group-hover:text-[#2d6a4f] transition-colors">
-                        {department.name}
-                      </h3>
-                      <p className="text-sm text-[#666666] mb-3 line-clamp-2">
+                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-[#e5e5e5] h-full group-hover:border-[#2d6a4f]">
+                  {/* Department Header */}
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-[#1a1a1a] mb-2 group-hover:text-[#2d6a4f] transition-colors">
+                      {department.name}
+                    </h3>
+                    {department.description && (
+                      <p className="text-sm text-[#666666] line-clamp-2">
                         {department.description}
                       </p>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Department Head */}
-                    <div className="mb-4 pb-4 border-b border-[#e0e0e0]">
-                      <p className="text-xs text-[#888888] mb-1">Head of Department</p>
-                      <p className="text-sm font-medium text-[#1a1a1a]">
-                        {department.head}
+                  {/* Department Head */}
+                  <div className="mb-4 pb-4 border-b border-[#e5e5e5]">
+                    <p className="text-xs text-[#666666] mb-1">Head of Department</p>
+                    <p className="text-sm font-semibold text-[#1a1a1a]">
+                      {department.head}
+                    </p>
+                  </div>
+
+                  {/* Department Stats */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
+                      <p className="text-xs text-[#666666] mb-1">Students</p>
+                      <p className="text-lg font-bold text-[#1976d2]">
+                        {department.totalStudents}
                       </p>
                     </div>
-
-                    {/* Department Stats */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="text-center p-3 bg-[#f8f9fa] rounded-lg">
-                        <p className="text-xs text-[#888888] mb-1">Students</p>
-                        <p className="text-xl font-bold text-[#1a1a1a]">
-                          {department.totalStudents}
-                        </p>
-                      </div>
-                      <div className="text-center p-3 bg-[#f8f9fa] rounded-lg">
-                        <p className="text-xs text-[#888888] mb-1">Staff</p>
-                        <p className="text-xl font-bold text-[#1a1a1a]">
-                          {department.totalStaff}
-                        </p>
-                      </div>
-                      <div className="text-center p-3 bg-[#f8f9fa] rounded-lg">
-                        <p className="text-xs text-[#888888] mb-1">Programs</p>
-                        <p className="text-xl font-bold text-[#1a1a1a]">
-                          {department.programs.length}
-                        </p>
-                      </div>
+                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
+                      <p className="text-xs text-[#666666] mb-1">Staff</p>
+                      <p className="text-lg font-bold text-[#e65100]">
+                        {department.totalStaff}
+                      </p>
                     </div>
-
-                    {/* Programs List */}
-                    <div className="mb-4">
-                      <p className="text-xs text-[#888888] mb-2">Programs Offered</p>
-                      <div className="flex flex-wrap gap-2">
-                        {department.programs.map((program, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs bg-[#f0f0ed] text-[#666666] px-3 py-1 rounded-full border border-[#e0e0e0]"
-                          >
-                            {program}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
+                      <p className="text-xs text-[#666666] mb-1">Pubs</p>
+                      <p className="text-lg font-bold text-[#c2185b]">
+                        {department.totalPublications}
+                      </p>
                     </div>
-
-                    {/* View More */}
-                    <div className="pt-4 border-t border-[#e0e0e0]">
-                      <span className="text-sm text-[#2d6a4f] font-medium group-hover:text-[#1e4d39] flex items-center gap-2">
-                        View Department Details
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
+                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
+                      <p className="text-xs text-[#666666] mb-1">Projects</p>
+                      <p className="text-lg font-bold text-[#00897b]">
+                        {department.totalProjects}
+                      </p>
                     </div>
+                  </div>
+
+                  {/* View More */}
+                  <div className="pt-4 border-t border-[#e5e5e5]">
+                    <span className="text-sm text-[#2d6a4f] font-semibold group-hover:text-[#1e4d39] flex items-center gap-2">
+                      View Department Details
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
                   </div>
                 </div>
               </Link>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );

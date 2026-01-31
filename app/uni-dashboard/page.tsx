@@ -204,29 +204,67 @@ export default async function UniDashboard() {
           </div>
         </section>
 
-        {/* Project Status & Faculty Distribution */}
-        <section className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <PieChartIcon className="w-6 h-6 text-[#2d6a4f]" />
-              <h3 className="text-xl font-bold text-[#1a1a1a]">Project Status</h3>
+        {/* Project Status & Publications by Department */}
+        <section className="mb-8 w-full flex flex-col lg:flex-row gap-8 items-stretch">
+          {/* Project Status Pie Chart */}
+          <div className="flex-1 bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6 flex flex-col">
+            <div className="flex items-center gap-3 mb-6 justify-between">
+              <div className="flex items-center gap-3">
+                <PieChartIcon className="w-6 h-6 text-[#2d6a4f]" />
+                <h3 className="text-xl font-bold text-[#1a1a1a]">Project Status</h3>
+              </div>
+              <a href="/admin/projects" className="inline-block px-4 py-2 bg-[#1976d2] text-white rounded-lg text-sm font-semibold shadow hover:bg-[#145ea8] transition">View All Projects</a>
             </div>
-            <PieChart data={projectsStatusPieData} colors={[ '#1976d2', '#2d6a4f', '#e65100' ]} donut={true} />
+            <div className="flex-1 flex items-center justify-center min-h-[340px]">
+              <PieChart data={projectsStatusPieData} colors={[ '#1976d2', '#2d6a4f', '#e65100' ]} donut={true} height={340} />
+            </div>
           </div>
-
-          <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-[#1a1a1a]">Faculty Distribution</h3>
-              <span className="text-sm text-[#666666]">By department size</span>
+          {/* Publications by Department Bar Chart */}
+          <div className="flex-1 bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6 flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <BookOpen className="w-6 h-6 text-[#7b1fa2]" />
+              <h3 className="text-xl font-bold text-[#1a1a1a]">Publications by Department</h3>
             </div>
-            <PieChart
-              data={departmentDistribution}
-              colors={[ '#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc' ]}
-              donut={false}
-              height={420}
-              center={[ '50%', '50%' ]}
-              radius={'65%'}
-            />
+            <div className="flex-1 flex items-center justify-center min-h-[340px]">
+              <BarChart data={{
+                categories: departments.map(safeDeptName),
+                values: departments.map((d: any) => d.staff.reduce((sum: number, s: any) => sum + (s.publications?.length || 0), 0)),
+              }} color="#7b1fa2" showValues={true} />
+            </div>
+          </div>
+        </section>
+
+        {/* Faculty Distribution - Extra Large, Chart Left, Legend Right */}
+        <section className="w-full py-12">
+          <div className="w-full max-w-none bg-white rounded-3xl shadow-lg border-2 border-[#e5e5e5] flex flex-col px-2 md:px-8 py-10" style={{marginLeft: 0, marginRight: 0}}>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1a1a1a] mb-2 text-center">Faculty Distribution</h2>
+            <p className="text-xl text-[#666666] mb-8 text-center">By department size</p>
+            <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-12" style={{minHeight: 600}}>
+              {/* Chart Left */}
+              <div className="flex-shrink-0 flex items-center justify-center" style={{width: 750, height: 750, maxWidth: '90vw'}}>
+                <PieChart
+                  data={departmentDistribution}
+                  colors={[ '#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc' ]}
+                  donut={false}
+                  height={700}
+                  center={[ '50%', '50%' ]}
+                  radius={'95%'}
+                />
+              </div>
+              {/* Legend Right */}
+              <div className="flex flex-col items-start justify-center flex-1 max-w-xs w-full">
+                <h3 className="text-2xl font-bold mb-4 text-[#1a1a1a]">Departments</h3>
+                <ul className="space-y-3 w-full">
+                  {departmentDistribution.map((dept, idx) => (
+                    <li key={dept.name} className="flex items-center gap-3 text-lg">
+                      <span className="inline-block w-5 h-5 rounded-full" style={{backgroundColor: ['#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'][idx % 6]}}></span>
+                      <span className="truncate" title={dept.name}>{dept.name}</span>
+                      <span className="ml-auto font-semibold text-[#666]">{dept.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
       </main>

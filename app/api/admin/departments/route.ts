@@ -37,11 +37,38 @@ export async function GET(request: NextRequest) {
             programs: true,
           },
         },
+        staff: {
+          where: {
+            status: 'APPROVED',
+          },
+          include: {
+            _count: {
+              select: {
+                publications: true,
+                projects: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json({ departments });
+    // Add publications and projects counts
+    const departmentsWithStats = departments.map((dept) => ({
+      ...dept,
+      totalPublications: dept.staff.reduce(
+        (sum, staff) => sum + staff._count.publications,
+        0
+      ),
+      totalProjects: dept.staff.reduce(
+        (sum, staff) => sum + staff._count.projects,
+        0
+      ),
+      staff: undefined, // Remove staff data from response
+    }));
+
+    return NextResponse.json({ departments: departmentsWithStats });
   } catch (error) {
     console.error('Error fetching departments:', error);
     return NextResponse.json({ error: 'Failed to fetch departments' }, { status: 500 });

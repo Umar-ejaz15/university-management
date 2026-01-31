@@ -83,28 +83,58 @@ model Staff {
 }
 
 model Publication {
-  id        String   @id @default(cuid())
-  title     String
-  year      Int
-  journal   String?
-  staffId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  title           String
+  authors         String          // Comma-separated list or JSON array
+  year            Int
+  publicationType PublicationType @default(JOURNAL_ARTICLE)
+  journal         String?         // Journal or Conference name
+  volume          String?
+  issue           String?
+  pages           String?         // e.g., "123-145"
+  publisher       String?
+  doi             String?         // Digital Object Identifier
+  isbn            String?         // For books
+  issn            String?         // For journals
+  abstract        String?         @db.Text
+  keywords        String?         // Comma-separated keywords
+  url             String?         // Link to publication
+  pdfUrl          String?         // Direct link to PDF
+  impactFactor    String?         // Journal impact factor
+  indexedIn       String?         // e.g., "Scopus, Web of Science, PubMed"
+  citationCount   Int             @default(0)
+  verified        Boolean         @default(false) // Admin verified publication
+  staffId         String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  staff           Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([year])
+  @@index([publicationType])
+  @@index([verified])
 }
 
 model Project {
-  id          String        @id @default(cuid())
-  title       String
-  description String?
-  studentCount Int           @default(0)
-  status      ProjectStatus @default(ONGOING)
-  startDate   DateTime?
-  endDate     DateTime?
-  staffId     String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  staff       Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  title          String
+  description    String?       @db.Text
+  objectives     String?       @db.Text  // Project objectives and goals
+  methodology    String?       @db.Text  // Research methodology
+  outcomes       String?       @db.Text  // Project outcomes and results
+  studentCount   Int           @default(0)
+  fundingAmount  String?       // e.g., "PKR 2,000,000" or "USD 50,000"
+  fundingAgency  String?       // e.g., "HEC", "NSF", "Industry Partner"
+  collaborators  String?       // Names of collaborating researchers/institutions
+  projectUrl     String?       // Link to project website or repository
+  status         ProjectStatus @default(ONGOING)
+  startDate      DateTime?
+  endDate        DateTime?
+  staffId        String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  staff          Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 model Course {
@@ -165,4 +195,16 @@ enum UserRole {
   ADMIN
   FACULTY
   STUDENT
+}
+
+enum PublicationType {
+  JOURNAL_ARTICLE
+  CONFERENCE_PAPER
+  BOOK
+  BOOK_CHAPTER
+  THESIS
+  PATENT
+  TECHNICAL_REPORT
+  WORKING_PAPER
+  PREPRINT
 }

@@ -33,6 +33,13 @@ interface Publication {
   title: string;
   year: number;
   journal: string;
+  authors?: string;
+  doi?: string;
+  abstract?: string;
+  pdfUrl?: string;
+  impactFactor?: string;
+  indexedIn?: string;
+  citationCount?: number;
 }
 
 interface Project {
@@ -634,10 +641,15 @@ export default function EditProfilePage() {
                       Students Supervised
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={form.studentsSupervised}
-                      onChange={(e) => update('studentsSupervised', parseInt(e.target.value) || 0)}
-                      min="0"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        update('studentsSupervised', parseInt(val) || 0);
+                      }}
+                      placeholder="e.g., 25"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
                     />
                   </div>
@@ -719,14 +731,15 @@ export default function EditProfilePage() {
                     </div>
                     <div>
                       <input
-                        type="number"
-                        placeholder="Year"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Year (e.g., 2023)"
                         value={newPublication.year}
-                        onChange={(e) =>
-                          setNewPublication({ ...newPublication, year: parseInt(e.target.value) })
-                        }
-                        min="1990"
-                        max={new Date().getFullYear()}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setNewPublication({ ...newPublication, year: parseInt(val) || new Date().getFullYear() });
+                        }}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
                       />
                     </div>
@@ -781,13 +794,16 @@ export default function EditProfilePage() {
                               />
                               <div className="grid grid-cols-2 gap-3">
                                 <input
-                                  type="number"
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   value={editPublicationData.year}
-                                  onChange={(e) =>
-                                    setEditPublicationData({ ...editPublicationData, year: parseInt(e.target.value) })
-                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    setEditPublicationData({ ...editPublicationData, year: parseInt(val) || new Date().getFullYear() });
+                                  }}
                                   className="p-2 border border-gray-300 rounded-lg"
-                                  placeholder="Year"
+                                  placeholder="Year (e.g., 2023)"
                                 />
                                 <input
                                   type="text"
@@ -899,11 +915,15 @@ export default function EditProfilePage() {
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <input
-                        type="number"
-                        placeholder="Student Count (optional)"
-                        value={newProject.studentCount}
-                        onChange={(e) => setNewProject({ ...newProject, studentCount: parseInt(e.target.value) || 0 })}
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Student Count (e.g., 5)"
+                        value={newProject.studentCount || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setNewProject({ ...newProject, studentCount: parseInt(val) || 0 });
+                        }}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
                       />
                     </div>
@@ -996,14 +1016,16 @@ export default function EditProfilePage() {
                               />
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <input
-                                  type="number"
-                                  value={editProjectData.studentCount || 0}
-                                  onChange={(e) =>
-                                    setEditProjectData({ ...editProjectData, studentCount: parseInt(e.target.value) || 0 })
-                                  }
-                                  min="0"
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={editProjectData.studentCount || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    setEditProjectData({ ...editProjectData, studentCount: parseInt(val) || 0 });
+                                  }}
                                   className="p-2 border border-gray-300 rounded-lg"
-                                  placeholder="Student Count"
+                                  placeholder="Student Count (e.g., 5)"
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-3">
@@ -1118,26 +1140,29 @@ export default function EditProfilePage() {
                     </div>
                     <div>
                       <input
-                        type="number"
-                        placeholder="Credits"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Credits (e.g., 3)"
                         value={newCourse.credits}
-                        onChange={(e) =>
-                          setNewCourse({ ...newCourse, credits: parseInt(e.target.value) || 0 })
-                        }
-                        min="1"
-                        max="6"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setNewCourse({ ...newCourse, credits: parseInt(val) || 0 });
+                        }}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
                       />
                     </div>
                     <div>
                       <input
-                        type="number"
-                        placeholder="Students"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Students (e.g., 45)"
                         value={newCourse.students}
-                        onChange={(e) =>
-                          setNewCourse({ ...newCourse, students: parseInt(e.target.value) || 0 })
-                        }
-                        min="0"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setNewCourse({ ...newCourse, students: parseInt(val) || 0 });
+                        }}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d6a4f] focus:border-transparent"
                       />
                     </div>
@@ -1199,31 +1224,36 @@ export default function EditProfilePage() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <input
-                                      type="number"
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       value={editCourseData.credits}
-                                      onChange={(e) =>
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
                                         setEditCourseData({
                                           ...editCourseData,
-                                          credits: parseInt(e.target.value) || 0,
-                                        })
-                                      }
+                                          credits: parseInt(val) || 0,
+                                        });
+                                      }}
                                       className="w-20 p-2 border border-gray-300 rounded text-center mx-auto block"
-                                      min="1"
-                                      max="6"
+                                      placeholder="3"
                                     />
                                   </td>
                                   <td className="px-4 py-3">
                                     <input
-                                      type="number"
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       value={editCourseData.students}
-                                      onChange={(e) =>
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
                                         setEditCourseData({
                                           ...editCourseData,
-                                          students: parseInt(e.target.value) || 0,
-                                        })
-                                      }
+                                          students: parseInt(val) || 0,
+                                        });
+                                      }}
                                       className="w-20 p-2 border border-gray-300 rounded text-center mx-auto block"
-                                      min="0"
+                                      placeholder="45"
                                     />
                                   </td>
                                   <td className="px-4 py-3">

@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         year: year || new Date().getFullYear(),
         journal: journal?.trim() || null,
         staffId: dbUser.staffId,
+        authors: body.authors?.trim() || 'Unknown',
       },
     });
 
