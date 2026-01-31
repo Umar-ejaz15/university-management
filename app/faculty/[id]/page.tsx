@@ -71,14 +71,14 @@ export default async function FacultyPage({ params }: PageProps) {
   const publicationsHistory = {
     years: years.map(String),
     values: years.map(
-      (year) => staff.publications.filter((pub) => pub.year === year).length
+      (year) => staff.publications.filter((pub: typeof staff.publications[number]) => pub.year === year).length
     ),
   };
 
   // Projects by status
-  const ongoingProjects = staff.projects.filter(p => p.status === 'ONGOING').length;
-  const completedProjects = staff.projects.filter(p => p.status === 'COMPLETED').length;
-  const pendingProjects = staff.projects.filter(p => p.status === 'PENDING').length;
+  const ongoingProjects = staff.projects.filter((p: typeof staff.projects[number]) => p.status === 'ONGOING').length;
+  const completedProjects = staff.projects.filter((p: typeof staff.projects[number]) => p.status === 'COMPLETED').length;
+  const pendingProjects = staff.projects.filter((p: typeof staff.projects[number]) => p.status === 'PENDING').length;
 
   const projectsStatusData = [
     { name: 'Ongoing', value: ongoingProjects },
@@ -88,27 +88,27 @@ export default async function FacultyPage({ params }: PageProps) {
 
   // Course statistics
   const courseData = {
-    categories: staff.courses.map(c => c.name.length > 15 ? c.name.substring(0, 12) + '...' : c.name),
-    values: staff.courses.map(c => c.students)
+    categories: staff.courses.map((c: typeof staff.courses[number]) => c.name.length > 15 ? c.name.substring(0, 12) + '...' : c.name),
+    values: staff.courses.map((c: typeof staff.courses[number]) => c.students)
   };
 
   // Parse administrative duties (convert bullet list to array)
   const administrativeDuties = staff.administrativeDuties
     ? staff.administrativeDuties
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(line => line.replace(/^[-*•]\s*/, '')) // Remove bullet characters
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0)
+        .map((line: string) => line.replace(/^[-*•]\s*/, '')) // Remove bullet characters
     : [];
 
   // Prepare project-student data if available
   type ProjectWithStudentCount = { title: string; studentCount?: number | null };
 
   const projectStudentData = {
-    categories: staff.projects.map(p => p.title),
-    values: staff.projects.map(p => (p as ProjectWithStudentCount).studentCount ?? 0),
+    categories: staff.projects.map((p: typeof staff.projects[number]) => p.title),
+    values: staff.projects.map((p: typeof staff.projects[number]) => (p as ProjectWithStudentCount).studentCount ?? 0),
   };
-  const showProjectStudentsChart = projectStudentData.values.some(v => v > 0);
+  const showProjectStudentsChart = projectStudentData.values.some((v: number) => v > 0);
 
   const dutiesCount = administrativeDuties.length;
   const studentsSupervised = staff.studentsSupervised ?? 0;
@@ -225,7 +225,7 @@ export default async function FacultyPage({ params }: PageProps) {
             </h2>
             <div className="p-2">
               <ul className="list-disc pl-6 space-y-2">
-                {administrativeDuties.map((duty, index) => (
+                {administrativeDuties.map((duty: string, index: number) => (
                   <li key={index} className="text-base text-[#1a1a1a] leading-relaxed">
                     {duty}
                   </li>
@@ -296,7 +296,7 @@ export default async function FacultyPage({ params }: PageProps) {
               <div>
                 <h3 className="text-lg font-semibold text-[#666666] mb-4">Course Details</h3>
                 <div className="space-y-3">
-                  {staff.courses.map((course) => (
+                  {staff.courses.map((course: typeof staff.courses[number]) => (
                     <div key={course.id} className="bg-[#f8f9fa] p-4 rounded-xl">
                       <h4 className="font-bold text-[#1a1a1a] mb-2">{course.name}</h4>
                       <div className="flex gap-6 text-sm">
@@ -325,7 +325,7 @@ export default async function FacultyPage({ params }: PageProps) {
               Recent Publications
             </h2>
             <div className="space-y-4">
-              {staff.publications.slice(0, 10).map((pub, index) => (
+              {staff.publications.slice(0, 10).map((pub: typeof staff.publications[number], index: number) => (
                 <div key={pub.id} className="flex items-start gap-4 p-4 bg-[#f8f9fa] rounded-xl hover:bg-[#e8f5e9] transition-colors">
                   <div className="bg-[#2d6a4f] text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                     {index + 1}
@@ -350,7 +350,7 @@ export default async function FacultyPage({ params }: PageProps) {
               Research Projects
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {staff.projects.map((project) => (
+              {staff.projects.map((project: typeof staff.projects[number]) => (
                 <div key={project.id} className="p-6 bg-[#f8f9fa] rounded-xl border-2 border-[#e5e5e5] hover:border-[#2d6a4f] transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <h4 className="font-bold text-[#1a1a1a] text-lg">{project.title}</h4>
