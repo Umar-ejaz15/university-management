@@ -7,6 +7,8 @@
   --primary-gold: #c9a961;
   --avatar-bg: #d4e5dd;
   --badge-bg: #e5e5e5;
+  --font-geist-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
 }
 
 @theme inline {

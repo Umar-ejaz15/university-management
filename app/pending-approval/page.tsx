@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, CheckCircle, XCircle, RefreshCw, Mail, Shield, FileCheck, AlertCircle } from 'lucide-react';
 
@@ -17,7 +17,7 @@ export default function PendingApprovalPage() {
   const [checking, setChecking] = useState(false);
   const [reapplying, setReapplying] = useState(false);
 
-  const checkStatus = async () => {
+  const checkStatus = useCallback(async () => {
     try {
       setChecking(true);
 
@@ -51,7 +51,7 @@ export default function PendingApprovalPage() {
       setChecking(false);
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleReapply = async () => {
     try {
@@ -90,7 +90,7 @@ export default function PendingApprovalPage() {
     // Auto-check status every 30 seconds
     const interval = setInterval(checkStatus, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [checkStatus]);
 
   if (loading) {
     return (

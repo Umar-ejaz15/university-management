@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { GraduationCap, BookOpen, Briefcase, Eye, Search, Filter } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { GraduationCap, BookOpen, Briefcase, Eye, Search } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -28,7 +27,6 @@ interface Staff {
 }
 
 export default function StaffListingPage() {
-  const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,15 +34,7 @@ export default function StaffListingPage() {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedDesignation, setSelectedDesignation] = useState('all');
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
-
-  useEffect(() => {
-    filterStaff();
-  }, [staff, searchQuery, selectedDepartment, selectedDesignation]);
-
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/staff/all');
@@ -58,9 +48,9 @@ export default function StaffListingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const filterStaff = () => {
+  const filterStaff = useCallback(() => {
     let filtered = [...staff];
 
     // Search filter
@@ -85,7 +75,15 @@ export default function StaffListingPage() {
     }
 
     setFilteredStaff(filtered);
-  };
+  }, [staff, searchQuery, selectedDepartment, selectedDesignation]);
+
+  useEffect(() => {
+    fetchStaff();
+  }, [fetchStaff]);
+
+  useEffect(() => {
+    filterStaff();
+  }, [filterStaff]);
 
   const departments = [...new Set(staff.map((s) => s.department.name))];
   const designations = [...new Set(staff.map((s) => s.designation))];

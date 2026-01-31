@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Loader2, Check, Building2, School } from 'lucide-react';

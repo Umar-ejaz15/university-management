@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, UserCheck, UserX, Clock, RefreshCw, CheckCircle, XCircle, Building2, GraduationCap, ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleApprove = async (facultyId: string) => {
     if (!confirm('Are you sure you want to approve this faculty member?')) return;
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

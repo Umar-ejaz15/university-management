@@ -1,5 +1,8 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Loader2, Check } from 'lucide-react';

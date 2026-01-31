@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -7,7 +9,7 @@ import PublicationsChart from '@/components/charts/PublicationsChart';
 import AreaChart from '@/components/charts/AreaChart';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { User, BookOpen, Briefcase, GraduationCap, Mail, Award, Calendar, Edit } from 'lucide-react';
+import { User, BookOpen, Briefcase, GraduationCap, Mail, Award, Edit } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{

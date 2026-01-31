@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Building2, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 
@@ -18,7 +17,6 @@ interface Faculty {
 }
 
 export default function AdminFacultiesPage() {
-  const router = useRouter();
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);

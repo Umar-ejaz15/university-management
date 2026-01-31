@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { GraduationCap, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 
@@ -27,7 +26,6 @@ interface Department {
 }
 
 export default function AdminDepartmentsPage() {
-  const router = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [loading, setLoading] = useState(true);

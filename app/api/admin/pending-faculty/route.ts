@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
 
 /**
  * GET /api/admin/pending-faculty
@@ -72,23 +71,8 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    type StaffWithRelations = Prisma.StaffGetPayload<{
-      include: {
-        department: {
-          include: {
-            faculty: {
-              select: {
-                name: true;
-                shortName: true;
-              };
-            };
-          };
-        };
-      };
-    }>;
-
     return NextResponse.json({
-      faculty: pendingFaculty.map((staff: StaffWithRelations) => ({
+      faculty: pendingFaculty.map((staff) => ({
         id: staff.id,
         name: staff.name,
         email: staff.email,

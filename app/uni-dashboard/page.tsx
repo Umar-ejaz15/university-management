@@ -4,7 +4,7 @@ import LineChart from '@/components/charts/LineChart';
 import AreaChart from '@/components/charts/AreaChart';
 import PieChart from '@/components/charts/PieChart';
 import { prisma } from '@/lib/db';
-import { Users, BookOpen, Briefcase, GraduationCap, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Users, BookOpen, Briefcase, GraduationCap, PieChart as PieChartIcon } from 'lucide-react';
 
 export default async function UniDashboard() {
   // Fetch aggregated data
@@ -49,11 +49,6 @@ export default async function UniDashboard() {
   };
 
   const safeDeptName = (d: DepartmentWithStaff) => ((d?.name ?? '') as string).replace('Department of ', '') || 'Unknown';
-
-  const publicationsByDept = {
-    categories: departments.map(safeDeptName),
-    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.publications?.length || 0), 0)),
-  };
 
   const staffByDept = {
     categories: departments.map(safeDeptName),

@@ -28,7 +28,8 @@ export default function LoginPage() {
       }
       if (data.user?.needsOnboarding) router.push("/onboarding/teacher");
       else router.push("/uni-dashboard");
-    } catch (e) {
+    } catch (err) {
+      console.error(err);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
