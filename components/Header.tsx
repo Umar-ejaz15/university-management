@@ -89,7 +89,7 @@ export default function Header() {
 
   return (
     <header className="bg-[#2d6a4f] text-white">
-      <div className="container mx-auto px-6 py-4">
+      <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
 
           {/* University logo and app title */}
