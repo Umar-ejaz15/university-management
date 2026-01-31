@@ -72,7 +72,20 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      faculty: pendingFaculty.map((staff) => ({
+      faculty: pendingFaculty.map((staff): {
+        id: string;
+        name: string;
+        email: string;
+        designation: string;
+        department: {
+          name: string;
+          faculty: string;
+        };
+        specialization: string | null;
+        experienceYears: string | null;
+        qualifications: string | null;
+        createdAt: Date;
+      } => ({
         id: staff.id,
         name: staff.name,
         email: staff.email,
