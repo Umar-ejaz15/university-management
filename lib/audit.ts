@@ -1,5 +1,5 @@
 import { prisma } from './db';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 export interface AuditLogEntry {
   action: string;
