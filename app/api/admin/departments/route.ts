@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, head, establishedYear, totalStudents, description, facultyId } = body;
+    const { name, head, establishedYear, totalStudents, description, facultyId, programs } = body;
 
     if (!name || !head || !establishedYear || !facultyId) {
       return NextResponse.json(
@@ -132,6 +132,17 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Create programs if provided
+    if (programs && Array.isArray(programs) && programs.length > 0) {
+      await prisma.program.createMany({
+        data: programs.map((programName: string) => ({
+          name: programName,
+          departmentId: department.id,
+        })),
+        skipDuplicates: true,
+      });
+    }
 
     await createAuditLog({
       action: 'CREATE_DEPARTMENT',

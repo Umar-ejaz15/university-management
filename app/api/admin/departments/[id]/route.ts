@@ -5,6 +5,62 @@ import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
 
 /**
+ * GET /api/admin/departments/[id]
+ * Get a single department with programs
+ * Admin only
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const authResult = await requireAdmin(user, request.url);
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.reason }, { status: 403 });
+    }
+
+    const department = await prisma.department.findUnique({
+      where: { id },
+      include: {
+        faculty: {
+          select: {
+            id: true,
+            name: true,
+            shortName: true,
+          },
+        },
+        programs: {
+          select: {
+            id: true,
+            name: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!department) {
+      return NextResponse.json({ error: 'Department not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ department });
+  } catch (error) {
+    console.error('Error fetching department:', error);
+    return NextResponse.json({ error: 'Failed to fetch department' }, { status: 500 });
+  }
+}
+
+/**
  * PUT /api/admin/departments/[id]
  * Update a department
  * Admin only
@@ -29,7 +85,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, head, establishedYear, totalStudents, description, facultyId } = body;
+    const { name, head, establishedYear, totalStudents, description, facultyId, programs } = body;
 
     // Verify faculty exists if facultyId is being changed
     if (facultyId) {
@@ -63,6 +119,25 @@ export async function PUT(
         },
       },
     });
+
+    // Update programs if provided
+    if (programs && Array.isArray(programs)) {
+      // Delete existing programs
+      await prisma.program.deleteMany({
+        where: { departmentId: id },
+      });
+
+      // Create new programs
+      if (programs.length > 0) {
+        await prisma.program.createMany({
+          data: programs.map((programName: string) => ({
+            name: programName,
+            departmentId: id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
 
     await createAuditLog({
       action: 'UPDATE_DEPARTMENT',

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { use } from 'react';
 import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
 
 interface Staff {
@@ -149,17 +150,24 @@ export default function DepartmentPage({ params }: PageProps) {
       <Header />
 
       <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-[#666666]">
-          <Link href="/faculties" className="hover:text-[#2d6a4f]">
-            Faculties
-          </Link>
-          <span className="mx-2">/</span>
-          <Link href={`/faculties/${facultyId}`} className="hover:text-[#2d6a4f]">
-            {department.faculty.shortName}
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-[#1a1a1a]">{department.name}</span>
+        {/* Breadcrumb and Search */}
+        <div className="mb-6 flex items-center justify-between gap-6">
+          <div className="text-sm text-[#666666]">
+            <Link href="/faculties" className="hover:text-[#2d6a4f]">
+              Faculties
+            </Link>
+            <span className="mx-2">/</span>
+            <Link href={`/faculties/${facultyId}`} className="hover:text-[#2d6a4f]">
+              {department.faculty.shortName}
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-[#1a1a1a]">{department.name}</span>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md">
+            <SearchBar placeholder="Search staff members or programs..." />
+          </div>
         </div>
 
         {/* Department Header */}

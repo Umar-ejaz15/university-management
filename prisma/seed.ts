@@ -52,7 +52,14 @@ async function main() {
       establishedYear: 2000,
       description: 'Focuses on agricultural engineering and technology.',
       departments: [
-        { name: 'Department of Agricultural Engineering', head: 'Dr. Imran Raza', establishedYear: 2000, totalStudents: 200, description: 'Agricultural engineering and mechanization.' },
+        { 
+          name: 'Department of Agricultural Engineering', 
+          head: 'Dr. Imran Raza', 
+          establishedYear: 2000, 
+          totalStudents: 200, 
+          description: 'Agricultural engineering and mechanization.',
+          programs: ['BS Agricultural Engineering', 'MS Agricultural Engineering', 'PhD Agricultural Engineering']
+        },
       ],
     },
     {
@@ -62,11 +69,46 @@ async function main() {
       establishedYear: 1995,
       description: 'Covers plant breeding, biotechnology, and environmental sciences.',
       departments: [
-        { name: 'Institute of Plant Breeding and Biotechnology', head: 'Dr. Sara Malik', establishedYear: 2005, totalStudents: 180, description: 'Plant breeding and biotechnology.' },
-        { name: 'Institute of Plant Protection (IPP)', head: 'Dr. Khalid Javed', establishedYear: 2007, totalStudents: 120, description: 'Plant protection and pest management.' },
-        { name: 'Department of Agronomy', head: 'Dr. Ahsan Ali', establishedYear: 1996, totalStudents: 160, description: 'Agronomy and crop production.' },
-        { name: 'Department of Horticulture', head: 'Dr. Sadaf Iqbal', establishedYear: 1998, totalStudents: 140, description: 'Horticulture and fruit science.' },
-        { name: 'Department of Soil and Environmental Sciences', head: 'Dr. Nazia Bibi', establishedYear: 2002, totalStudents: 110, description: 'Soil and environmental sciences.' },
+        { 
+          name: 'Institute of Plant Breeding and Biotechnology', 
+          head: 'Dr. Sara Malik', 
+          establishedYear: 2005, 
+          totalStudents: 180, 
+          description: 'Plant breeding and biotechnology.',
+          programs: ['BS Plant Breeding & Genetics', 'MS Plant Breeding & Genetics', 'PhD Plant Breeding & Genetics', 'MS Biotechnology']
+        },
+        { 
+          name: 'Institute of Plant Protection (IPP)', 
+          head: 'Dr. Khalid Javed', 
+          establishedYear: 2007, 
+          totalStudents: 120, 
+          description: 'Plant protection and pest management.',
+          programs: ['BS Plant Protection', 'MS Entomology', 'MS Plant Pathology', 'PhD Entomology']
+        },
+        { 
+          name: 'Department of Agronomy', 
+          head: 'Dr. Ahsan Ali', 
+          establishedYear: 1996, 
+          totalStudents: 160, 
+          description: 'Agronomy and crop production.',
+          programs: ['BS Agronomy', 'MS Agronomy', 'PhD Agronomy']
+        },
+        { 
+          name: 'Department of Horticulture', 
+          head: 'Dr. Sadaf Iqbal', 
+          establishedYear: 1998, 
+          totalStudents: 140, 
+          description: 'Horticulture and fruit science.',
+          programs: ['BS Horticulture', 'MS Horticulture', 'PhD Horticulture']
+        },
+        { 
+          name: 'Department of Soil and Environmental Sciences', 
+          head: 'Dr. Nazia Bibi', 
+          establishedYear: 2002, 
+          totalStudents: 110, 
+          description: 'Soil and environmental sciences.',
+          programs: ['BS Soil Science', 'BS Environmental Sciences', 'MS Soil Science', 'MS Environmental Sciences', 'PhD Soil Science']
+        },
       ],
     },
     {
@@ -84,10 +126,38 @@ async function main() {
       establishedYear: 2004,
       description: 'Food, nutrition, and home sciences.',
       departments: [
-        { name: 'Department of Agricultural and Resource Economics', head: 'Dr. Usman Farooq', establishedYear: 2004, totalStudents: 90, description: 'Agricultural economics and resource management.' },
-        { name: 'Department of Agribusiness and Entrepreneurship Development', head: 'Dr. Imran Ahmed', establishedYear: 2006, totalStudents: 80, description: 'Agribusiness and entrepreneurship.' },
-        { name: 'Department of Mathematics and Statistics', head: 'Dr. Samina Akhtar', establishedYear: 2005, totalStudents: 100, description: 'Mathematics and statistics.' },
-        { name: 'Department of Outreach and Continuing Education', head: 'Dr. Khalid Mehmood', establishedYear: 2007, totalStudents: 60, description: 'Outreach and continuing education.' },
+        { 
+          name: 'Department of Agricultural and Resource Economics', 
+          head: 'Dr. Usman Farooq', 
+          establishedYear: 2004, 
+          totalStudents: 90, 
+          description: 'Agricultural economics and resource management.',
+          programs: ['BS Agricultural Economics', 'MS Agricultural Economics', 'PhD Agricultural Economics']
+        },
+        { 
+          name: 'Department of Agribusiness and Entrepreneurship Development', 
+          head: 'Dr. Imran Ahmed', 
+          establishedYear: 2006, 
+          totalStudents: 80, 
+          description: 'Agribusiness and entrepreneurship.',
+          programs: ['BS Agribusiness Management', 'MS Agribusiness Management']
+        },
+        { 
+          name: 'Department of Mathematics and Statistics', 
+          head: 'Dr. Samina Akhtar', 
+          establishedYear: 2005, 
+          totalStudents: 100, 
+          description: 'Mathematics and statistics.',
+          programs: ['BS Mathematics', 'BS Statistics', 'MS Mathematics', 'MS Statistics', 'PhD Statistics']
+        },
+        { 
+          name: 'Department of Outreach and Continuing Education', 
+          head: 'Dr. Khalid Mehmood', 
+          establishedYear: 2007, 
+          totalStudents: 60, 
+          description: 'Outreach and continuing education.',
+          programs: ['Certificate Programs', 'Diploma Programs']
+        },
       ],
     },
     {
@@ -97,9 +167,30 @@ async function main() {
       establishedYear: 2008,
       description: 'Veterinary and animal sciences.',
       departments: [
-        { name: 'Department of Food Science and Technology', head: 'Dr. Hina Ashraf', establishedYear: 2008, totalStudents: 70, description: 'Food science and technology.' },
-        { name: 'Department Of Human Nutrition and Dietetics', head: 'Dr. Fatima Zahra', establishedYear: 2010, totalStudents: 60, description: 'Human nutrition and dietetics.' },
-        { name: 'Department of Home Sciences', head: 'Dr. Sana Ullah', establishedYear: 2011, totalStudents: 50, description: 'Home sciences.' },
+        { 
+          name: 'Department of Food Science and Technology', 
+          head: 'Dr. Hina Ashraf', 
+          establishedYear: 2008, 
+          totalStudents: 70, 
+          description: 'Food science and technology.',
+          programs: ['BS Food Science & Technology', 'MS Food Science & Technology', 'PhD Food Science & Technology']
+        },
+        { 
+          name: 'Department Of Human Nutrition and Dietetics', 
+          head: 'Dr. Fatima Zahra', 
+          establishedYear: 2010, 
+          totalStudents: 60, 
+          description: 'Human nutrition and dietetics.',
+          programs: ['BS Human Nutrition & Dietetics', 'MS Human Nutrition & Dietetics']
+        },
+        { 
+          name: 'Department of Home Sciences', 
+          head: 'Dr. Sana Ullah', 
+          establishedYear: 2011, 
+          totalStudents: 50, 
+          description: 'Home sciences.',
+          programs: ['BS Home Sciences', 'MS Home Sciences']
+        },
       ],
     },
     {
@@ -137,7 +228,7 @@ async function main() {
     facultyMap[faculty.shortName] = createdFaculty;
     if (faculty.departments.length > 0) {
       for (const dept of faculty.departments) {
-        await prisma.department.create({
+        const createdDepartment = await prisma.department.create({
           data: {
             name: dept.name,
             head: dept.head,
@@ -147,6 +238,18 @@ async function main() {
             facultyId: createdFaculty.id,
           },
         });
+
+        // Add programs for the department if any
+        if (dept.programs && dept.programs.length > 0) {
+          for (const programName of dept.programs) {
+            await prisma.program.create({
+              data: {
+                name: programName,
+                departmentId: createdDepartment.id,
+              },
+            });
+          }
+        }
       }
     } else {
       console.log(`⚠️  Faculty "${faculty.name}" has no departments. Department onboarding will be skipped for this faculty.`);

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { use } from 'react';
 import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
 
 interface Department {
@@ -124,13 +125,20 @@ export default function FacultyDetailPage({ params }: PageProps) {
       <Header />
 
       <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-[#666666]">
-          <Link href="/faculties" className="hover:text-[#4169E1]">
-            Faculties
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-[#1a1a1a]">{faculty.shortName}</span>
+        {/* Breadcrumb and Search */}
+        <div className="mb-6 flex items-center justify-between gap-6">
+          <div className="text-sm text-[#666666]">
+            <Link href="/faculties" className="hover:text-[#4169E1]">
+              Faculties
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-[#1a1a1a]">{faculty.shortName}</span>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md">
+            <SearchBar placeholder="Search departments or people..." />
+          </div>
         </div>
 
         {/* Faculty Header */}

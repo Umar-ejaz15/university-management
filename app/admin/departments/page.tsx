@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { GraduationCap, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { GraduationCap, Plus, Edit2, Trash2, RefreshCw, BookOpen } from 'lucide-react';
+import Link from 'next/link';
 import Header from '@/components/Header';
 
 interface Faculty {
@@ -41,6 +42,8 @@ export default function AdminDepartmentsPage() {
     description: '',
     facultyId: '',
   });
+  const [programs, setPrograms] = useState<string[]>([]);
+  const [newProgram, setNewProgram] = useState('');
 
   useEffect(() => {
     fetchDepartments();
@@ -92,12 +95,14 @@ export default function AdminDepartmentsPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, programs }),
       });
 
       if (response.ok) {
         setShowModal(false);
         setEditingDepartment(null);
+        setPrograms([]);
+        setNewProgram('');
         setFormData({
           name: '',
           head: '',
@@ -117,7 +122,7 @@ export default function AdminDepartmentsPage() {
     }
   };
 
-  const handleEdit = (department: Department) => {
+  const handleEdit = async (department: Department) => {
     setEditingDepartment(department);
     setFormData({
       name: department.name,
@@ -127,6 +132,19 @@ export default function AdminDepartmentsPage() {
       description: department.description || '',
       facultyId: department.facultyId,
     });
+    
+    // Fetch existing programs for this department
+    try {
+      const response = await fetch(`/api/admin/departments/${department.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPrograms(data.department.programs?.map((p: any) => p.name) || []);
+      }
+    } catch (error) {
+      console.error('Error fetching department programs:', error);
+      setPrograms([]);
+    }
+    
     setShowModal(true);
   };
 
@@ -193,6 +211,8 @@ export default function AdminDepartmentsPage() {
                     description: '',
                     facultyId: '',
                   });
+                  setPrograms([]);
+                  setNewProgram('');
                   setShowModal(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -265,15 +285,24 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div className="flex gap-2 ml-4">
+                      <Link
+                        href={`/admin/departments/${department.id}/programs`}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Manage Programs"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                      </Link>
                       <button
                         onClick={() => handleEdit(department)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        title="Edit Department"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(department.id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        title="Delete Department"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -392,12 +421,72 @@ export default function AdminDepartmentsPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Programs Offered
+                </label>
+                <div className="space-y-2">
+                  {programs.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {programs.map((program, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                        >
+                          {program}
+                          <button
+                            type="button"
+                            onClick={() => setPrograms(programs.filter((_, i) => i !== index))}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newProgram}
+                      onChange={(e) => setNewProgram(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newProgram.trim() && !programs.includes(newProgram.trim())) {
+                            setPrograms([...programs, newProgram.trim()]);
+                            setNewProgram('');
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="e.g., BS Computer Science"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newProgram.trim() && !programs.includes(newProgram.trim())) {
+                          setPrograms([...programs, newProgram.trim()]);
+                          setNewProgram('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">Press Enter or click + to add a program</p>
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setEditingDepartment(null);
+                    setPrograms([]);
+                    setNewProgram('');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >

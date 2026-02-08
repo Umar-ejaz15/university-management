@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
 import LineChart from '@/components/charts/LineChart';
 import AreaChart from '@/components/charts/AreaChart';
@@ -98,10 +99,17 @@ export default async function UniDashboard() {
       <Header />
 
       <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">University Dashboard</h1>
-          <p className="text-sm text-[#666666]">Real-time overview of academic activities</p>
+        {/* Page Header with Search */}
+        <div className="mb-8 flex items-center justify-between gap-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">University Dashboard</h1>
+            <p className="text-sm text-[#666666]">Real-time overview of academic activities</p>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md">
+            <SearchBar placeholder="Search faculties, departments, or people..." />
+          </div>
         </div>
 
         {/* Key Metrics */}

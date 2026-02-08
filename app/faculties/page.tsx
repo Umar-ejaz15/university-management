@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
 
 interface Faculty {
@@ -106,14 +107,21 @@ export default function FacultiesPage() {
       <Header />
 
       <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">
-            Academic Faculties
-          </h1>
-          <p className="text-sm text-[#666666]">
-            Explore our diverse academic faculties and their departments
-          </p>
+        {/* Page Header with Search */}
+        <div className="mb-8 flex items-center justify-between gap-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">
+              Academic Faculties
+            </h1>
+            <p className="text-sm text-[#666666]">
+              Explore our diverse academic faculties and their departments
+            </p>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md">
+            <SearchBar placeholder="Search faculties, departments, or people..." />
+          </div>
         </div>
 
         {/* Overview Stats */}
