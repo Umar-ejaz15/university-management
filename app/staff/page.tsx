@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { GraduationCap, BookOpen, Briefcase, Eye, Search } from 'lucide-react';
+import { GraduationCap, BookOpen, FlaskConical, Search, Users, Building2, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -88,12 +88,35 @@ export default function StaffListingPage() {
   const departments = [...new Set(staff.map((s) => s.department.name))];
   const designations = [...new Set(staff.map((s) => s.designation))];
 
+  const totalPublications = staff.reduce((sum, s) => sum + s._count.publications, 0);
+  const avgPublications = staff.length > 0 ? (totalPublications / staff.length).toFixed(1) : '0';
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+
+  const hasActiveFilters =
+    searchQuery || selectedDepartment !== 'all' || selectedDesignation !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedDepartment('all');
+    setSelectedDesignation('all');
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-600">Loading faculty members...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-[70vh]">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin mx-auto" />
+            <p className="mt-5 text-gray-500 font-medium">Loading faculty members...</p>
+          </div>
         </div>
       </div>
     );
@@ -102,37 +125,87 @@ export default function StaffListingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+
+      {/* Hero */}
+      <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Faculty Listing</h1>
-              <p className="text-gray-600 mt-2">
-                Browse all approved faculty members across departments
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white/70 text-sm font-medium tracking-widest uppercase">
+                  MNSUAM
+                </span>
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight mb-2">Faculty Members</h1>
+              <p className="text-white/70 text-lg">
+                Meet our distinguished academic community
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-green-600">{filteredStaff.length}</p>
-              <p className="text-sm text-gray-600">Faculty Members</p>
+            <div className="flex gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 text-center border border-white/20">
+                <p className="text-3xl font-bold text-[#c9a961]">{filteredStaff.length}</p>
+                <p className="text-white/70 text-sm mt-1">Members Shown</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 text-center border border-white/20">
+                <p className="text-3xl font-bold text-[#c9a961]">{staff.length}</p>
+                <p className="text-white/70 text-sm mt-1">Total Faculty</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Strip */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-3 divide-x divide-gray-100">
+            <div className="flex items-center gap-4 py-5 px-6">
+              <div className="w-10 h-10 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-[#2d6a4f]" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{staff.length}</p>
+                <p className="text-sm text-gray-500">Total Members</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 py-5 px-6">
+              <div className="w-10 h-10 rounded-xl bg-[#c9a961]/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-[#c9a961]" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
+                <p className="text-sm text-gray-500">Departments</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 py-5 px-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{avgPublications}</p>
+                <p className="text-sm text-gray-500">Avg Publications</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div className="flex flex-col md:flex-row gap-3">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by name, email, or department..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none transition-all"
               />
             </div>
 
@@ -140,7 +213,7 @@ export default function StaffListingPage() {
             <select
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none bg-white transition-all min-w-50"
             >
               <option value="all">All Departments</option>
               {departments.map((dept) => (
@@ -154,7 +227,7 @@ export default function StaffListingPage() {
             <select
               value={selectedDesignation}
               onChange={(e) => setSelectedDesignation(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none bg-white transition-all min-w-50"
             >
               <option value="all">All Designations</option>
               {designations.map((desig) => (
@@ -163,101 +236,102 @@ export default function StaffListingPage() {
                 </option>
               ))}
             </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
+
+          {hasActiveFilters && (
+            <p className="mt-3 text-xs text-gray-400 pl-1">
+              Showing {filteredStaff.length} of {staff.length} faculty members
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Staff List */}
-      <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Staff Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {filteredStaff.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">No faculty members found</p>
-            <p className="text-gray-500 text-sm mt-2">Try adjusting your filters</p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-20 text-center">
+            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">
+              <GraduationCap className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No faculty members found</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              No results match your current filters. Try adjusting your search.
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#1e4d38] transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear Filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 grid grid-cols-12 gap-4 font-semibold text-sm text-gray-700">
-              <div className="col-span-3">Name</div>
-              <div className="col-span-2">Department</div>
-              <div className="col-span-2">Designation</div>
-              <div className="col-span-2 text-center">Publications</div>
-              <div className="col-span-2 text-center">Projects</div>
-              <div className="col-span-1 text-center">Actions</div>
-            </div>
-
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200">
-              {filteredStaff.map((member) => (
-                <div
-                  key={member.id}
-                  className="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors"
-                >
-                  {/* Name */}
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-green-700 font-semibold text-sm">
-                          {member.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{member.name}</p>
-                        <p className="text-xs text-gray-500">{member.email}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Department */}
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-gray-900">{member.department.name}</p>
-                    <p className="text-xs text-gray-500">{member.department.faculty.shortName}</p>
-                  </div>
-
-                  {/* Designation */}
-                  <div className="col-span-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {member.designation}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredStaff.map((member) => (
+              <div
+                key={member.id}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-[#2d6a4f]/20 transition-all duration-200 flex flex-col"
+              >
+                {/* Card Top */}
+                <div className="p-6 flex items-start gap-4 flex-1">
+                  <div className="w-14 h-14 rounded-2xl bg-[#2d6a4f]/10 flex items-center justify-center shrink-0">
+                    <span className="text-[#2d6a4f] font-bold text-lg">
+                      {getInitials(member.name)}
                     </span>
-                    {member.specialization && (
-                      <p className="text-xs text-gray-500 mt-1">{member.specialization}</p>
-                    )}
                   </div>
-
-                  {/* Publications */}
-                  <div className="col-span-2 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <BookOpen className="w-4 h-4 text-purple-600" />
-                      <span className="font-semibold text-gray-900">
-                        {member._count.publications}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Projects */}
-                  <div className="col-span-2 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Briefcase className="w-4 h-4 text-orange-600" />
-                      <span className="font-semibold text-gray-900">
-                        {member._count.projects}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-1 text-center">
-                    <Link
-                      href={`/faculty/${member.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View
-                    </Link>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-base truncate">{member.name}</h3>
+                    <p className="text-sm font-medium text-[#c9a961] mt-0.5 truncate">
+                      {member.designation}
+                    </p>
+                    <span className="inline-block mt-2 rounded-full px-3 py-1 text-xs font-semibold bg-[#2d6a4f]/10 text-[#2d6a4f] truncate max-w-full">
+                      {member.department.name}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Stats Row */}
+                <div className="mx-6 mb-4 border border-gray-100 rounded-xl grid grid-cols-2 divide-x divide-gray-100">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{member._count.publications}</p>
+                      <p className="text-xs text-gray-400">Publications</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <FlaskConical className="w-4 h-4 text-purple-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{member._count.projects}</p>
+                      <p className="text-xs text-gray-400">Projects</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* View Profile Button */}
+                <div className="px-6 pb-6">
+                  <Link
+                    href={`/faculty/${member.id}`}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#2d6a4f]/30 text-[#2d6a4f] text-sm font-semibold hover:bg-[#2d6a4f] hover:text-white hover:border-[#2d6a4f] transition-all duration-200"
+                  >
+                    View Profile
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -3,7 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, BookOpen, GraduationCap, Users, Award, CheckCircle, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import {
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  FlaskConical,
+  Users,
+  BarChart3,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -74,229 +87,293 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - University Theme */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#1a5a42] via-[#2d6a4f] to-[#40916c] relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
+      {/* Left Panel */}
+      <div className="hidden lg:flex lg:w-[52%] bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] relative overflow-hidden flex-col">
+        {/* Decorative orbs */}
+        <div className="-top-20 -left-20 absolute w-85 h-85 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="-bottom-15 -right-15 absolute w-105 h-105 bg-[#c9a961]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-white/3 rounded-full pointer-events-none" />
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
-          <div className="mb-8">
-            <GraduationCap className="w-16 h-16 mb-6" />
-            <h1 className="text-5xl font-bold mb-4">Join Our Academic</h1>
-            <h2 className="text-4xl font-light">Community Today</h2>
+        <div className="relative z-10 flex flex-col justify-between h-full px-14 py-14">
+          {/* Top: Logo + Name */}
+          <div className="flex flex-col items-start">
+            <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 border border-white/20">
+              <Image
+                src="/logo.png"
+                alt="MNSUAM Logo"
+                width={56}
+                height={56}
+                className="object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+            <h1 className="text-2xl font-bold text-white leading-snug max-w-xs">
+              Muhammad Nawaz Sharif University of Agriculture
+            </h1>
+            <p className="text-[#c9a961] font-semibold text-sm mt-1 tracking-wide uppercase">
+              Multan, Pakistan
+            </p>
           </div>
 
-          <p className="text-lg text-white/90 mb-12 max-w-md">
-            Create your account and become part of a thriving academic ecosystem dedicated to excellence in education and research.
-          </p>
+          {/* Middle: Feature bullets */}
+          <div className="space-y-5">
+            <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-2">
+              Why Join MNSUAM Portal
+            </p>
 
-          {/* Benefits */}
-          <div className="space-y-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <BookOpen className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                <FlaskConical className="w-5 h-5 text-[#c9a961]" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Manage Your Courses</h3>
-                <p className="text-white/80 text-sm">Track teaching load and student enrollments</p>
+                <p className="font-semibold text-white text-sm">CLS Integration</p>
+                <p className="text-white/60 text-xs mt-0.5">
+                  Centralised laboratory &amp; course system
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Users className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-[#c9a961]" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Collaborative Platform</h3>
-                <p className="text-white/80 text-sm">Network with faculty across departments</p>
+                <p className="font-semibold text-white text-sm">Faculty Directory</p>
+                <p className="text-white/60 text-xs mt-0.5">
+                  Manage staff profiles &amp; departments
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Award className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-5 h-5 text-[#c9a961]" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Showcase Research</h3>
-                <p className="text-white/80 text-sm">Document publications and projects</p>
+                <p className="font-semibold text-white text-sm">Academic Analytics</p>
+                <p className="text-white/60 text-xs mt-0.5">
+                  Research metrics &amp; publication tracking
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="mt-12 pt-8 border-t border-white/20">
-            <div className="grid grid-cols-3 gap-6">
+          {/* Stats strip */}
+          <div className="space-y-4">
+            <div className="h-px bg-white/20" />
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <div className="text-3xl font-bold mb-1">500+</div>
-                <div className="text-sm text-white/80">Faculty Members</div>
+                <p className="text-2xl font-bold text-white">500+</p>
+                <p className="text-white/50 text-xs mt-0.5">Faculty Members</p>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-1">50+</div>
-                <div className="text-sm text-white/80">Departments</div>
+                <p className="text-2xl font-bold text-white">50+</p>
+                <p className="text-white/50 text-xs mt-0.5">Departments</p>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-1">1000+</div>
-                <div className="text-sm text-white/80">Publications</div>
+                <p className="text-2xl font-bold text-white">1000+</p>
+                <p className="text-white/50 text-xs mt-0.5">Publications</p>
               </div>
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <div className="h-px flex-1 bg-white/20" />
+              <span className="text-white/50 text-xs font-medium tracking-widest uppercase">
+                Established 2012
+              </span>
+              <div className="h-px flex-1 bg-white/20" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Signup Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <GraduationCap className="w-12 h-12 mx-auto mb-4 text-[#2d6a4f]" />
-            <h2 className="text-2xl font-bold text-gray-800">University Portal</h2>
+      {/* Right Panel */}
+      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6 py-12">
+        <div className="w-full max-w-105">
+          {/* Mobile header */}
+          <div className="lg:hidden flex flex-col items-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-[#2d6a4f]/10 flex items-center justify-center mb-4">
+              <Image
+                src="/logo.png"
+                alt="MNSUAM"
+                width={40}
+                height={40}
+                className="object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+            <p className="text-sm font-semibold text-[#2d6a4f] uppercase tracking-widest">
+              MNSUAM Portal
+            </p>
           </div>
 
-          {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
-              <p className="text-gray-600">Join the academic community</p>
+          {/* Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="mb-7">
+              <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
+              <p className="text-gray-500 text-sm mt-1">Join MNSUAM portal</p>
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name Field */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Full Name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm"
                     placeholder="Dr. John Smith"
                   />
                 </div>
               </div>
 
-              {/* Email Field */}
+              {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800"
-                    placeholder="your.email@university.edu"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm"
+                    placeholder="your.email@mnsuam.edu.pk"
                   />
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* Password */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800"
+                    className="w-full pl-11 pr-11 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm"
                     placeholder="At least 6 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4.5 h-4.5" />
+                    ) : (
+                      <Eye className="w-4.5 h-4.5" />
+                    )}
                   </button>
                 </div>
+
                 {/* Password Strength Indicator */}
                 {password && (
-                  <div className="mt-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            passwordStrength.strength === "weak"
-                              ? "w-1/3 bg-red-500"
-                              : passwordStrength.strength === "medium"
-                              ? "w-2/3 bg-yellow-500"
-                              : "w-full bg-green-500"
-                          }`}
-                        />
-                      </div>
-                      <span
-                        className={`text-xs font-semibold ${
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
                           passwordStrength.strength === "weak"
-                            ? "text-red-600"
+                            ? "w-1/3 bg-red-500"
                             : passwordStrength.strength === "medium"
-                            ? "text-yellow-600"
-                            : "text-green-600"
+                            ? "w-2/3 bg-amber-400"
+                            : "w-full bg-emerald-500"
                         }`}
-                      >
-                        {passwordStrength.text}
-                      </span>
+                      />
                     </div>
+                    <span
+                      className={`text-xs font-semibold w-12 text-right ${
+                        passwordStrength.strength === "weak"
+                          ? "text-red-600"
+                          : passwordStrength.strength === "medium"
+                          ? "text-amber-600"
+                          : "text-emerald-600"
+                      }`}
+                    >
+                      {passwordStrength.text}
+                    </span>
                   </div>
                 )}
               </div>
 
-              {/* Confirm Password Field */}
+              {/* Confirm Password */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <CheckCircle className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <CheckCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800"
+                    className="w-full pl-11 pr-11 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm"
                     placeholder="Re-enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4.5 h-4.5" />
+                    ) : (
+                      <Eye className="w-4.5 h-4.5" />
+                    )}
                   </button>
                 </div>
               </div>
 
               {/* Password Requirements */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                <p className="text-xs text-blue-800 mb-1 font-semibold">Password Requirements:</p>
-                <ul className="text-xs text-blue-700 space-y-1">
+              <div className="bg-[#2d6a4f]/5 border border-[#2d6a4f]/15 rounded-xl p-3.5">
+                <p className="text-xs font-semibold text-[#2d6a4f] mb-2">
+                  Password Requirements
+                </p>
+                <ul className="space-y-1.5">
                   <li className="flex items-center gap-2">
-                    <div className={`w-1 h-1 rounded-full ${password.length >= 6 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    At least 6 characters long
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        password.length >= 6 ? "bg-emerald-500" : "bg-gray-300"
+                      }`}
+                    />
+                    <span className="text-xs text-gray-600">
+                      At least 6 characters long
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className={`w-1 h-1 rounded-full ${password === confirmPassword && password ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    Passwords match
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        password === confirmPassword && password
+                          ? "bg-emerald-500"
+                          : "bg-gray-300"
+                      }`}
+                    />
+                    <span className="text-xs text-gray-600">Passwords match</span>
                   </li>
                 </ul>
               </div>
@@ -305,41 +382,34 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-[#2d6a4f] to-[#40916c] text-white font-semibold py-3.5 rounded-xl hover:shadow-lg hover:shadow-[#2d6a4f]/30 transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-6"
+                className="w-full h-12 bg-[#2d6a4f] hover:bg-[#235a40] text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm mt-1"
               >
                 {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Creating Account...
-                  </span>
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
                 ) : (
                   "Create Account"
                 )}
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="my-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-gray-200"></div>
-              <span className="text-sm text-gray-500">Already have an account?</span>
-              <div className="flex-1 h-px bg-gray-200"></div>
+            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+              <p className="text-sm text-gray-500">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="text-[#2d6a4f] font-semibold hover:text-[#235a40] transition-colors"
+                >
+                  Sign in
+                </Link>
+              </p>
             </div>
-
-            {/* Sign In Link */}
-            <Link
-              href="/login"
-              className="block w-full text-center py-3.5 border-2 border-[#2d6a4f] text-[#2d6a4f] font-semibold rounded-xl hover:bg-[#2d6a4f] hover:text-white transition-all"
-            >
-              Sign In Instead
-            </Link>
           </div>
 
-          {/* Footer */}
-          <p className="text-center text-sm text-gray-500 mt-8">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
+          <p className="text-center text-xs text-gray-400 mt-6 leading-relaxed">
+            By creating an account, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>
       </div>

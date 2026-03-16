@@ -7,6 +7,18 @@ import { use } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
+import {
+  Building2,
+  Users,
+  GraduationCap,
+  BookOpen,
+  Briefcase,
+  Calendar,
+  UserCircle,
+  ChevronRight,
+  Home,
+  Search,
+} from 'lucide-react';
 
 interface Department {
   id: string;
@@ -82,13 +94,19 @@ export default function FacultyDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5]">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="h-8 w-48 bg-white/20 rounded-lg mb-4 animate-pulse" />
+            <div className="h-10 w-80 bg-white/20 rounded-lg animate-pulse" />
+          </div>
+        </section>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6a4f] mx-auto mb-4"></div>
-              <p className="text-sm text-[#666666]">Loading faculty details...</p>
+              <p className="text-sm text-gray-500">Loading faculty details...</p>
             </div>
           </div>
         </main>
@@ -98,9 +116,9 @@ export default function FacultyDetailPage({ params }: PageProps) {
 
   if (error || !faculty) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5]">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
             <p className="text-red-800">{error || 'Faculty not found'}</p>
           </div>
@@ -121,155 +139,123 @@ export default function FacultyDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Breadcrumb and Search */}
-        <div className="mb-6 flex items-center justify-between gap-6">
-          <div className="text-sm text-[#666666]">
-            <Link href="/faculties" className="hover:text-[#4169E1]">
+      {/* Hero Banner */}
+      <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-green-300 mb-6">
+            <Link href="/" className="hover:text-white transition-colors flex items-center gap-1">
+              <Home className="w-3.5 h-3.5" />
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-green-500" />
+            <Link href="/faculties" className="hover:text-white transition-colors">
               Faculties
             </Link>
-            <span className="mx-2">/</span>
-            <span className="text-[#1a1a1a]">{faculty.shortName}</span>
-          </div>
+            <ChevronRight className="w-3.5 h-3.5 text-green-500" />
+            <span className="text-white font-medium">{faculty.shortName}</span>
+          </nav>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md">
-            <SearchBar placeholder="Search departments or people..." />
-          </div>
-        </div>
-
-        {/* Faculty Header */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#e5e5e5] mb-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-[#e8f5e9] rounded-xl flex items-center justify-center text-[#2d6a4f] font-bold text-2xl">
-                {faculty.shortName.charAt(0)}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <span className="bg-[#c9a961]/20 border border-[#c9a961]/40 text-[#c9a961] text-xs font-bold px-3 py-1 rounded-full tracking-wider uppercase">
+                  {faculty.shortName}
+                </span>
+                <span className="bg-white/10 border border-white/20 text-green-200 text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Est. {faculty.establishedYear}
+                </span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1 tracking-tight">
-                  {faculty.name}
-                </h1>
-                <p className="text-sm text-[#666666] max-w-3xl">
+              <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight mb-3">
+                {faculty.name}
+              </h1>
+              <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
+                <UserCircle className="w-4 h-4 shrink-0" />
+                <span>Dean: <span className="text-white font-semibold">{faculty.dean}</span></span>
+              </div>
+              {faculty.description && (
+                <p className="text-green-100 text-sm max-w-2xl leading-relaxed">
                   {faculty.description}
                 </p>
-              </div>
-            </div>
-            <span className="text-xs font-semibold bg-[#f5f5f5] text-[#666666] px-3 py-1 rounded-full whitespace-nowrap">
-              Est. {faculty.establishedYear}
-            </span>
-          </div>
-
-          {/* Dean Info */}
-          <div className="mb-6 pb-6 border-b border-[#e5e5e5]">
-            <p className="text-xs text-[#666666] mb-1">Dean</p>
-            <p className="text-sm font-semibold text-[#1a1a1a]">
-              {faculty.dean}
-            </p>
-          </div>
-
-          {/* Faculty Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#e8f5e9] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#2d6a4f]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalDepartments}</p>
-              <p className="text-sm text-[#666666]">Departments</p>
+              )}
             </div>
 
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#f3e5f5] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#7b1fa2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalStudents.toLocaleString()}</p>
-              <p className="text-sm text-[#666666]">Students</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#fff3e0] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#e65100]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalStaff}</p>
-              <p className="text-sm text-[#666666]">Faculty Staff</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#fce4ec] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#c2185b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalPublications.toLocaleString()}</p>
-              <p className="text-sm text-[#666666]">Publications</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#e0f2f1] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#00897b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.totalProjects}</p>
-              <p className="text-sm text-[#666666]">Projects</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5e5e5]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="bg-[#e3f2fd] p-3 rounded-xl">
-                  <svg className="w-8 h-8 text-[#1976d2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-4xl font-bold text-[#1a1a1a] leading-none mb-2">{faculty.departments.length}</p>
-              <p className="text-sm text-[#666666]">Depts</p>
+            {/* Search */}
+            <div className="w-full lg:max-w-md">
+              <SearchBar placeholder="Search departments or people..." />
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Analytics Section */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Stats Strip */}
         <section className="mb-10">
-          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-6 flex items-center gap-3">
-            <div className="w-1.5 h-8 bg-[#2d6a4f] rounded-full" />
-            Department Analytics
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
-              <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Students by Department</h3>
-              <BarChart data={departmentStudentsData} color="#2d6a4f" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5 border-l-4 border-l-[#2d6a4f]">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#e8f5e9] p-2.5 rounded-xl shrink-0">
+                  <Building2 className="w-5 h-5 text-[#2d6a4f]" />
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-gray-900 leading-none">{faculty.totalDepartments}</p>
+                  <p className="text-xs text-gray-400 mt-1">Departments</p>
+                </div>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl shadow-md border-2 border-[#e5e5e5] p-6">
-              <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Staff by Department</h3>
-              <BarChart data={departmentStaffData} color="#1976d2" />
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5 border-l-4 border-l-amber-500">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-50 p-2.5 rounded-xl shrink-0">
+                  <Users className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-gray-900 leading-none">{faculty.totalStaff}</p>
+                  <p className="text-xs text-gray-400 mt-1">Staff</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5 border-l-4 border-l-blue-500">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-50 p-2.5 rounded-xl shrink-0">
+                  <GraduationCap className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-gray-900 leading-none">
+                    {faculty.totalStudents.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Students</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5 border-l-4 border-l-purple-500">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-50 p-2.5 rounded-xl shrink-0">
+                  <BookOpen className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-gray-900 leading-none">
+                    {faculty.totalPublications.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Publications</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Departments Section */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-6 flex items-center gap-3">
-            <div className="w-1.5 h-8 bg-[#2d6a4f] rounded-full" />
-            All Departments
-          </h2>
+        {/* Departments Grid */}
+        <section className="mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 border-l-4 border-[#2d6a4f] pl-3">All Departments</h2>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {faculty.departments.map((department) => (
@@ -278,67 +264,73 @@ export default function FacultyDetailPage({ params }: PageProps) {
                 href={`/faculties/${facultyId}/${department.id}`}
                 className="block group"
               >
-                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-[#e5e5e5] h-full group-hover:border-[#2d6a4f]">
-                  {/* Department Header */}
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-[#1a1a1a] mb-2 group-hover:text-[#2d6a4f] transition-colors">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-full flex flex-col overflow-hidden">
+                  {/* Gold top bar */}
+                  <div className="h-1.5 bg-[#c9a961] w-full" />
+
+                  <div className="p-6 flex flex-col flex-1">
+                    {/* Dept Name */}
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-[#2d6a4f] transition-colors mb-3 leading-snug">
                       {department.name}
                     </h3>
-                    {department.description && (
-                      <p className="text-sm text-[#666666] line-clamp-2">
-                        {department.description}
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Department Head */}
-                  <div className="mb-4 pb-4 border-b border-[#e5e5e5]">
-                    <p className="text-xs text-[#666666] mb-1">Head of Department</p>
-                    <p className="text-sm font-semibold text-[#1a1a1a]">
-                      {department.head}
-                    </p>
-                  </div>
+                    {/* Head */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                      <UserCircle className="w-4 h-4 text-[#2d6a4f] shrink-0" />
+                      <span>
+                        <span className="text-gray-400 text-xs">Head: </span>
+                        <span className="font-medium text-gray-700">{department.head}</span>
+                      </span>
+                    </div>
 
-                  {/* Department Stats */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
-                      <p className="text-xs text-[#666666] mb-1">Students</p>
-                      <p className="text-lg font-bold text-[#1976d2]">
-                        {department.totalStudents}
-                      </p>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-3">
+                        <GraduationCap className="w-4 h-4 text-blue-500 shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 leading-none">{department.totalStudents}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Students</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-3">
+                        <BookOpen className="w-4 h-4 text-purple-500 shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 leading-none">{department.totalPublications}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Publications</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
-                      <p className="text-xs text-[#666666] mb-1">Staff</p>
-                      <p className="text-lg font-bold text-[#e65100]">
-                        {department.totalStaff}
-                      </p>
-                    </div>
-                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
-                      <p className="text-xs text-[#666666] mb-1">Pubs</p>
-                      <p className="text-lg font-bold text-[#c2185b]">
-                        {department.totalPublications}
-                      </p>
-                    </div>
-                    <div className="text-center p-2.5 bg-[#f5f5f5] rounded-xl">
-                      <p className="text-xs text-[#666666] mb-1">Projects</p>
-                      <p className="text-lg font-bold text-[#00897b]">
-                        {department.totalProjects}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* View More */}
-                  <div className="pt-4 border-t border-[#e5e5e5]">
-                    <span className="text-sm text-[#2d6a4f] font-semibold group-hover:text-[#1e4d39] flex items-center gap-2">
-                      View Department Details
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
+                    {/* View Dept link */}
+                    <div className="mt-auto pt-4 border-t border-gray-100">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#2d6a4f] group-hover:text-[#1e4d38] transition-colors">
+                        View Dept
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Link>
             ))}
+          </div>
+        </section>
+
+        {/* Analytics Section */}
+        <section className="mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 border-l-4 border-[#2d6a4f] pl-3">Department Analytics</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
+              <h3 className="text-base font-bold text-gray-900 mb-1">Students by Department</h3>
+              <p className="text-sm text-gray-400 mb-4">Total enrolled students per department</p>
+              <BarChart data={departmentStudentsData} color="#2d6a4f" />
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
+              <h3 className="text-base font-bold text-gray-900 mb-1">Staff by Department</h3>
+              <p className="text-sm text-gray-400 mb-4">Approved faculty staff count per department</p>
+              <BarChart data={departmentStaffData} color="#1976d2" />
+            </div>
           </div>
         </section>
       </main>

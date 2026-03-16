@@ -2,7 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle, XCircle, RefreshCw, Mail, Shield, FileCheck, AlertCircle } from 'lucide-react';
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Mail,
+  Shield,
+  FileCheck,
+  AlertCircle,
+  Loader2,
+  LogOut,
+} from 'lucide-react';
 
 interface StaffStatus {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -94,260 +105,271 @@ export default function PendingApprovalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-600">Loading your application status...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-white/60 mx-auto" />
+          <p className="mt-4 text-white/60 text-sm">Loading your application status...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-9xl mx-auto">
-        <div className="max-w-2xl w-full mx-auto">
-        {/* Pending Status */}
-        {status?.status === 'PENDING' && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
-              <div className="flex items-center justify-center">
-                <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 animate-pulse">
-                  <Clock className="w-12 h-12 text-white" />
-                </div>
-              </div>
-              <h1 className="text-3xl font-bold text-white text-center mt-4">
-                Application Under Review
-              </h1>
-              <p className="text-green-50 text-center mt-2">
-                Your profile has been successfully submitted
-              </p>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Page hero */}
+      <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] px-6 py-10 text-center">
+        <p className="text-[#c9a961] text-xs font-semibold uppercase tracking-widest mb-2">
+          MNSUAM Portal
+        </p>
+        <h1 className="text-2xl font-bold text-white">Application Status</h1>
+        <p className="text-white/60 text-sm mt-1">
+          Muhammad Nawaz Sharif University of Agriculture, Multan
+        </p>
+      </div>
 
-            {/* Content */}
-            <div className="px-8 py-8 space-y-6">
-              {/* Status Message */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-r-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <Shield className="w-6 h-6 text-yellow-600 mt-1" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Verification in Progress</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      Our administrative team is carefully reviewing your faculty profile to ensure
-                      all credentials and information meet our university standards. This process
-                      typically takes 24-48 hours.
-                    </p>
-                  </div>
+      {/* Content */}
+      <div className="flex-1 flex items-start justify-center px-4 py-10">
+        <div className="w-full max-w-xl">
+
+          {/* PENDING STATUS */}
+          {status?.status === 'PENDING' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Status banner */}
+              <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900 text-base">Application Under Review</h2>
+                  <p className="text-amber-700 text-xs mt-0.5">
+                    Your profile has been successfully submitted and is pending admin approval.
+                  </p>
                 </div>
               </div>
 
-              {/* Timeline */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 text-lg">Application Timeline</h3>
-                <div className="space-y-3">
-                  {/* Step 1 - Completed */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="px-6 py-6 space-y-6">
+                {/* What to expect */}
+                <div className="bg-[#2d6a4f]/5 border border-[#2d6a4f]/15 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-4 h-4 text-[#2d6a4f]" />
+                    <p className="text-sm font-semibold text-[#2d6a4f]">Verification in Progress</p>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Our administrative team is carefully reviewing your faculty profile to ensure
+                    all credentials meet university standards. This typically takes 24–48 hours.
+                  </p>
+                </div>
+
+                {/* Timeline */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                    Application Timeline
+                  </p>
+
+                  <div className="relative pl-5">
+                    {/* Vertical line */}
+                    <div className="absolute left-4.5 top-5 bottom-5 w-px bg-gray-200" />
+
+                    <div className="space-y-0">
+                      {/* Step 1 — done */}
+                      <div className="flex items-start gap-4 pb-6">
+                        <div className="w-9 h-9 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center shrink-0 relative z-10">
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="pt-1.5">
+                          <p className="font-semibold text-gray-900 text-sm">Profile Submitted</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {status.createdAt
+                              ? new Date(status.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Just now'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="w-0.5 h-12 bg-green-200"></div>
-                    </div>
-                    <div className="flex-1 pt-2">
-                      <p className="font-medium text-gray-900">Profile Submitted</p>
-                      <p className="text-sm text-gray-600">
-                        {status.createdAt
-                          ? new Date(status.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Just now'}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Step 2 - In Progress */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center animate-pulse">
-                        <FileCheck className="w-5 h-5 text-yellow-600" />
+                      {/* Step 2 — in progress */}
+                      <div className="flex items-start gap-4 pb-6">
+                        <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-white flex items-center justify-center shrink-0 relative z-10 animate-pulse">
+                          <FileCheck className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div className="pt-1.5">
+                          <p className="font-semibold text-gray-900 text-sm">Under Review</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Admin team is verifying your credentials
+                          </p>
+                        </div>
                       </div>
-                      <div className="w-0.5 h-12 bg-gray-200"></div>
-                    </div>
-                    <div className="flex-1 pt-2">
-                      <p className="font-medium text-gray-900">Under Review</p>
-                      <p className="text-sm text-gray-600">Admin team is verifying your credentials</p>
-                    </div>
-                  </div>
 
-                  {/* Step 3 - Pending */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                        <Mail className="w-5 h-5 text-gray-400" />
+                      {/* Step 3 — pending */}
+                      <div className="flex items-start gap-4">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center shrink-0 relative z-10">
+                          <Mail className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="pt-1.5">
+                          <p className="font-semibold text-gray-400 text-sm">Decision &amp; Notification</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            You&apos;ll be notified via email once reviewed
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex-1 pt-2">
-                      <p className="font-medium text-gray-400">Decision & Notification</p>
-                      <p className="text-sm text-gray-500">You&apos;ll be notified via email</p>
-                    </div>
                   </div>
+                </div>
+
+                {/* What happens next */}
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-gray-500" />
+                    <p className="text-sm font-semibold text-gray-700">What happens next?</p>
+                  </div>
+                  <ul className="space-y-2">
+                    {[
+                      'Your credentials and academic qualifications will be verified',
+                      'Our admin will review your specialization and experience',
+                      'Once approved, you\'ll gain full access to the faculty portal',
+                      'You can view and manage your profile, publications, and courses',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#2d6a4f]/50 mt-1.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={checkStatus}
+                    disabled={checking}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+                    {checking ? 'Checking...' : 'Refresh Status'}
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all font-medium text-sm"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+
+                {/* Contact */}
+                <div className="border-t border-gray-100 pt-4 text-center">
+                  <p className="text-xs text-gray-500">
+                    Need assistance? Contact our administration office
+                  </p>
+                  <a
+                    href="mailto:admin@mnsuam.edu.pk"
+                    className="text-sm font-semibold text-[#2d6a4f] hover:text-[#235a40] mt-1 inline-block transition-colors"
+                  >
+                    admin@mnsuam.edu.pk
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* REJECTED STATUS */}
+          {status?.status === 'REJECTED' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Status banner */}
+              <div className="bg-red-50 border-b border-red-100 px-6 py-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900 text-base">Application Not Approved</h2>
+                  <p className="text-red-600 text-xs mt-0.5">
+                    Your application requires attention before it can be approved.
+                  </p>
                 </div>
               </div>
 
-              {/* What Happens Next */}
-              <div className="bg-blue-50 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-600" />
-                  What happens next?
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>Your credentials and academic qualifications will be verified</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>Our admin will review your specialization and experience</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>Once approved, you&apos;ll gain full access to the faculty portal</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>You can view and manage your profile, publications, and courses</span>
-                  </li>
-                </ul>
-              </div>
+              <div className="px-6 py-6 space-y-6">
+                {/* Rejection reason */}
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <p className="text-sm font-semibold text-red-700">Reason for Rejection</p>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {status.rejectionReason ||
+                      'No specific reason provided. Please contact administration for details.'}
+                  </p>
+                </div>
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={checkStatus}
-                  disabled={checking}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                >
-                  <RefreshCw className={`w-5 h-5 ${checking ? 'animate-spin' : ''}`} />
-                  {checking ? 'Checking...' : 'Refresh Status'}
-                </button>
+                {/* Next steps */}
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">What you can do</p>
+                  <ol className="space-y-2">
+                    {[
+                      'Review the rejection reason carefully',
+                      'Address the issues mentioned above',
+                      'Update your credentials or documentation if needed',
+                      'Click "Reapply" below to submit your application again',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                        <span className="font-bold text-[#2d6a4f] shrink-0">{i + 1}.</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
 
-                <button
-                  onClick={handleLogout}
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
-                >
-                  Logout
-                </button>
-              </div>
+                {/* Actions */}
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={handleReapply}
+                    disabled={reapplying}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#2d6a4f] hover:bg-[#235a40] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-sm shadow-sm"
+                  >
+                    {reapplying ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Reapply Now
+                      </>
+                    )}
+                  </button>
 
-              {/* Contact Info */}
-              <div className="border-t border-gray-200 pt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Need assistance? Contact our administration office
-                </p>
-                <p className="text-sm text-green-600 font-medium mt-1">
-                  admin@mnsuam.edu.pk
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all font-medium text-sm"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
 
-        {/* Rejected Status */}
-        {status?.status === 'REJECTED' && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6">
-              <div className="flex items-center justify-center">
-                <div className="bg-white/20 backdrop-blur-sm rounded-full p-4">
-                  <XCircle className="w-12 h-12 text-white" />
+                {/* Contact */}
+                <div className="border-t border-gray-100 pt-4 text-center">
+                  <p className="text-xs text-gray-500">
+                    Have questions? Contact our administration office
+                  </p>
+                  <a
+                    href="mailto:admin@mnsuam.edu.pk"
+                    className="text-sm font-semibold text-[#2d6a4f] hover:text-[#235a40] mt-1 inline-block transition-colors"
+                  >
+                    admin@mnsuam.edu.pk
+                  </a>
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-white text-center mt-4">
-                Application Not Approved
-              </h1>
-              <p className="text-red-50 text-center mt-2">
-                Your application requires attention
-              </p>
             </div>
+          )}
 
-            {/* Content */}
-            <div className="px-8 py-8 space-y-6">
-              {/* Rejection Reason */}
-              <div className="bg-red-50 border-l-4 border-red-400 rounded-r-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="w-6 h-6 text-red-600 mt-1" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Reason for Rejection</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      {status.rejectionReason || 'No specific reason provided. Please contact administration for details.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Next Steps */}
-              <div className="bg-blue-50 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-3">What you can do</h3>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">1.</span>
-                    <span>Review the rejection reason carefully</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">2.</span>
-                    <span>Address the issues mentioned above</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">3.</span>
-                    <span>Update your credentials or documentation if needed</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">4.</span>
-                    <span>Click &quot;Reapply&quot; below to submit your application again</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={handleReapply}
-                  disabled={reapplying}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                >
-                  <CheckCircle className="w-5 h-5" />
-                  {reapplying ? 'Processing...' : 'Reapply Now'}
-                </button>
-
-                <button
-                  onClick={handleLogout}
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
-                >
-                  Logout
-                </button>
-              </div>
-
-              {/* Contact Info */}
-              <div className="border-t border-gray-200 pt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Have questions? Contact our administration office
-                </p>
-                <p className="text-sm text-green-600 font-medium mt-1">
-                  admin@mnsuam.edu.pk
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
         </div>
       </div>
     </div>

@@ -59,16 +59,16 @@ model ResearchArea {
 }
 
 model Staff {
-  id                   String        @id @default(cuid())
+  id                   String             @id @default(cuid())
   name                 String
-  email                String        @unique
+  email                String             @unique
   designation          String
   departmentId         String
-  status               StaffStatus   @default(APPROVED)
-  studentsSupervised   Int           @default(0)
+  status               StaffStatus        @default(APPROVED)
+  studentsSupervised   Int                @default(0)
   studentsSupervisedDetails Json?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
   bio                  String?
   experienceYears      String?
   profileImage         String?
@@ -79,7 +79,8 @@ model Staff {
   courses              Course[]
   projects             Project[]
   publications         Publication[]
-  department           Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  equipmentRequests    EquipmentRequest[]
+  department           Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 }
 
 model Publication {
@@ -179,10 +180,64 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model Lab {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  floor       String
+  labInCharge String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  equipment   Equipment[]
+}
+
+model Equipment {
+  id        String             @id @default(cuid())
+  srNo      Int?
+  name      String
+  model     String?
+  quantity  Int                @default(1)
+  notes     String?
+  labId     String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  lab       Lab                @relation(fields: [labId], references: [id], onDelete: Cascade)
+  requests  EquipmentRequest[]
+}
+
+model EquipmentRequest {
+  id            String        @id @default(cuid())
+  equipmentId   String
+  staffId       String
+  purpose       String
+  requestedFrom DateTime
+  requestedTo   DateTime
+  status        RequestStatus @default(PENDING)
+  adminNotes    String?
+  approvedAt    DateTime?
+  borrowedAt    DateTime?
+  returnedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  equipment     Equipment     @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  staff         Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([staffId])
+  @@index([equipmentId])
+}
+
 enum StaffStatus {
   APPROVED
   PENDING
   REJECTED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
 }
 
 enum ProjectStatus {
