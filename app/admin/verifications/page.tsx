@@ -245,17 +245,19 @@ function TeacherCard({
 
           {/* ── Profile section ── */}
           {teacher.profile && (
-            <div className="px-6 py-5 bg-purple-50/20">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-purple-600" />
+            <div className="bg-purple-50/20">
+              {/* Section heading */}
+              <div className="flex items-center gap-2 px-6 py-3 bg-purple-100/40 border-b border-purple-100">
+                <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-semibold text-gray-800 text-sm">Profile Info</span>
+                <span className="font-bold text-purple-800 text-sm uppercase tracking-wide">Profile</span>
                 <Chip status={teacher.profile.profileVerificationStatus} />
                 <span className="ml-auto text-xs text-gray-400">
                   Updated {new Date(teacher.profile.updatedAt).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
+              <div className="px-6 py-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-1">
                 {teacher.profile.designation && (
                   <div className="bg-white rounded-xl p-3 border border-gray-100">
@@ -294,12 +296,22 @@ function TeacherCard({
                 onReject={(r) => act('profile', teacher.profile!.id, 'REJECTED', r)}
                 processing={isProc('profile', teacher.profile.id)}
               />
+              </div>{/* end px-6 py-5 */}
             </div>
           )}
 
           {/* ── Publications ── */}
-          {teacher.publications.map((pub) => (
-            <div key={pub.id} className="px-6 py-5 bg-blue-50/10">
+          {teacher.publications.length > 0 && (
+            <div className="bg-blue-50/10">
+              <div className="flex items-center gap-2 px-6 py-3 bg-blue-100/40 border-b border-blue-100">
+                <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center">
+                  <BookOpen className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-bold text-blue-800 text-sm uppercase tracking-wide">Publications</span>
+                <span className="ml-1 px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full text-xs font-bold">{teacher.publications.length}</span>
+              </div>
+              {teacher.publications.map((pub) => (
+              <div key={pub.id} className="px-6 py-4 border-b border-blue-50/50 last:border-0">
               <div className="flex items-start gap-3">
                 {pub.imageUrl && (
                   <img src={pub.imageUrl} alt={pub.title} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-100" />
@@ -328,21 +340,29 @@ function TeacherCard({
                   />
                 </div>
               </div>
+              </div>
+              ))}
             </div>
-          ))}
+          )}
 
           {/* ── Projects ── */}
-          {teacher.projects.map((proj) => (
-            <div key={proj.id} className="px-6 py-5 bg-[#2d6a4f]/5">
+          {teacher.projects.length > 0 && (
+            <div className="bg-[#2d6a4f]/5">
+              <div className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f]/10 border-b border-[#2d6a4f]/10">
+                <div className="w-6 h-6 rounded-md bg-[#2d6a4f] flex items-center justify-center">
+                  <FlaskConical className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-bold text-[#1a3d2b] text-sm uppercase tracking-wide">Projects</span>
+                <span className="ml-1 px-2 py-0.5 bg-[#2d6a4f]/20 text-[#2d6a4f] rounded-full text-xs font-bold">{teacher.projects.length}</span>
+              </div>
+              {teacher.projects.map((proj) => (
+              <div key={proj.id} className="px-6 py-4 border-b border-[#2d6a4f]/5 last:border-0">
               <div className="flex items-start gap-3">
                 {proj.imageUrl && (
                   <img src={proj.imageUrl} alt={proj.title} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-100" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 rounded-md bg-[#2d6a4f]/15 flex items-center justify-center shrink-0">
-                      <FlaskConical className="w-3 h-3 text-[#2d6a4f]" />
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="font-semibold text-gray-900 text-sm">{proj.title}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
                       proj.status === 'ONGOING' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
@@ -362,16 +382,24 @@ function TeacherCard({
                   />
                 </div>
               </div>
+              </div>
+              ))}
             </div>
-          ))}
+          )}
 
           {/* ── Courses ── */}
-          {teacher.courses.map((course) => (
-            <div key={course.id} className="px-6 py-5 bg-amber-50/20">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <GraduationCap className="w-3 h-3 text-amber-600" />
+          {teacher.courses.length > 0 && (
+            <div className="bg-amber-50/20">
+              <div className="flex items-center gap-2 px-6 py-3 bg-amber-100/40 border-b border-amber-100">
+                <div className="w-6 h-6 rounded-md bg-amber-500 flex items-center justify-center">
+                  <GraduationCap className="w-3.5 h-3.5 text-white" />
                 </div>
+                <span className="font-bold text-amber-800 text-sm uppercase tracking-wide">Courses</span>
+                <span className="ml-1 px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full text-xs font-bold">{teacher.courses.length}</span>
+              </div>
+              {teacher.courses.map((course) => (
+              <div key={course.id} className="px-6 py-4 border-b border-amber-50 last:border-0">
+              <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="font-semibold text-gray-900 text-sm">{course.name}</span>
@@ -391,8 +419,10 @@ function TeacherCard({
                   />
                 </div>
               </div>
+              </div>
+              ))}
             </div>
-          ))}
+          )}
 
         </div>
       )}

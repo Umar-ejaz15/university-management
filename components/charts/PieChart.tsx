@@ -22,45 +22,13 @@ export default function PieChart({
   center,
   radius,
 }: PieChartProps) {
-  const total = data.reduce((sum, d) => sum + d.value, 0);
-
   // When we own the legend we shift the pie left so the legend fits on the right.
   // When the caller provides its own legend we centre the pie.
   const pieCenter: [string, string] = center ?? (showLegend ? ['36%', '50%'] : ['50%', '50%']);
   const pieRadius = radius ?? (donut ? ['42%', '68%'] : '65%');
 
-  // Graphic elements rendered in the donut hole (total count + label)
-  const graphic = donut
-    ? [
-        {
-          type: 'text',
-          left: pieCenter[0],
-          top: pieCenter[1],
-          style: {
-            text: String(total),
-            textAlign: 'center',
-            textVerticalAlign: 'bottom',
-            fill: '#111',
-            fontSize: 24,
-            fontWeight: 'bold',
-            lineHeight: 28,
-          },
-        },
-        {
-          type: 'text',
-          left: pieCenter[0],
-          top: pieCenter[1],
-          style: {
-            text: 'Total',
-            textAlign: 'center',
-            textVerticalAlign: 'top',
-            fill: '#999',
-            fontSize: 11,
-            lineHeight: 16,
-          },
-        },
-      ]
-    : [];
+  // No center graphic — keep the donut hole clean
+  const graphic: unknown[] = [];
 
   const option = {
     tooltip: {

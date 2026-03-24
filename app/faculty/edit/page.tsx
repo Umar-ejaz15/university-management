@@ -32,7 +32,7 @@ import {
   Clock,
   ImagePlus,
 } from 'lucide-react';
-import { UploadButton } from '@/lib/uploadthing-client';
+import UploadImageButton from '@/components/UploadImageButton';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -877,31 +877,14 @@ export default function EditProfilePage() {
 
                     {/* Upload area */}
                     <div className="flex-1 space-y-3">
-                      <p className="text-sm text-gray-500">Upload a professional profile photo. Max 4MB, JPG/PNG/WebP.</p>
-                      <div className="[&_.ut-button]:bg-[#2d6a4f] [&_.ut-button]:rounded-xl [&_.ut-button]:px-5 [&_.ut-button]:py-2.5 [&_.ut-button]:text-sm [&_.ut-button]:font-semibold [&_.ut-button]:hover:bg-[#245a42] [&_.ut-button]:transition-colors [&_.ut-button]:shadow-sm [&_.ut-label]:text-gray-500 [&_.ut-label]:text-xs">
-                        <UploadButton
-                          endpoint="profileImage"
-                          onClientUploadComplete={(res) => {
-                            if (res?.[0]?.ufsUrl) {
-                              update('profileImage', res[0].ufsUrl);
-                            }
-                          }}
-                          onUploadError={(error) => {
-                            setError(`Upload failed: ${error.message}`);
-                          }}
-                          appearance={{
-                            button: 'bg-[#2d6a4f] hover:bg-[#245a42] rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm ut-uploading:cursor-not-allowed ut-uploading:opacity-70',
-                            allowedContent: 'text-gray-400 text-xs mt-1',
-                          }}
-                          content={{
-                            button({ ready }) {
-                              return ready ? (
-                                <span className="flex items-center gap-2"><Upload className="w-4 h-4" />Upload Photo</span>
-                              ) : 'Getting ready…';
-                            },
-                          }}
-                        />
-                      </div>
+                      <UploadImageButton
+                        endpoint="profileImage"
+                        currentUrl={form.profileImage || null}
+                        onUpload={(url) => update('profileImage', url)}
+                        onRemove={() => update('profileImage', '')}
+                        label="Upload Profile Photo"
+                        hint="JPG, PNG or WebP · max 4 MB"
+                      />
                       {/* Fallback URL input */}
                       <div>
                         <p className="text-xs text-gray-400 mb-1">Or paste an image URL directly:</p>
@@ -1856,34 +1839,14 @@ export default function EditProfilePage() {
 
               <div>
                 <label className={labelCls}>Cover Image</label>
-                {newPublication.imageUrl ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={newPublication.imageUrl}
-                      alt="cover"
-                      className="w-16 h-16 rounded-xl object-cover border border-gray-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setNewPublication({ ...newPublication, imageUrl: undefined })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  </div>
-                ) : (
-                  <UploadButton
-                    endpoint="contentImage"
-                    onClientUploadComplete={(res) => {
-                      if (res?.[0]?.url) setNewPublication({ ...newPublication, imageUrl: res[0].url });
-                    }}
-                    onUploadError={(err) => alert(`Upload error: ${err.message}`)}
-                    appearance={{
-                      button: 'bg-[#2d6a4f] text-white text-sm font-semibold rounded-xl px-4 py-2 hover:bg-[#235a40] transition-colors',
-                      allowedContent: 'text-gray-400 text-xs mt-1',
-                    }}
-                  />
-                )}
+                <UploadImageButton
+                  endpoint="contentImage"
+                  currentUrl={newPublication.imageUrl ?? null}
+                  onUpload={(url) => setNewPublication({ ...newPublication, imageUrl: url })}
+                  onRemove={() => setNewPublication({ ...newPublication, imageUrl: undefined })}
+                  label="Upload Cover Image"
+                  hint="JPG, PNG or WebP · max 8 MB"
+                />
               </div>
 
               <div>
@@ -2032,34 +1995,14 @@ export default function EditProfilePage() {
 
               <div>
                 <label className={labelCls}>Project Image</label>
-                {newProject.imageUrl ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={newProject.imageUrl}
-                      alt="project"
-                      className="w-16 h-16 rounded-xl object-cover border border-gray-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setNewProject({ ...newProject, imageUrl: undefined })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  </div>
-                ) : (
-                  <UploadButton
-                    endpoint="contentImage"
-                    onClientUploadComplete={(res) => {
-                      if (res?.[0]?.url) setNewProject({ ...newProject, imageUrl: res[0].url });
-                    }}
-                    onUploadError={(err) => alert(`Upload error: ${err.message}`)}
-                    appearance={{
-                      button: 'bg-[#2d6a4f] text-white text-sm font-semibold rounded-xl px-4 py-2 hover:bg-[#235a40] transition-colors',
-                      allowedContent: 'text-gray-400 text-xs mt-1',
-                    }}
-                  />
-                )}
+                <UploadImageButton
+                  endpoint="contentImage"
+                  currentUrl={newProject.imageUrl ?? null}
+                  onUpload={(url) => setNewProject({ ...newProject, imageUrl: url })}
+                  onRemove={() => setNewProject({ ...newProject, imageUrl: undefined })}
+                  label="Upload Project Image"
+                  hint="JPG, PNG or WebP · max 8 MB"
+                />
               </div>
             </div>
 

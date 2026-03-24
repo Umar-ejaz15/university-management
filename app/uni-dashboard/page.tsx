@@ -112,9 +112,9 @@ export default async function UniDashboard() {
       {/* Hero Banner */}
       <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div className="flex flex-col gap-6">
             {/* University Branding */}
-            <div className="flex-1">
+            <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-2 h-8 bg-[#c9a961] rounded-full" />
                 <span className="text-[#c9a961] text-sm font-semibold tracking-widest uppercase">
@@ -128,42 +128,8 @@ export default async function UniDashboard() {
               <p className="text-green-200 text-base mt-1 mb-6">
                 Excellence in Agriculture &amp; Sciences — Advancing Knowledge, Transforming Lives
               </p>
-              <div className="flex-1 max-w-md">
+              <div className="max-w-md">
                 <SearchBar placeholder="Search faculties, departments, or people..." />
-              </div>
-            </div>
-
-            {/* Hero Stat Cards */}
-            <div className="grid grid-cols-2 gap-4 lg:w-auto w-full">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 text-center min-w-[130px]">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl mx-auto mb-3">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-3xl font-extrabold text-white leading-none">{totalFaculty}</p>
-                <p className="text-green-200 text-xs mt-1 font-medium">Faculty Members</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 text-center min-w-[130px]">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl mx-auto mb-3">
-                  <FlaskConical className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-3xl font-extrabold text-white leading-none">{totalProjects}</p>
-                <p className="text-green-200 text-xs mt-1 font-medium">Research Projects</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 text-center min-w-[130px]">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl mx-auto mb-3">
-                  <BookOpen className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-3xl font-extrabold text-white leading-none">{totalPublications}</p>
-                <p className="text-green-200 text-xs mt-1 font-medium">Publications</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 text-center min-w-[130px]">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl mx-auto mb-3">
-                  <GraduationCap className="w-5 h-5 text-white" />
-                </div>
-                <p className="text-3xl font-extrabold text-white leading-none">
-                  {totalStudentsSupervised._sum?.studentsSupervised || 0}
-                </p>
-                <p className="text-green-200 text-xs mt-1 font-medium">Students</p>
               </div>
             </div>
           </div>
