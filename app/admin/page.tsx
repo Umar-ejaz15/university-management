@@ -18,6 +18,7 @@ import {
   Calendar,
   Sparkles,
   AlertCircle,
+  Shield,
 } from 'lucide-react';
 import Header from '@/components/Header';
 
@@ -28,6 +29,7 @@ interface AdminStats {
   pendingCount: number;
   rejectedCount: number;
   totalDepartments: number;
+  pendingVerifications?: number;
 }
 
 interface PendingFaculty {
@@ -146,9 +148,10 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [statsRes, pendingRes] = await Promise.all([
+      const [statsRes, pendingRes, verifRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/admin/pending-faculty'),
+        fetch('/api/admin/verifications'),
       ]);
       if (!statsRes.ok || !pendingRes.ok) {
         router.push('/login');
@@ -156,7 +159,8 @@ export default function AdminDashboard() {
       }
       const statsData   = await statsRes.json();
       const pendingData = await pendingRes.json();
-      setStats(statsData);
+      const verifData   = verifRes.ok ? await verifRes.json() : null;
+      setStats({ ...statsData, pendingVerifications: verifData?.totalPending ?? 0 });
       setPendingFaculty(pendingData.faculty || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -388,6 +392,22 @@ export default function AdminDashboard() {
               title="University Dashboard"
               description="View the public university overview and statistics"
               href="/uni-dashboard"
+            />
+            <QuickActionCard
+              icon={<FlaskConical className="w-5 h-5 text-emerald-600" />}
+              iconBg="bg-emerald-50"
+              title="Manage Labs"
+              description="Add, edit, or remove labs and their equipment"
+              href="/admin/labs"
+              badge="Labs"
+            />
+            <QuickActionCard
+              icon={<Shield className="w-5 h-5 text-indigo-600" />}
+              iconBg="bg-indigo-50"
+              title="Content Verification"
+              description={`Review teacher-submitted publications, projects, courses & profiles`}
+              href="/admin/verifications"
+              badge={(stats?.pendingVerifications ?? 0) > 0 ? `${stats?.pendingVerifications} pending` : undefined}
             />
           </div>
         </div>

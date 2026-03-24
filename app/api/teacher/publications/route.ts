@@ -60,6 +60,9 @@ export async function POST(request: NextRequest) {
         journal: journal?.trim() || null,
         staffId: dbUser.staffId,
         authors: body.authors?.trim() || 'Unknown',
+        imageUrl: body.imageUrl?.trim() || null,
+        verificationStatus: 'PENDING',
+        rejectionReason: null,
       },
     });
 

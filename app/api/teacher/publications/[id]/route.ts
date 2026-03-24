@@ -79,6 +79,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         title: title?.trim() ?? existing.title,
         year: year ?? existing.year,
         journal: journal?.trim() ?? existing.journal,
+        imageUrl: body.imageUrl !== undefined ? (body.imageUrl?.trim() || null) : existing.imageUrl,
+        verificationStatus: 'PENDING',
+        rejectionReason: null,
       },
     });
 

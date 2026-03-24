@@ -239,7 +239,7 @@ function ViewModal({ request, onClose }: { request: CLSRequest; onClose: () => v
         <div className="px-6 py-5 space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#2d6a4f]/10 flex items-center justify-center font-bold text-[#2d6a4f]">
-              {request.teacherName.charAt(0).toUpperCase()}
+              {(request.teacherName ?? '?').charAt(0).toUpperCase()}
             </div>
             <div>
               <p className="font-semibold text-gray-900">{request.teacherName}</p>
@@ -562,7 +562,7 @@ export default function AdminCLSPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-[#2d6a4f]/10 flex items-center justify-center flex-shrink-0 font-semibold text-[#2d6a4f] text-xs">
-                            {req.teacherName.charAt(0).toUpperCase()}
+                            {(req.teacherName ?? '?').charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 leading-tight">{req.teacherName}</p>

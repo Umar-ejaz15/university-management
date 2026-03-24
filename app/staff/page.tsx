@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useEffect, useState, useCallback } from 'react';
 import { GraduationCap, BookOpen, FlaskConical, Search, Users, Building2, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
@@ -12,6 +14,7 @@ interface Staff {
   designation: string;
   specialization: string | null;
   experienceYears: string | null;
+  profileImage: string | null;
   department: {
     name: string;
     faculty: {
@@ -286,10 +289,27 @@ export default function StaffListingPage() {
               >
                 {/* Card Top */}
                 <div className="p-6 flex items-start gap-4 flex-1">
-                  <div className="w-14 h-14 rounded-2xl bg-[#2d6a4f]/10 flex items-center justify-center shrink-0">
-                    <span className="text-[#2d6a4f] font-bold text-lg">
-                      {getInitials(member.name)}
-                    </span>
+                  <div className="w-14 h-14 rounded-2xl shrink-0 overflow-hidden border-2 border-[#2d6a4f]/20">
+                    {member.profileImage ? (
+                      <img
+                        src={member.profileImage}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const el = e.currentTarget;
+                          el.style.display = 'none';
+                          const parent = el.parentElement;
+                          if (parent) {
+                            parent.classList.add('bg-[#2d6a4f]/10', 'flex', 'items-center', 'justify-center');
+                            parent.innerHTML = `<span class="text-[#2d6a4f] font-bold text-lg">${getInitials(member.name)}</span>`;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#2d6a4f]/10 flex items-center justify-center">
+                        <span className="text-[#2d6a4f] font-bold text-lg">{getInitials(member.name)}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 text-base truncate">{member.name}</h3>

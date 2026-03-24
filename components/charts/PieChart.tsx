@@ -3,107 +3,149 @@
 import ReactECharts from 'echarts-for-react';
 
 interface PieChartProps {
-  data: {
-    name: string;
-    value: number;
-  }[];
+  data: { name: string; value: number }[];
   colors?: string[];
   donut?: boolean;
   height?: number;
+  /** Pass false when the parent renders its own legend outside the chart */
+  showLegend?: boolean;
   center?: [string, string];
   radius?: string | string[];
 }
 
-/**
- * Enhanced Pie/Donut chart component
- * Perfect for showing proportions and distributions
- * Features: smooth animations, hover effects, percentage labels
- */
 export default function PieChart({
   data,
   colors = ['#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'],
   donut = false,
   height = 320,
+  showLegend = true,
   center,
   radius,
 }: PieChartProps) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  // When we own the legend we shift the pie left so the legend fits on the right.
+  // When the caller provides its own legend we centre the pie.
+  const pieCenter: [string, string] = center ?? (showLegend ? ['36%', '50%'] : ['50%', '50%']);
+  const pieRadius = radius ?? (donut ? ['42%', '68%'] : '65%');
+
+  // Graphic elements rendered in the donut hole (total count + label)
+  const graphic = donut
+    ? [
+        {
+          type: 'text',
+          left: pieCenter[0],
+          top: pieCenter[1],
+          style: {
+            text: String(total),
+            textAlign: 'center',
+            textVerticalAlign: 'bottom',
+            fill: '#111',
+            fontSize: 24,
+            fontWeight: 'bold',
+            lineHeight: 28,
+          },
+        },
+        {
+          type: 'text',
+          left: pieCenter[0],
+          top: pieCenter[1],
+          style: {
+            text: 'Total',
+            textAlign: 'center',
+            textVerticalAlign: 'top',
+            fill: '#999',
+            fontSize: 11,
+            lineHeight: 16,
+          },
+        },
+      ]
+    : [];
+
   const option = {
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: 'rgba(255,255,255,0.97)',
       borderColor: '#e0e0e0',
       borderWidth: 1,
-      textStyle: {
-        color: '#333',
-        fontSize: 13
-      },
-      formatter: (params: { color: string; name: string; value: number; percent: number }) => {
-        return `
-          <div style="padding: 5px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="display: inline-block; width: 10px; height: 10px; background: ${params.color}; border-radius: 50%;"></span>
-              <strong>${params.name}</strong>
-            </div>
-            <div style="margin-top: 5px; padding-left: 18px;">
-              <span style="color: #666;">Count: <strong>${params.value}</strong></span><br/>
-              <span style="color: #666;">Percentage: <strong>${params.percent}%</strong></span>
-            </div>
+      textStyle: { color: '#333', fontSize: 13 },
+      formatter: (params: { color: string; name: string; value: number; percent: number }) => `
+        <div style="padding:6px 10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="display:inline-block;width:10px;height:10px;background:${params.color};border-radius:50%;"></span>
+            <strong>${params.name}</strong>
           </div>
-        `;
-      }
+          <div style="padding-left:18px;line-height:1.6;">
+            Count:&nbsp;<strong>${params.value}</strong><br/>
+            Share:&nbsp;<strong>${params.percent}%</strong>
+          </div>
+        </div>
+      `,
     },
-    legend: { show: false },
+
+    legend: showLegend
+      ? {
+          orient: 'vertical',
+          right: '2%',
+          top: 'middle',
+          itemWidth: 10,
+          itemHeight: 10,
+          borderRadius: 6,
+          textStyle: { fontSize: 12, color: '#444', lineHeight: 20 },
+          formatter: (name: string) => {
+            const item = data.find((d) => d.name === name);
+            return item ? `${name}  (${item.value})` : name;
+          },
+        }
+      : { show: false },
+
+    graphic,
+
     series: [
       {
-        name: 'Distribution',
         type: 'pie',
-        radius: radius ?? (donut ? ['45%', '70%'] : '70%'),
-        center: center ?? ['35%', '50%'],
+        radius: pieRadius,
+        center: pieCenter,
         avoidLabelOverlap: true,
         itemStyle: {
-          borderRadius: 8,
+          borderRadius: 6,
           borderColor: '#fff',
-          borderWidth: 2
+          borderWidth: 2,
         },
-        label: {
-          show: donut, // Only show label in center for donut, hide for large pie
-          position: donut ? 'center' : 'outside',
-          formatter: '', // No label for pie chart, only tooltip
-          fontSize: donut ? 14 : 12,
-          fontWeight: donut ? 'bold' : 'normal',
-          color: donut ? '#1a1a1a' : '#666'
-        },
+        // No static slice labels — legend carries the info
+        label: { show: false },
+        labelLine: { show: false },
         emphasis: {
-          label: {
-            show: true,
-            fontSize: 16,
-            fontWeight: 'bold'
-          },
+          // For donut: show segment value/% in the hole on hover
+          label: donut
+            ? {
+                show: true,
+                position: 'center',
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#222',
+                formatter: (params: { name: string; value: number; percent: number }) =>
+                  `${params.value}\n${params.percent}%`,
+              }
+            : { show: false },
           itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.3)'
-          }
-        },
-        labelLine: {
-          show: !donut,
-          length: 15,
-          length2: 10,
-          smooth: true
+            shadowBlur: 12,
+            shadowColor: 'rgba(0,0,0,0.18)',
+          },
         },
         data: data.map((item, index) => ({
           value: item.value,
           name: item.name,
-          itemStyle: {
-            color: colors[index % colors.length]
-          }
+          itemStyle: { color: colors[index % colors.length] },
         })),
         animationType: 'scale',
         animationEasing: 'elasticOut',
-        animationDuration: 1000
-      }
-    ]
+        animationDuration: 900,
+      },
+    ],
   };
 
-  return <ReactECharts option={option} style={{ height: `${height}px`, width: '100%' }} />;
+  return (
+    <ReactECharts option={option} style={{ height: `${height}px`, width: '100%' }} />
+  );
 }

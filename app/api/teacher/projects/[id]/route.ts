@@ -82,6 +82,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         startDate: startDate ? new Date(startDate) : existing.startDate,
         endDate: endDate ? new Date(endDate) : existing.endDate,
         studentCount: typeof studentCount === 'number' ? studentCount : existing.studentCount,
+        imageUrl: body.imageUrl !== undefined ? (body.imageUrl?.trim() || null) : existing.imageUrl,
+        verificationStatus: 'PENDING',
+        rejectionReason: null,
       },
     });
 

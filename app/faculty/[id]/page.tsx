@@ -27,6 +27,7 @@ import {
   ClipboardList,
   UserCircle,
   BookMarked,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface PageProps {
@@ -422,7 +423,14 @@ export default async function FacultyPage({ params }: PageProps) {
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1.5">{pub.title}</h4>
+                        <div className="flex items-start gap-2 mb-1.5">
+                          <h4 className="font-semibold text-gray-900 text-sm leading-snug">{pub.title}</h4>
+                          {(pub.verificationStatus as string) === 'VERIFIED' && (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <ShieldCheck className="w-3 h-3" /> Verified
+                            </span>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${pubTypeBadge(pub.publicationType)}`}>
                             {pubTypeLabel(pub.publicationType)}
@@ -476,7 +484,14 @@ export default async function FacultyPage({ params }: PageProps) {
                       className="p-5 rounded-xl border border-gray-100 hover:border-purple-100 hover:bg-purple-50/20 transition-all"
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <h4 className="font-bold text-gray-900 text-sm leading-snug">{project.title}</h4>
+                        <div className="flex items-start gap-2 min-w-0">
+                          <h4 className="font-bold text-gray-900 text-sm leading-snug">{project.title}</h4>
+                          {(project as { verificationStatus?: string }).verificationStatus === 'VERIFIED' && (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <ShieldCheck className="w-3 h-3" /> Verified
+                            </span>
+                          )}
+                        </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${projectStatusBadge(project.status)}`}>
                           {project.status}
                         </span>

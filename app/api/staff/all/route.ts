@@ -19,6 +19,7 @@ export async function GET() {
         designation: true,
         specialization: true,
         experienceYears: true,
+        profileImage: true,
         department: {
           select: {
             name: true,

@@ -61,7 +61,10 @@ export async function POST(request: NextRequest) {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         studentCount: typeof studentCount === 'number' ? studentCount : 0,
+        imageUrl: body.imageUrl?.trim() || null,
         staffId: dbUser.staffId,
+        verificationStatus: 'PENDING',
+        rejectionReason: null,
       },
     });
 

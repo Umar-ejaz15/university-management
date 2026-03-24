@@ -74,8 +74,10 @@ model Staff {
   profileImage         String?
   qualifications       String?
   specialization       String?
-  administrativeDuties String?
-  teachingLoad         Json?
+  administrativeDuties      String?
+  teachingLoad              Json?
+  profileVerificationStatus VerificationStatus @default(PENDING)
+  profileRejectionReason    String?
   courses              Course[]
   projects             Project[]
   publications         Publication[]
@@ -103,9 +105,12 @@ model Publication {
   pdfUrl          String?         // Direct link to PDF
   impactFactor    String?         // Journal impact factor
   indexedIn       String?         // e.g., "Scopus, Web of Science, PubMed"
-  citationCount   Int             @default(0)
-  verified        Boolean         @default(false) // Admin verified publication
-  staffId         String
+  citationCount        Int                @default(0)
+  verified             Boolean            @default(false)
+  verificationStatus   VerificationStatus @default(PENDING)
+  rejectionReason      String?
+  imageUrl             String?
+  staffId              String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   staff           Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -126,8 +131,11 @@ model Project {
   fundingAmount  String?       // e.g., "PKR 2,000,000" or "USD 50,000"
   fundingAgency  String?       // e.g., "HEC", "NSF", "Industry Partner"
   collaborators  String?       // Names of collaborating researchers/institutions
-  projectUrl     String?       // Link to project website or repository
-  status         ProjectStatus @default(ONGOING)
+  projectUrl          String?
+  imageUrl            String?
+  verificationStatus  VerificationStatus @default(PENDING)
+  rejectionReason     String?
+  status              ProjectStatus @default(ONGOING)
   startDate      DateTime?
   endDate        DateTime?
   staffId        String
@@ -139,11 +147,13 @@ model Project {
 }
 
 model Course {
-  id        String   @id @default(cuid())
-  name      String
-  credits   Int
-  students  Int      @default(0)
-  staffId   String
+  id                 String             @id @default(cuid())
+  name               String
+  credits            Int
+  students           Int                @default(0)
+  verificationStatus VerificationStatus @default(PENDING)
+  rejectionReason    String?
+  staffId            String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -230,6 +240,12 @@ model EquipmentRequest {
 enum StaffStatus {
   APPROVED
   PENDING
+  REJECTED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
   REJECTED
 }
 

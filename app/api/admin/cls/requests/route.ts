@@ -73,9 +73,25 @@ export async function GET(request: NextRequest) {
       prisma.equipmentRequest.count({ where }),
     ]);
 
+    const mapped = requests.map((r) => ({
+      id: r.id,
+      teacherName: r.staff?.name ?? 'Unknown',
+      teacherEmail: r.staff?.email ?? '',
+      equipmentName: r.equipment?.name ?? 'Unknown',
+      labName: r.equipment?.lab?.name ?? 'Unknown',
+      purpose: r.purpose,
+      fromDate: r.requestedFrom,
+      toDate: r.requestedTo,
+      status: r.status,
+      approvedAt: r.approvedAt,
+      returnedAt: r.returnedAt,
+      adminNotes: r.status !== 'REJECTED' ? r.adminNotes : undefined,
+      rejectionReason: r.status === 'REJECTED' ? r.adminNotes : undefined,
+    }));
+
     return NextResponse.json(
       {
-        requests,
+        requests: mapped,
         pagination: {
           page,
           limit,

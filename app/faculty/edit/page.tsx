@@ -25,7 +25,14 @@ import {
   Hash,
   AlertCircle,
   CheckCircle2,
+  Upload,
+  Camera,
+  ShieldCheck,
+  ShieldX,
+  Clock,
+  ImagePlus,
 } from 'lucide-react';
+import { UploadButton } from '@/lib/uploadthing-client';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -34,6 +41,8 @@ interface Department {
   name: string;
   faculty: { id: string; name: string };
 }
+
+type VerifStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
 interface Publication {
   id?: string;
@@ -47,6 +56,9 @@ interface Publication {
   impactFactor?: string;
   indexedIn?: string;
   citationCount?: number;
+  imageUrl?: string;
+  verificationStatus?: VerifStatus;
+  rejectionReason?: string | null;
 }
 
 interface Project {
@@ -57,6 +69,9 @@ interface Project {
   startDate: string;
   endDate: string;
   studentCount?: number;
+  imageUrl?: string;
+  verificationStatus?: VerifStatus;
+  rejectionReason?: string | null;
 }
 
 interface Course {
@@ -64,6 +79,62 @@ interface Course {
   name: string;
   credits: number;
   students: number;
+  verificationStatus?: VerifStatus;
+  rejectionReason?: string | null;
+}
+
+// ─── Verification badge ───────────────────────────────────────────────────────
+
+function VerifBadge({ status, reason }: { status?: VerifStatus; reason?: string | null }) {
+  if (!status || status === 'PENDING') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
+      <Clock className="w-3 h-3" />Pending review
+    </span>
+  );
+  if (status === 'VERIFIED') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
+      <ShieldCheck className="w-3 h-3" />Verified
+    </span>
+  );
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-semibold">
+        <ShieldX className="w-3 h-3" />Rejected — needs update
+      </span>
+      {reason && (
+        <div className="flex items-start gap-1.5 mt-1 px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg text-xs text-red-700">
+          <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span>{reason}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Profile verification status banner ───────────────────────────────────────
+
+function ProfileVerifBanner({ status, reason }: { status?: VerifStatus; reason?: string | null }) {
+  if (!status || status === 'PENDING') return (
+    <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 mb-4">
+      <Clock className="w-4 h-4 flex-shrink-0" />
+      <span><strong>Profile under review.</strong> Changes are pending admin verification.</span>
+    </div>
+  );
+  if (status === 'VERIFIED') return (
+    <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800 mb-4">
+      <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+      <span><strong>Profile verified</strong> by admin.</span>
+    </div>
+  );
+  return (
+    <div className="flex items-start gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 mb-4">
+      <ShieldX className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      <div>
+        <strong>Profile rejected.</strong> Please address the feedback below and resubmit.
+        {reason && <p className="mt-0.5 text-red-700">{reason}</p>}
+      </div>
+    </div>
+  );
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -100,6 +171,10 @@ export default function EditProfilePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Profile verification state
+  const [profileVerifStatus, setProfileVerifStatus] = useState<VerifStatus>('PENDING');
+  const [profileVerifReason, setProfileVerifReason] = useState<string | null>(null);
 
   // Profile form state
   const [form, setForm] = useState({
@@ -188,6 +263,8 @@ export default function EditProfilePage() {
         setPublications(s.publications || []);
         setProjects(s.projects || []);
         setCourses(s.courses || []);
+        setProfileVerifStatus(s.profileVerificationStatus || 'PENDING');
+        setProfileVerifReason(s.profileRejectionReason || null);
       }
 
       if (deptRes.ok) {
@@ -244,7 +321,9 @@ export default function EditProfilePage() {
         return;
       }
 
-      setSuccess('Profile saved successfully!');
+      setProfileVerifStatus('PENDING');
+      setProfileVerifReason(null);
+      setSuccess('Changes submitted for admin verification.');
     } catch (err) {
       setError('An error occurred while saving');
     } finally {
@@ -278,7 +357,7 @@ export default function EditProfilePage() {
       setPublications([...publications, data.publication]);
       setNewPublication({ title: '', year: new Date().getFullYear(), journal: '' });
       setShowAddPubModal(false);
-      setSuccess('Publication added!');
+      setSuccess('Publication submitted for admin verification.');
     } catch (err) {
       setError('Failed to add publication');
     } finally {
@@ -314,7 +393,7 @@ export default function EditProfilePage() {
       );
       setEditingPublication(null);
       setEditPublicationData(null);
-      setSuccess('Publication updated!');
+      setSuccess('Publication updated — pending re-verification.');
     } catch (err) {
       setError('Failed to update publication');
     } finally {
@@ -360,7 +439,7 @@ export default function EditProfilePage() {
       setProjects([...projects, data.project]);
       setNewProject({ title: '', description: '', status: 'ONGOING', startDate: '', endDate: '' });
       setShowAddProjectModal(false);
-      setSuccess('Project added!');
+      setSuccess('Project submitted for admin verification.');
     } catch (err) {
       setError('Failed to add project');
     } finally {
@@ -403,7 +482,7 @@ export default function EditProfilePage() {
       setProjects(projects.map((p) => (p.id === editingProject ? data.project : p)));
       setEditingProject(null);
       setEditProjectData(null);
-      setSuccess('Project updated!');
+      setSuccess('Project updated — pending re-verification.');
     } catch (err) {
       setError('Failed to update project');
     } finally {
@@ -449,7 +528,7 @@ export default function EditProfilePage() {
       setCourses([...courses, data.course]);
       setNewCourse({ name: '', credits: 3, students: 0 });
       setShowAddCourseModal(false);
-      setSuccess('Course added!');
+      setSuccess('Course submitted for admin verification.');
     } catch (err) {
       setError('Failed to add course');
     } finally {
@@ -483,7 +562,7 @@ export default function EditProfilePage() {
       setCourses(courses.map((c) => (c.id === editingCourse ? data.course : c)));
       setEditingCourse(null);
       setEditCourseData(null);
-      setSuccess('Course updated!');
+      setSuccess('Course updated — pending re-verification.');
     } catch (err) {
       setError('Failed to update course');
     } finally {
@@ -641,6 +720,9 @@ export default function EditProfilePage() {
           {activeTab === 'profile' && (
             <div className="p-8 space-y-8">
 
+              {/* Profile verification banner */}
+              <ProfileVerifBanner status={profileVerifStatus} reason={profileVerifReason} />
+
               {/* Section: Identity */}
               <div>
                 <div className="flex items-center gap-3 mb-6">
@@ -764,26 +846,75 @@ export default function EditProfilePage() {
 
                 {/* Profile Image */}
                 <div className="mb-6">
-                  <label className={labelCls}>Profile Image URL</label>
-                  <input
-                    type="url"
-                    value={form.profileImage}
-                    onChange={(e) => update('profileImage', e.target.value)}
-                    placeholder="https://example.com/your-photo.jpg"
-                    className={inputCls}
-                  />
-                  {form.profileImage && (
-                    <div className="mt-3">
-                      <img
-                        src={form.profileImage}
-                        alt="Profile preview"
-                        className="w-20 h-20 rounded-2xl object-cover border-2 border-[#2d6a4f]/30"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                  <label className={labelCls}>Profile Photo</label>
+                  <div className="flex items-start gap-6">
+                    {/* Preview */}
+                    <div className="flex-shrink-0">
+                      {form.profileImage ? (
+                        <div className="relative group">
+                          <img
+                            src={form.profileImage}
+                            alt="Profile"
+                            className="w-28 h-28 rounded-2xl object-cover border-2 border-[#2d6a4f]/40 shadow-md"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => update('profileImage', '')}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                            title="Remove photo"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-28 h-28 rounded-2xl bg-[#2d6a4f]/10 border-2 border-dashed border-[#2d6a4f]/30 flex flex-col items-center justify-center">
+                          <Camera className="w-8 h-8 text-[#2d6a4f]/40 mb-1" />
+                          <span className="text-xs text-[#2d6a4f]/50 font-medium">No photo</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Upload area */}
+                    <div className="flex-1 space-y-3">
+                      <p className="text-sm text-gray-500">Upload a professional profile photo. Max 4MB, JPG/PNG/WebP.</p>
+                      <div className="[&_.ut-button]:bg-[#2d6a4f] [&_.ut-button]:rounded-xl [&_.ut-button]:px-5 [&_.ut-button]:py-2.5 [&_.ut-button]:text-sm [&_.ut-button]:font-semibold [&_.ut-button]:hover:bg-[#245a42] [&_.ut-button]:transition-colors [&_.ut-button]:shadow-sm [&_.ut-label]:text-gray-500 [&_.ut-label]:text-xs">
+                        <UploadButton
+                          endpoint="profileImage"
+                          onClientUploadComplete={(res) => {
+                            if (res?.[0]?.ufsUrl) {
+                              update('profileImage', res[0].ufsUrl);
+                            }
+                          }}
+                          onUploadError={(error) => {
+                            setError(`Upload failed: ${error.message}`);
+                          }}
+                          appearance={{
+                            button: 'bg-[#2d6a4f] hover:bg-[#245a42] rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm ut-uploading:cursor-not-allowed ut-uploading:opacity-70',
+                            allowedContent: 'text-gray-400 text-xs mt-1',
+                          }}
+                          content={{
+                            button({ ready }) {
+                              return ready ? (
+                                <span className="flex items-center gap-2"><Upload className="w-4 h-4" />Upload Photo</span>
+                              ) : 'Getting ready…';
+                            },
+                          }}
+                        />
+                      </div>
+                      {/* Fallback URL input */}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Or paste an image URL directly:</p>
+                        <input
+                          type="url"
+                          value={form.profileImage}
+                          onChange={(e) => update('profileImage', e.target.value)}
+                          placeholder="https://example.com/photo.jpg"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all placeholder:text-gray-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -849,6 +980,7 @@ export default function EditProfilePage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Title</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Year</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Journal / Conference</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell w-28">Status</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Actions</th>
                       </tr>
                     </thead>
@@ -938,14 +1070,20 @@ export default function EditProfilePage() {
                                 </span>
                               </td>
                               <td className="px-4 py-3">
-                                <p className="font-semibold text-gray-900 leading-snug line-clamp-2">
-                                  {pub.title}
-                                </p>
-                                {pub.doi && (
-                                  <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                                    DOI: {pub.doi}
-                                  </p>
-                                )}
+                                <div className="flex items-start gap-2 mb-1">
+                                  {pub.imageUrl && (
+                                    <img src={pub.imageUrl} alt={pub.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-gray-100" />
+                                  )}
+                                  <div>
+                                    <p className="font-semibold text-gray-900 leading-snug line-clamp-2">
+                                      {pub.title}
+                                    </p>
+                                    {pub.doi && (
+                                      <p className="text-xs text-gray-400 mt-0.5 font-mono">DOI: {pub.doi}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <VerifBadge status={pub.verificationStatus} reason={pub.rejectionReason} />
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700">
@@ -1158,6 +1296,7 @@ export default function EditProfilePage() {
                               {project.description}
                             </p>
                           )}
+                          <VerifBadge status={project.verificationStatus} reason={project.rejectionReason} />
                           <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
                             {(project.startDate || project.endDate) && (
                               <span className="flex items-center gap-1">
@@ -1248,6 +1387,9 @@ export default function EditProfilePage() {
                         <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">
                           Students Enrolled
                         </th>
+                        <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-32 hidden lg:table-cell">
+                          Status
+                        </th>
                         <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
                           Actions
                         </th>
@@ -1302,6 +1444,7 @@ export default function EditProfilePage() {
                                   placeholder="45"
                                 />
                               </td>
+                              <td className="px-5 py-3 hidden lg:table-cell" />
                               <td className="px-5 py-3">
                                 <div className="flex items-center justify-center gap-1">
                                   <button
@@ -1339,6 +1482,9 @@ export default function EditProfilePage() {
                                   <Hash className="w-3 h-3" />
                                   {course.credits}
                                 </span>
+                              </td>
+                              <td className="px-5 py-4 hidden lg:table-cell">
+                                <VerifBadge status={course.verificationStatus} reason={course.rejectionReason} />
                               </td>
                               <td className="px-5 py-4 text-center">
                                 <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-orange-50 text-orange-700">
@@ -1381,6 +1527,7 @@ export default function EditProfilePage() {
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'administrative' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
+            <ProfileVerifBanner status={profileVerifStatus} reason={profileVerifReason} />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center">
                 <Briefcase className="w-5 h-5 text-rose-500" />
@@ -1421,6 +1568,7 @@ export default function EditProfilePage() {
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'students' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
+            <ProfileVerifBanner status={profileVerifStatus} reason={profileVerifReason} />
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
@@ -1707,6 +1855,38 @@ export default function EditProfilePage() {
               </div>
 
               <div>
+                <label className={labelCls}>Cover Image</label>
+                {newPublication.imageUrl ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={newPublication.imageUrl}
+                      alt="cover"
+                      className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewPublication({ ...newPublication, imageUrl: undefined })}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <UploadButton
+                    endpoint="contentImage"
+                    onClientUploadComplete={(res) => {
+                      if (res?.[0]?.url) setNewPublication({ ...newPublication, imageUrl: res[0].url });
+                    }}
+                    onUploadError={(err) => alert(`Upload error: ${err.message}`)}
+                    appearance={{
+                      button: 'bg-[#2d6a4f] text-white text-sm font-semibold rounded-xl px-4 py-2 hover:bg-[#235a40] transition-colors',
+                      allowedContent: 'text-gray-400 text-xs mt-1',
+                    }}
+                  />
+                )}
+              </div>
+
+              <div>
                 <label className={labelCls}>PDF URL</label>
                 <input
                   type="url"
@@ -1848,6 +2028,38 @@ export default function EditProfilePage() {
                     className={inputCls}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Project Image</label>
+                {newProject.imageUrl ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={newProject.imageUrl}
+                      alt="project"
+                      className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewProject({ ...newProject, imageUrl: undefined })}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <UploadButton
+                    endpoint="contentImage"
+                    onClientUploadComplete={(res) => {
+                      if (res?.[0]?.url) setNewProject({ ...newProject, imageUrl: res[0].url });
+                    }}
+                    onUploadError={(err) => alert(`Upload error: ${err.message}`)}
+                    appearance={{
+                      button: 'bg-[#2d6a4f] text-white text-sm font-semibold rounded-xl px-4 py-2 hover:bg-[#235a40] transition-colors',
+                      allowedContent: 'text-gray-400 text-xs mt-1',
+                    }}
+                  />
+                )}
               </div>
             </div>
 

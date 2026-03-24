@@ -57,17 +57,19 @@ export async function PUT(request: NextRequest) {
     const updated = await prisma.staff.update({
       where: { id: dbUser.staffId },
       data: {
-        designation: designation ?? undefined,
-        departmentId: departmentId ?? undefined,
-        specialization: specialization ?? undefined,
-        experienceYears: experienceYears ?? undefined,
-        qualifications: qualifications ?? undefined,
-        bio: bio ?? undefined,
-        profileImage: profileImage ?? undefined,
+        designation: designation || undefined,
+        ...(departmentId ? { department: { connect: { id: departmentId } } } : {}),
+        specialization: specialization || undefined,
+        experienceYears: experienceYears || undefined,
+        qualifications: qualifications || undefined,
+        bio: bio || undefined,
+        profileImage: profileImage || undefined,
         teachingLoad: teachingLoad ?? undefined,
         studentsSupervised: studentsSupervised ?? undefined,
-        administrativeDuties: administrativeDuties ?? undefined,
+        administrativeDuties: administrativeDuties || undefined,
         studentsSupervisedDetails: studentsSupervisedDetails ?? undefined,
+        profileVerificationStatus: 'PENDING',
+        profileRejectionReason: null,
       },
       include: {
         department: {

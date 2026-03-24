@@ -323,7 +323,7 @@ export default async function UniDashboard() {
               <h3 className="text-base font-bold text-gray-900 mb-1">Students Supervised by Department</h3>
               <p className="text-sm text-gray-400 mb-4">Total students supervised by faculty per department</p>
               <div style={{ height: 320 }}>
-                <BarChart data={studentsByDept} color="#e65100" showValues={false} />
+                <BarChart data={studentsByDept} color="#e65100" showValues={true} />
               </div>
             </div>
           </div>
@@ -347,9 +347,10 @@ export default async function UniDashboard() {
                   data={departmentDistribution}
                   colors={['#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc']}
                   donut={false}
+                  showLegend={false}
                   height={560}
                   center={['50%', '50%']}
-                  radius={'95%'}
+                  radius={'80%'}
                 />
               </div>
               <div className="flex flex-col items-start justify-center flex-1 max-w-xs w-full">
