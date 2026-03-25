@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         year: year ?? existing.year,
         journal: journal?.trim() ?? existing.journal,
         imageUrl: body.imageUrl !== undefined ? (body.imageUrl?.trim() || null) : existing.imageUrl,
-        verificationStatus: 'PENDING',
+        verificationStatus: 'VERIFIED',
         rejectionReason: null,
       },
     });

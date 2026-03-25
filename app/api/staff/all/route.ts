@@ -34,7 +34,7 @@ export async function GET() {
         _count: {
           select: {
             publications: true,
-            projects: true,
+            projects: { where: { verificationStatus: 'VERIFIED' } },
             courses: true,
           },
         },

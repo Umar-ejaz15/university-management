@@ -8,9 +8,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  BookOpen,
   FlaskConical,
-  GraduationCap,
   User,
   RefreshCw,
   ChevronDown,
@@ -18,8 +16,6 @@ import {
   X,
   Shield,
   ShieldCheck,
-  Hash,
-  Users,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,29 +31,16 @@ interface PendingProfile {
   profileVerificationStatus: VerifStatus; profileRejectionReason: string | null;
   updatedAt: string; department: { name: string };
 }
-interface PendingPublication {
-  id: string; title: string; year: number; journal: string | null;
-  authors: string; doi: string | null; abstract: string | null; imageUrl: string | null;
-  verificationStatus: VerifStatus; rejectionReason: string | null;
-  updatedAt: string; staff: StaffRef;
-}
 interface PendingProject {
   id: string; title: string; description: string | null; status: string;
   imageUrl: string | null; verificationStatus: VerifStatus; rejectionReason: string | null;
   updatedAt: string; staff: StaffRef;
 }
-interface PendingCourse {
-  id: string; name: string; credits: number; students: number;
-  verificationStatus: VerifStatus; rejectionReason: string | null;
-  updatedAt: string; staff: StaffRef;
-}
 interface VerifData {
   totalPending: number;
-  counts: { profiles: number; publications: number; projects: number; courses: number };
+  counts: { profiles: number; projects: number };
   pendingProfiles: PendingProfile[];
-  pendingPublications: PendingPublication[];
   pendingProjects: PendingProject[];
-  pendingCourses: PendingCourse[];
 }
 
 // Per-teacher aggregated pending data
@@ -65,9 +48,7 @@ interface TeacherPending {
   id: string; name: string; email: string; department: string;
   profileImage: string | null;
   profile: PendingProfile | null;
-  publications: PendingPublication[];
   projects: PendingProject[];
-  courses: PendingCourse[];
   total: number;
 }
 
@@ -224,9 +205,7 @@ function TeacherCard({
             {teacher.profile && (
               <SectionTag icon={<User className="w-3 h-3" />} count={1} label="Profile" color="bg-purple-50 text-purple-700" />
             )}
-            <SectionTag icon={<BookOpen className="w-3 h-3" />} count={teacher.publications.length} label="Publications" color="bg-blue-50 text-blue-700" />
             <SectionTag icon={<FlaskConical className="w-3 h-3" />} count={teacher.projects.length} label="Projects" color="bg-[#2d6a4f]/10 text-[#2d6a4f]" />
-            <SectionTag icon={<GraduationCap className="w-3 h-3" />} count={teacher.courses.length} label="Courses" color="bg-amber-50 text-amber-700" />
           </div>
         </div>
 
@@ -300,51 +279,6 @@ function TeacherCard({
             </div>
           )}
 
-          {/* ── Publications ── */}
-          {teacher.publications.length > 0 && (
-            <div className="bg-blue-50/10">
-              <div className="flex items-center gap-2 px-6 py-3 bg-blue-100/40 border-b border-blue-100">
-                <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center">
-                  <BookOpen className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-bold text-blue-800 text-sm uppercase tracking-wide">Publications</span>
-                <span className="ml-1 px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full text-xs font-bold">{teacher.publications.length}</span>
-              </div>
-              {teacher.publications.map((pub) => (
-              <div key={pub.id} className="px-6 py-4 border-b border-blue-50/50 last:border-0">
-              <div className="flex items-start gap-3">
-                {pub.imageUrl && (
-                  <img src={pub.imageUrl} alt={pub.title} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-100" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-3 h-3 text-blue-600" />
-                    </div>
-                    <span className="font-semibold text-gray-900 text-sm line-clamp-1">{pub.title}</span>
-                    <Chip status={pub.verificationStatus} />
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-1">
-                    <span>{pub.year}</span>
-                    {pub.journal && <><span>·</span><span>{pub.journal}</span></>}
-                    {pub.doi && <><span>·</span><span className="font-mono">DOI: {pub.doi}</span></>}
-                  </div>
-                  {pub.abstract && (
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-1">{pub.abstract}</p>
-                  )}
-                  <InlineActions
-                    label={pub.title}
-                    onVerify={() => act('publication', pub.id, 'VERIFIED')}
-                    onReject={(r) => act('publication', pub.id, 'REJECTED', r)}
-                    processing={isProc('publication', pub.id)}
-                  />
-                </div>
-              </div>
-              </div>
-              ))}
-            </div>
-          )}
-
           {/* ── Projects ── */}
           {teacher.projects.length > 0 && (
             <div className="bg-[#2d6a4f]/5">
@@ -379,43 +313,6 @@ function TeacherCard({
                     onVerify={() => act('project', proj.id, 'VERIFIED')}
                     onReject={(r) => act('project', proj.id, 'REJECTED', r)}
                     processing={isProc('project', proj.id)}
-                  />
-                </div>
-              </div>
-              </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── Courses ── */}
-          {teacher.courses.length > 0 && (
-            <div className="bg-amber-50/20">
-              <div className="flex items-center gap-2 px-6 py-3 bg-amber-100/40 border-b border-amber-100">
-                <div className="w-6 h-6 rounded-md bg-amber-500 flex items-center justify-center">
-                  <GraduationCap className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-bold text-amber-800 text-sm uppercase tracking-wide">Courses</span>
-                <span className="ml-1 px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full text-xs font-bold">{teacher.courses.length}</span>
-              </div>
-              {teacher.courses.map((course) => (
-              <div key={course.id} className="px-6 py-4 border-b border-amber-50 last:border-0">
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-900 text-sm">{course.name}</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#2d6a4f]/10 text-[#2d6a4f] rounded-full text-xs font-semibold">
-                      <Hash className="w-3 h-3" />{course.credits} cr
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-xs font-semibold">
-                      <Users className="w-3 h-3" />{course.students} students
-                    </span>
-                    <Chip status={course.verificationStatus} />
-                  </div>
-                  <InlineActions
-                    label={course.name}
-                    onVerify={() => act('course', course.id, 'VERIFIED')}
-                    onReject={(r) => act('course', course.id, 'REJECTED', r)}
-                    processing={isProc('course', course.id)}
                   />
                 </div>
               </div>
@@ -473,7 +370,7 @@ export default function AdminVerificationsPage() {
     const map = new Map<string, TeacherPending>();
 
     const ensure = (id: string, name: string, email: string, dept: string, img: string | null) => {
-      if (!map.has(id)) map.set(id, { id, name, email, department: dept, profileImage: img, profile: null, publications: [], projects: [], courses: [], total: 0 });
+      if (!map.has(id)) map.set(id, { id, name, email, department: dept, profileImage: img, profile: null, projects: [], total: 0 });
       return map.get(id)!;
     };
 
@@ -481,22 +378,14 @@ export default function AdminVerificationsPage() {
       const t = ensure(p.id, p.name, p.email, p.department.name, p.profileImage);
       t.profile = p;
     });
-    data.pendingPublications.forEach((pub) => {
-      const t = ensure(pub.staff.id, pub.staff.name, pub.staff.email, pub.staff.department.name, null);
-      t.publications.push(pub);
-    });
     data.pendingProjects.forEach((proj) => {
       const t = ensure(proj.staff.id, proj.staff.name, proj.staff.email, proj.staff.department.name, null);
       t.projects.push(proj);
     });
-    data.pendingCourses.forEach((c) => {
-      const t = ensure(c.staff.id, c.staff.name, c.staff.email, c.staff.department.name, null);
-      t.courses.push(c);
-    });
 
     // compute totals and sort by total desc
     return Array.from(map.values())
-      .map((t) => ({ ...t, total: (t.profile ? 1 : 0) + t.publications.length + t.projects.length + t.courses.length }))
+      .map((t) => ({ ...t, total: (t.profile ? 1 : 0) + t.projects.length }))
       .sort((a, b) => b.total - a.total);
   }, [data]);
 
@@ -555,12 +444,10 @@ export default function AdminVerificationsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Profiles', count: data?.counts.profiles, icon: <User className="w-5 h-5 text-purple-600" />, bg: 'bg-purple-50', txt: 'text-purple-700' },
-            { label: 'Publications', count: data?.counts.publications, icon: <BookOpen className="w-5 h-5 text-blue-600" />, bg: 'bg-blue-50', txt: 'text-blue-700' },
             { label: 'Projects', count: data?.counts.projects, icon: <FlaskConical className="w-5 h-5 text-[#2d6a4f]" />, bg: 'bg-[#2d6a4f]/10', txt: 'text-[#2d6a4f]' },
-            { label: 'Courses', count: data?.counts.courses, icon: <GraduationCap className="w-5 h-5 text-amber-600" />, bg: 'bg-amber-50', txt: 'text-amber-700' },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
               <div className={`w-11 h-11 rounded-xl ${s.bg} flex items-center justify-center shrink-0`}>{s.icon}</div>

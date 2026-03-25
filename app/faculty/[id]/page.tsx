@@ -22,12 +22,10 @@ import {
   Circle,
   ExternalLink,
   CalendarDays,
-  Hash,
   BarChart3,
   ClipboardList,
   UserCircle,
   BookMarked,
-  ShieldCheck,
 } from 'lucide-react';
 
 interface PageProps {
@@ -38,15 +36,30 @@ export default async function FacultyPage({ params }: PageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  const staff = await prisma.staff.findUnique({
-    where: { id },
-    include: {
-      department: { include: { faculty: true } },
-      publications: { orderBy: { year: 'desc' } },
-      projects:     { orderBy: { createdAt: 'desc' } },
-      courses:      { orderBy: { name: 'asc' } },
-    },
-  });
+  const [staff, totalPublications, totalProjects, totalCourses, allProjectStats, allPubYears] = await Promise.all([
+    prisma.staff.findUnique({
+      where: { id },
+      include: {
+        department: { include: { faculty: true } },
+        publications: { orderBy: { year: 'desc' }, take: 4 },
+        projects:     { where: { verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, take: 4 },
+        courses:      { orderBy: { name: 'asc' }, take: 4 },
+      },
+    }),
+    prisma.publication.count({ where: { staffId: id } }),
+    prisma.project.count({ where: { staffId: id, verificationStatus: 'VERIFIED' } }),
+    prisma.course.count({ where: { staffId: id } }),
+    // Lightweight full project list for analytics only
+    prisma.project.findMany({
+      where: { staffId: id, verificationStatus: 'VERIFIED' },
+      select: { status: true, title: true, studentCount: true },
+    }),
+    // All publication years for the trend chart
+    prisma.publication.findMany({
+      where: { staffId: id },
+      select: { year: true },
+    }),
+  ]);
 
   if (!staff) notFound();
 
@@ -64,12 +77,12 @@ export default async function FacultyPage({ params }: PageProps) {
   const years          = Array.from({ length: 6 }, (_, i) => currentYear - 5 + i);
   const pubHistory     = {
     years:  years.map(String),
-    values: years.map((y) => staff.publications.filter((p) => p.year === y).length),
+    values: years.map((y) => allPubYears.filter((p) => p.year === y).length),
   };
 
-  const ongoingProjects   = staff.projects.filter((p) => p.status === 'ONGOING').length;
-  const completedProjects = staff.projects.filter((p) => p.status === 'COMPLETED').length;
-  const pendingProjects   = staff.projects.filter((p) => p.status === 'PENDING').length;
+  const ongoingProjects   = allProjectStats.filter((p) => p.status === 'ONGOING').length;
+  const completedProjects = allProjectStats.filter((p) => p.status === 'COMPLETED').length;
+  const pendingProjects   = allProjectStats.filter((p) => p.status === 'PENDING').length;
 
   const projectsStatusData = [
     { name: 'Ongoing',   value: ongoingProjects   },
@@ -112,8 +125,8 @@ export default async function FacultyPage({ params }: PageProps) {
   }
 
   const projectStudentData = {
-    categories: staff.projects.map((p) => p.title),
-    values:     staff.projects.map((p) => (p as { studentCount?: number | null }).studentCount ?? 0),
+    categories: allProjectStats.map((p) => p.title),
+    values:     allProjectStats.map((p) => p.studentCount ?? 0),
   };
   const showProjectStudentsChart = projectStudentData.values.some((v) => v > 0);
 
@@ -144,15 +157,15 @@ export default async function FacultyPage({ params }: PageProps) {
     return 'bg-amber-50 text-amber-700 border-amber-200';
   };
 
-  const hasCharts = staff.projects.length > 0 || staff.publications.length > 0;
-  const hasTeaching = staff.courses.length > 0 || teachingLoadItems.length > 0;
+  const hasCharts = totalProjects > 0 || totalPublications > 0;
+  const hasTeaching = totalCourses > 0 || teachingLoadItems.length > 0;
 
   // ── Nav items — only show sections that have data ──────────────────────────
   const navItems = [
     { label: 'Profile',       href: '#profile'       },
     ...(staff.bio             ? [{ label: 'About',        href: '#about'         }] : []),
-    ...(staff.publications.length > 0 ? [{ label: 'Publications', href: '#publications' }] : []),
-    ...(staff.projects.length > 0     ? [{ label: 'Projects',     href: '#projects'     }] : []),
+    ...(totalPublications > 0 ? [{ label: 'Publications', href: '#publications' }] : []),
+    ...(totalProjects > 0     ? [{ label: 'Projects',     href: '#projects'     }] : []),
     ...(hasTeaching           ? [{ label: 'Teaching',     href: '#teaching'      }] : []),
     ...(administrativeDuties.length > 0 ? [{ label: 'Admin Duties', href: '#admin-duties' }] : []),
     ...(hasCharts             ? [{ label: 'Analytics',    href: '#analytics'     }] : []),
@@ -233,9 +246,9 @@ export default async function FacultyPage({ params }: PageProps) {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Publications', value: staff.publications.length, icon: BookOpen,       color: 'text-blue-300' },
-                  { label: 'Projects',     value: staff.projects.length,     icon: FlaskConical,   color: 'text-purple-300' },
-                  { label: 'Courses',      value: staff.courses.length,      icon: GraduationCap,  color: 'text-[#c9a961]' },
+                  { label: 'Publications', value: totalPublications, icon: BookOpen,       color: 'text-blue-300' },
+                  { label: 'Projects',     value: totalProjects,     icon: FlaskConical,   color: 'text-purple-300' },
+                  { label: 'Courses',      value: totalCourses,      icon: GraduationCap,  color: 'text-[#c9a961]' },
                   { label: 'Students Supervised', value: studentsSupervised,  icon: Users,          color: 'text-emerald-300' },
                 ].map((stat) => (
                   <div
@@ -402,7 +415,7 @@ export default async function FacultyPage({ params }: PageProps) {
             )}
 
             {/* Publications List */}
-            {staff.publications.length > 0 && (
+            {totalPublications > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="publications">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
@@ -410,7 +423,7 @@ export default async function FacultyPage({ params }: PageProps) {
                     Publications
                   </h2>
                   <span className="text-xs font-semibold rounded-full px-3 py-1 bg-blue-50 text-blue-700">
-                    {staff.publications.length} total
+                    {totalPublications} total
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -425,11 +438,6 @@ export default async function FacultyPage({ params }: PageProps) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-2 mb-1.5">
                           <h4 className="font-semibold text-gray-900 text-sm leading-snug">{pub.title}</h4>
-                          {(pub.verificationStatus as string) === 'VERIFIED' && (
-                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <ShieldCheck className="w-3 h-3" /> Verified
-                            </span>
-                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${pubTypeBadge(pub.publicationType)}`}>
@@ -438,11 +446,6 @@ export default async function FacultyPage({ params }: PageProps) {
                           <span className="text-xs font-semibold text-gray-600">{pub.year}</span>
                           {pub.journal && (
                             <span className="text-xs text-gray-500 italic truncate max-w-50">{pub.journal}</span>
-                          )}
-                          {pub.citationCount > 0 && (
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
-                              <Hash className="w-3 h-3" />{pub.citationCount} citations
-                            </span>
                           )}
                           {pub.doi && (
                             <a
@@ -462,11 +465,22 @@ export default async function FacultyPage({ params }: PageProps) {
                     </div>
                   ))}
                 </div>
+                {totalPublications > 4 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <p className="text-xs text-gray-400">Showing 4 of {totalPublications}</p>
+                    <Link
+                      href={`/faculty/${id}/publications`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm font-semibold hover:bg-blue-100 transition-colors"
+                    >
+                      View all {totalPublications} publications <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Projects List */}
-            {staff.projects.length > 0 && (
+            {totalProjects > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="projects">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
@@ -474,7 +488,7 @@ export default async function FacultyPage({ params }: PageProps) {
                     Research Projects
                   </h2>
                   <span className="text-xs font-semibold rounded-full px-3 py-1 bg-purple-50 text-purple-700">
-                    {staff.projects.length} total · {ongoingProjects} ongoing
+                    {totalProjects} total · {ongoingProjects} ongoing
                   </span>
                 </div>
                 <div className="space-y-4">
@@ -486,11 +500,6 @@ export default async function FacultyPage({ params }: PageProps) {
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex items-start gap-2 min-w-0">
                           <h4 className="font-bold text-gray-900 text-sm leading-snug">{project.title}</h4>
-                          {(project as { verificationStatus?: string }).verificationStatus === 'VERIFIED' && (
-                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <ShieldCheck className="w-3 h-3" /> Verified
-                            </span>
-                          )}
                         </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${projectStatusBadge(project.status)}`}>
                           {project.status}
@@ -523,6 +532,17 @@ export default async function FacultyPage({ params }: PageProps) {
                     </div>
                   ))}
                 </div>
+                {totalProjects > 4 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <p className="text-xs text-gray-400">Showing 4 of {totalProjects}</p>
+                    <Link
+                      href={`/faculty/${id}/projects`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-50 text-purple-700 text-sm font-semibold hover:bg-purple-100 transition-colors"
+                    >
+                      View all {totalProjects} projects <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
@@ -573,6 +593,17 @@ export default async function FacultyPage({ params }: PageProps) {
                         </tfoot>
                       </table>
                     </div>
+                    {totalCourses > 4 && (
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-xs text-gray-400">Showing 4 of {totalCourses} courses</p>
+                        <Link
+                          href={`/faculty/${id}/courses`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2d6a4f]/10 text-[#2d6a4f] text-sm font-semibold hover:bg-[#2d6a4f]/20 transition-colors"
+                        >
+                          View all {totalCourses} courses <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
 

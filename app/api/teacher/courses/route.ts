@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         credits: credits || 3,
         students: students || 0,
         staffId: dbUser.staffId,
-        verificationStatus: 'PENDING',
+        verificationStatus: 'VERIFIED',
         rejectionReason: null,
       },
     });

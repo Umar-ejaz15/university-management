@@ -27,6 +27,7 @@ interface CLSRequest {
   equipmentName: string;
   labName: string;
   purpose: string;
+  studentInfo?: string | null;
   fromDate: string;
   toDate: string;
   status: RequestStatus;
@@ -34,6 +35,21 @@ interface CLSRequest {
   returnedAt?: string;
   rejectionReason?: string;
   adminNotes?: string;
+}
+
+interface AdminEquipmentHistory {
+  staffId: string;
+  teacherName: string;
+  teacherEmail: string;
+  equipmentId: string;
+  equipmentName: string;
+  labName: string;
+  totalRequests: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  returned: number;
+  lastRequestedAt: string;
 }
 
 interface CLSStats {
@@ -270,9 +286,16 @@ function ViewModal({ request, onClose }: { request: CLSRequest; onClose: () => v
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 text-sm">
-            <p className="text-gray-500 text-xs mb-1">Purpose</p>
+            <p className="text-gray-500 text-xs mb-1">Purpose / Why needed</p>
             <p className="text-gray-800 leading-relaxed">{request.purpose}</p>
           </div>
+
+          {request.studentInfo && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm">
+              <p className="text-blue-600 text-xs mb-1 font-medium">Student Information</p>
+              <p className="text-gray-800 leading-relaxed">{request.studentInfo}</p>
+            </div>
+          )}
 
           {request.status === 'REJECTED' && request.rejectionReason && (
             <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm">
@@ -310,6 +333,9 @@ export default function AdminCLSPage() {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<AdminEquipmentHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const [approveModal, setApproveModal] = useState<CLSRequest | null>(null);
   const [rejectModal,  setRejectModal]  = useState<CLSRequest | null>(null);
@@ -343,6 +369,20 @@ export default function AdminCLSPage() {
   }, [activeTab]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/admin/cls/history');
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.history ?? []);
+      }
+    } catch { /* ignore */ }
+    finally { setHistoryLoading(false); }
+  }, []);
+
+  useEffect(() => { if (showHistory) fetchHistory(); }, [showHistory, fetchHistory]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -433,14 +473,27 @@ export default function AdminCLSPage() {
                 <p className="text-sm text-gray-500 mt-0.5">Central Lab System — Equipment Requests</p>
               </div>
             </div>
-            <button
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] disabled:opacity-60 transition-colors"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowHistory((p) => !p)}
+                className={`self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  showHistory
+                    ? 'bg-[#2d6a4f] text-white hover:bg-[#245a42]'
+                    : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <CalendarRange className="w-4 h-4" />
+                Request History
+              </button>
+              <button
+                onClick={() => fetchData(true)}
+                disabled={refreshing}
+                className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] disabled:opacity-60 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -638,6 +691,74 @@ export default function AdminCLSPage() {
             </div>
           )}
         </div>
+
+        {/* ── Request History Panel ─────────────────────────────────────── */}
+        {showHistory && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Equipment Request History</h2>
+                <p className="text-xs text-gray-500 mt-0.5">How many times each teacher requested each piece of equipment</p>
+              </div>
+            </div>
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin" />
+              </div>
+            ) : history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <CalendarRange className="w-10 h-10 mb-3 opacity-40" />
+                <p className="font-medium text-gray-500">No request history yet</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Teacher</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Equipment</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Approved</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Returned</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Rejected</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Requested</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {history.map((h, idx) => (
+                      <tr key={`${h.staffId}-${h.equipmentId}-${idx}`} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-gray-900">{h.teacherName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{h.teacherEmail}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-gray-900">{h.equipmentName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{h.labName}</p>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-block px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold">{h.totalRequests}</span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-semibold">{h.approved}</span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs font-semibold">{h.returned}</span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-block px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs font-semibold">{h.rejected}</span>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-gray-500">
+                          {new Date(h.lastRequestedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* ── Modals ─────────────────────────────────────────────────────────── */}

@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search') || '';
   const department = searchParams.get('department') || 'all';
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { verificationStatus: 'VERIFIED' };
 
   if (status !== 'all') where.status = status;
   if (search) {

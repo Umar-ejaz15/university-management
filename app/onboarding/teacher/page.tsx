@@ -45,14 +45,6 @@ const DESIGNATIONS = [
   'Visiting Faculty',
 ];
 
-const EXPERIENCE_RANGES = [
-  '0-2 years',
-  '3-5 years',
-  '6-10 years',
-  '11-15 years',
-  '16-20 years',
-  '20+ years',
-];
 
 const STEPS = [
   { id: 1, title: 'Welcome', description: 'Getting started with your profile' },
@@ -422,21 +414,13 @@ export default function TeacherOnboarding() {
               How many years of teaching experience do you have?
             </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {EXPERIENCE_RANGES.map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setFormData({ ...formData, experienceYears: range })}
-                  className={`p-4 text-center border-2 rounded-xl transition-all ${
-                    formData.experienceYears === range
-                      ? 'border-[#2d6a4f] bg-[#2d6a4f]/5'
-                      : 'border-gray-200 hover:border-[#2d6a4f]/40 bg-white'
-                  }`}
-                >
-                  <span className="font-semibold text-gray-900 text-sm">{range}</span>
-                </button>
-              ))}
-            </div>
+            <input
+              type="text"
+              value={formData.experienceYears}
+              onChange={(e) => setFormData({ ...formData, experienceYears: e.target.value })}
+              placeholder="e.g., 5 years, 10+ years, 2 years in industry..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all placeholder:text-gray-400"
+            />
 
             {errors.experienceYears && (
               <div className="flex items-center gap-2 mt-3 text-red-600">

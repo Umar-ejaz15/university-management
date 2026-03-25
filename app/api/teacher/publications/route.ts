@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         staffId: dbUser.staffId,
         authors: body.authors?.trim() || 'Unknown',
         imageUrl: body.imageUrl?.trim() || null,
-        verificationStatus: 'PENDING',
+        verificationStatus: 'VERIFIED',
         rejectionReason: null,
       },
     });

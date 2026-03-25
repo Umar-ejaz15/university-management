@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { equipmentId, purpose, requestedFrom, requestedTo } = body;
+    const { equipmentId, purpose, studentInfo, requestedFrom, requestedTo } = body;
 
     // Validate required fields
     if (!equipmentId || typeof equipmentId !== 'string') {
@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
         equipmentId,
         staffId: dbUser.staffId,
         purpose: purpose.trim(),
+        studentInfo: studentInfo?.trim() || null,
         requestedFrom: fromDate,
         requestedTo: toDate,
         status: 'PENDING',

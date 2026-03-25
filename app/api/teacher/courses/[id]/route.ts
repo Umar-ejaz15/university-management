@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         name: name?.trim() ?? existing.name,
         credits: credits ?? existing.credits,
         students: students ?? existing.students,
-        verificationStatus: 'PENDING',
+        verificationStatus: 'VERIFIED',
         rejectionReason: null,
       },
     });

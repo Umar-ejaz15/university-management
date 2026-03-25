@@ -15,7 +15,169 @@ import {
   X,
   Filter,
   BookOpen,
+  Plus,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  FileText,
 } from 'lucide-react';
+
+interface User {
+  userId: string;
+  name: string;
+  role: string;
+}
+
+interface ProjectFormState {
+  title: string;
+  description: string;
+  status: 'ONGOING' | 'COMPLETED' | 'PENDING';
+  startDate: string;
+  endDate: string;
+  studentCount: string;
+  fundingAgency: string;
+  fundingAmount: string;
+}
+
+function SubmitProjectModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [form, setForm] = useState<ProjectFormState>({
+    title: '',
+    description: '',
+    status: 'ONGOING',
+    startDate: '',
+    endDate: '',
+    studentCount: '',
+    fundingAgency: '',
+    fundingAmount: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim()) { setError('Project title is required.'); return; }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/teacher/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          status: form.status,
+          startDate: form.startDate || null,
+          endDate: form.endDate || null,
+          studentCount: form.studentCount ? parseInt(form.studentCount) : 0,
+          fundingAgency: form.fundingAgency.trim() || null,
+          fundingAmount: form.fundingAmount.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Failed to submit request.'); return; }
+      onSuccess();
+      onClose();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls = 'w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] transition';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#2d6a4f]/10 flex items-center justify-center">
+              <FlaskConical className="w-4 h-4 text-[#2d6a4f]" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Submit Project Request</h2>
+              <p className="text-xs text-gray-500">Your request will be reviewed by admin</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Project Title <span className="text-red-500">*</span></label>
+            <input required type="text" placeholder="e.g., AI-Powered Crop Disease Detection" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Description</label>
+            <textarea rows={3} placeholder="Briefly describe the project objectives and methodology..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} resize-none`} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ProjectFormState['status'] })} className={inputCls}>
+              <option value="ONGOING">Ongoing</option>
+              <option value="PENDING">Pending / Proposed</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Start Date</label>
+              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">End Date</label>
+              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inputCls} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Students Involved</label>
+              <input type="number" min="0" placeholder="0" value={form.studentCount} onChange={(e) => setForm({ ...form, studentCount: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Funding Agency</label>
+              <input type="text" placeholder="e.g., HEC, NSF" value={form.fundingAgency} onChange={(e) => setForm({ ...form, fundingAgency: e.target.value })} className={inputCls} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Funding Amount</label>
+            <input type="text" placeholder="e.g., PKR 1,500,000" value={form.fundingAmount} onChange={(e) => setForm({ ...form, fundingAmount: e.target.value })} className={inputCls} />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={submitting} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-lg transition-colors">
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><FileText className="w-4 h-4" />Submit Request</>}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 interface Project {
   id: string;
@@ -168,6 +330,13 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('all');
+  const [user, setUser] = useState<User | null>(null);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d?.user && setUser(d.user)).catch(() => {});
+  }, []);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -239,7 +408,22 @@ export default function ProjectsPage() {
               <p className="text-white/60 text-sm">
                 Explore active research initiatives across all departments
               </p>
+              {submitSuccess && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200 bg-white/10 border border-white/20 rounded-lg px-3 py-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  {submitSuccess}
+                </div>
+              )}
             </div>
+            {user?.role === 'FACULTY' && (
+              <button
+                onClick={() => { setSubmitSuccess(''); setShowSubmitModal(true); }}
+                className="flex items-center gap-2 bg-white text-[#2d6a4f] hover:bg-white/90 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                Submit Project Request
+              </button>
+            )}
             {/* Quick stats */}
             <div className="flex gap-3">
               {[
@@ -371,6 +555,16 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {showSubmitModal && (
+        <SubmitProjectModal
+          onClose={() => setShowSubmitModal(false)}
+          onSuccess={() => {
+            setSubmitSuccess('Project request submitted successfully! It will appear here once approved.');
+            fetchProjects();
+          }}
+        />
+      )}
     </div>
   );
 }

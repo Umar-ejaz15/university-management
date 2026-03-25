@@ -220,6 +220,7 @@ model EquipmentRequest {
   equipmentId   String
   staffId       String
   purpose       String
+  studentInfo   String?       // Who will use the equipment (student names/IDs/details)
   requestedFrom DateTime
   requestedTo   DateTime
   status        RequestStatus @default(PENDING)

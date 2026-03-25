@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
       equipmentName: r.equipment?.name ?? 'Unknown',
       labName: r.equipment?.lab?.name ?? 'Unknown',
       purpose: r.purpose,
+      studentInfo: r.studentInfo ?? null,
       fromDate: r.requestedFrom,
       toDate: r.requestedTo,
       status: r.status,

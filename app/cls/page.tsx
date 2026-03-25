@@ -46,6 +46,7 @@ interface Lab {
 interface EquipmentRequest {
   id: string;
   purpose: string;
+  studentInfo: string | null;
   requestedFrom: string;
   requestedTo: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'RETURNED';
@@ -65,6 +66,18 @@ interface EquipmentRequest {
   };
 }
 
+interface EquipmentHistory {
+  equipmentId: string;
+  equipmentName: string;
+  labName: string;
+  totalRequests: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  returned: number;
+  lastRequestedAt: string;
+}
+
 interface User {
   userId: string;
   email: string;
@@ -77,6 +90,7 @@ interface RequestFormState {
   equipmentName: string;
   labName: string;
   purpose: string;
+  studentInfo: string;
   requestedFrom: string;
   requestedTo: string;
 }
@@ -215,14 +229,28 @@ function RequestModal({ form: initialForm, onClose, onSubmit, submitting }: Requ
           {/* Purpose */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Purpose <span className="text-red-500">*</span>
+              Purpose / Why you need it <span className="text-red-500">*</span>
             </label>
             <textarea
               required
               rows={3}
-              placeholder="Describe the purpose of borrowing this equipment…"
+              placeholder="Describe why you need this equipment and how it will be used…"
               value={form.purpose}
               onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] resize-none transition"
+            />
+          </div>
+
+          {/* Student Info */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              Student Information <span className="text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Who will use the equipment? e.g., Student names, roll numbers, class section…"
+              value={form.studentInfo}
+              onChange={(e) => setForm({ ...form, studentInfo: e.target.value })}
               className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] resize-none transition"
             />
           </div>
@@ -659,6 +687,9 @@ function MyRequestsTab({
               <div>
                 <p className="text-xs text-gray-400 font-medium mb-0.5">Purpose</p>
                 <p className="text-sm text-gray-700 line-clamp-2">{req.purpose}</p>
+                {req.studentInfo && (
+                  <p className="text-xs text-gray-500 mt-1 italic line-clamp-1">Students: {req.studentInfo}</p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-gray-400 font-medium mb-0.5">Requested Period</p>
@@ -724,6 +755,84 @@ function MyRequestsTab({
   );
 }
 
+// ─── History Tab ──────────────────────────────────────────────────────────────
+
+function HistoryTab({ history, loading }: { history: EquipmentHistory[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-48" />
+                <div className="h-3 bg-gray-100 rounded w-32" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+        <Clock className="w-12 h-12 mb-3 opacity-40" />
+        <p className="text-base font-medium text-gray-500">No request history</p>
+        <p className="text-sm mt-1">Your equipment request history will appear here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-500 mb-4">
+        Showing how many times you have requested each piece of equipment.
+      </p>
+      {history.map((item) => (
+        <div key={item.equipmentId} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-[#2d6a4f]/10 flex items-center justify-center shrink-0">
+                <FlaskConical className="w-5 h-5 text-[#2d6a4f]" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-gray-900 text-sm">{item.equipmentName}</p>
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <Building2 className="w-3 h-3 shrink-0" />
+                  {item.labName}
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-2xl font-bold text-[#2d6a4f]">{item.totalRequests}</p>
+              <p className="text-xs text-gray-400">total requests</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {[
+              { label: 'Pending', value: item.pending, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+              { label: 'Approved', value: item.approved, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { label: 'Returned', value: item.returned, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+              { label: 'Rejected', value: item.rejected, color: 'bg-red-50 text-red-700 border-red-200' },
+            ].map((s) => (
+              <div key={s.label} className={`text-center py-2 rounded-lg border text-xs font-semibold ${s.color}`}>
+                <p className="text-lg font-bold">{s.value}</p>
+                {s.label}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            Last requested: {new Date(item.lastRequestedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CLSPage() {
@@ -736,7 +845,10 @@ export default function CLSPage() {
   const [requests, setRequests] = useState<EquipmentRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'requests'>('catalog');
+  const [history, setHistory] = useState<EquipmentHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<'catalog' | 'requests' | 'history'>('catalog');
 
   const [modal, setModal] = useState<RequestFormState | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -804,6 +916,28 @@ export default function CLSPage() {
     }
   }, [activeTab, user, fetchRequests]);
 
+  // ── Fetch history (FACULTY + History tab) ──
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/cls/history');
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.history ?? []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'history' && user?.role === 'FACULTY') {
+      fetchHistory();
+    }
+  }, [activeTab, user, fetchHistory]);
+
   // ── Open request modal ──
   const handleRequestClick = (equipment: Equipment, lab: Lab) => {
     setSubmitError('');
@@ -813,6 +947,7 @@ export default function CLSPage() {
       equipmentName: equipment.name,
       labName: lab.name,
       purpose: '',
+      studentInfo: '',
       requestedFrom: '',
       requestedTo: '',
     });
@@ -829,6 +964,7 @@ export default function CLSPage() {
         body: JSON.stringify({
           equipmentId: form.equipmentId,
           purpose: form.purpose,
+          studentInfo: form.studentInfo || null,
           requestedFrom: form.requestedFrom,
           requestedTo: form.requestedTo,
         }),
@@ -934,22 +1070,40 @@ export default function CLSPage() {
             </button>
 
             {!userLoading && user?.role === 'FACULTY' && (
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`relative px-5 py-3.5 text-sm font-medium transition-colors ${
-                  activeTab === 'requests'
-                    ? 'text-[#2d6a4f]'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  My Requests
-                </span>
-                {activeTab === 'requests' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2d6a4f] rounded-t" />
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className={`relative px-5 py-3.5 text-sm font-medium transition-colors ${
+                    activeTab === 'requests'
+                      ? 'text-[#2d6a4f]'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    My Requests
+                  </span>
+                  {activeTab === 'requests' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2d6a4f] rounded-t" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`relative px-5 py-3.5 text-sm font-medium transition-colors ${
+                    activeTab === 'history'
+                      ? 'text-[#2d6a4f]'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Request History
+                  </span>
+                  {activeTab === 'history' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2d6a4f] rounded-t" />
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -993,6 +1147,10 @@ export default function CLSPage() {
             onMarkReturned={handleMarkReturned}
             processingId={processingId}
           />
+        )}
+
+        {activeTab === 'history' && user?.role === 'FACULTY' && (
+          <HistoryTab history={history} loading={historyLoading} />
         )}
       </main>
 

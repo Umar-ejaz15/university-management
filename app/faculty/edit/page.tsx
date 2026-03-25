@@ -53,9 +53,7 @@ interface Publication {
   doi?: string;
   abstract?: string;
   pdfUrl?: string;
-  impactFactor?: string;
   indexedIn?: string;
-  citationCount?: number;
   imageUrl?: string;
   verificationStatus?: VerifStatus;
   rejectionReason?: string | null;
@@ -150,14 +148,6 @@ const DESIGNATIONS = [
   'Visiting Faculty',
 ];
 
-const EXPERIENCE_OPTIONS = [
-  '0-2 years',
-  '3-5 years',
-  '6-10 years',
-  '11-15 years',
-  '16-20 years',
-  '20+ years',
-];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -393,7 +383,7 @@ export default function EditProfilePage() {
       );
       setEditingPublication(null);
       setEditPublicationData(null);
-      setSuccess('Publication updated — pending re-verification.');
+      setSuccess('Publication updated successfully.');
     } catch (err) {
       setError('Failed to update publication');
     } finally {
@@ -562,7 +552,7 @@ export default function EditProfilePage() {
       setCourses(courses.map((c) => (c.id === editingCourse ? data.course : c)));
       setEditingCourse(null);
       setEditCourseData(null);
-      setSuccess('Course updated — pending re-verification.');
+      setSuccess('Course updated successfully.');
     } catch (err) {
       setError('Failed to update course');
     } finally {
@@ -802,22 +792,13 @@ export default function EditProfilePage() {
                 {/* Experience */}
                 <div className="mb-6">
                   <label className={labelCls}>Years of Experience</label>
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5">
-                    {EXPERIENCE_OPTIONS.map((exp) => (
-                      <button
-                        key={exp}
-                        type="button"
-                        onClick={() => update('experienceYears', exp)}
-                        className={`p-3 border-2 rounded-xl text-sm font-medium transition-all text-center ${
-                          form.experienceYears === exp
-                            ? 'border-[#2d6a4f] bg-[#2d6a4f]/8 text-[#2d6a4f]'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {exp}
-                      </button>
-                    ))}
-                  </div>
+                  <input
+                    type="text"
+                    value={form.experienceYears}
+                    onChange={(e) => update('experienceYears', e.target.value)}
+                    placeholder="e.g., 5 years, 10+ years, 2 years in industry..."
+                    className={inputCls}
+                  />
                 </div>
 
                 {/* Specialization */}
@@ -963,7 +944,6 @@ export default function EditProfilePage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Title</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Year</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Journal / Conference</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell w-28">Status</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Actions</th>
                       </tr>
                     </thead>
@@ -1066,7 +1046,6 @@ export default function EditProfilePage() {
                                     )}
                                   </div>
                                 </div>
-                                <VerifBadge status={pub.verificationStatus} reason={pub.rejectionReason} />
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700">
@@ -1370,9 +1349,6 @@ export default function EditProfilePage() {
                         <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">
                           Students Enrolled
                         </th>
-                        <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-32 hidden lg:table-cell">
-                          Status
-                        </th>
                         <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
                           Actions
                         </th>
@@ -1465,9 +1441,6 @@ export default function EditProfilePage() {
                                   <Hash className="w-3 h-3" />
                                   {course.credits}
                                 </span>
-                              </td>
-                              <td className="px-5 py-4 hidden lg:table-cell">
-                                <VerifBadge status={course.verificationStatus} reason={course.rejectionReason} />
                               </td>
                               <td className="px-5 py-4 text-center">
                                 <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-orange-50 text-orange-700">
@@ -1778,38 +1751,6 @@ export default function EditProfilePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Impact Factor</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., 4.5"
-                    value={newPublication.impactFactor || ''}
-                    onChange={(e) =>
-                      setNewPublication({ ...newPublication, impactFactor: e.target.value })
-                    }
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Citation Count</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    placeholder="e.g., 12"
-                    value={newPublication.citationCount || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      setNewPublication({
-                        ...newPublication,
-                        citationCount: parseInt(val) || 0,
-                      });
-                    }}
-                    className={inputCls}
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className={labelCls}>Indexed In</label>

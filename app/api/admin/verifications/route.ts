@@ -21,7 +21,7 @@ export async function GET() {
   const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const [pendingProfiles, pendingPublications, pendingProjects, pendingCourses] =
+  const [pendingProfiles, pendingProjects] =
     await Promise.all([
       prisma.staff.findMany({
         where: { profileVerificationStatus: 'PENDING', status: 'APPROVED' },
@@ -34,21 +34,7 @@ export async function GET() {
         },
         orderBy: { updatedAt: 'desc' },
       }),
-      prisma.publication.findMany({
-        where: { verificationStatus: 'PENDING' },
-        include: {
-          staff: { select: { id: true, name: true, email: true, department: { select: { name: true } } } },
-        },
-        orderBy: { updatedAt: 'desc' },
-      }),
       prisma.project.findMany({
-        where: { verificationStatus: 'PENDING' },
-        include: {
-          staff: { select: { id: true, name: true, email: true, department: { select: { name: true } } } },
-        },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      prisma.course.findMany({
         where: { verificationStatus: 'PENDING' },
         include: {
           staff: { select: { id: true, name: true, email: true, department: { select: { name: true } } } },
@@ -57,23 +43,15 @@ export async function GET() {
       }),
     ]);
 
-  const totalPending =
-    pendingProfiles.length +
-    pendingPublications.length +
-    pendingProjects.length +
-    pendingCourses.length;
+  const totalPending = pendingProfiles.length + pendingProjects.length;
 
   return NextResponse.json({
     totalPending,
     counts: {
       profiles: pendingProfiles.length,
-      publications: pendingPublications.length,
       projects: pendingProjects.length,
-      courses: pendingCourses.length,
     },
     pendingProfiles,
-    pendingPublications,
     pendingProjects,
-    pendingCourses,
   });
 }
