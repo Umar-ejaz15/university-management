@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
+import { useCurrentUser } from '@/lib/queries/auth';
+import { useClsLabs, useClsRequests, useClsHistory } from '@/lib/queries/cls';
 import {
   FlaskConical,
   Package,
@@ -836,17 +839,10 @@ function HistoryTab({ history, loading }: { history: EquipmentHistory[]; loading
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CLSPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const [labs, setLabs] = useState<Lab[]>([]);
-  const [labsLoading, setLabsLoading] = useState(true);
-
-  const [requests, setRequests] = useState<EquipmentRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(false);
-
-  const [history, setHistory] = useState<EquipmentHistory[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // Shared auth cache — no extra network request, served from TanStack Query
+  const { data: user, isLoading: userLoading } = useCurrentUser();
 
   const [activeTab, setActiveTab] = useState<'catalog' | 'requests' | 'history'>('catalog');
 
@@ -857,86 +853,9 @@ export default function CLSPage() {
 
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // ── Fetch user ──
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch {
-        // unauthenticated
-      } finally {
-        setUserLoading(false);
-      }
-    })();
-  }, []);
-
-  // ── Fetch labs ──
-  const fetchLabs = useCallback(async () => {
-    setLabsLoading(true);
-    try {
-      const res = await fetch('/api/cls/labs');
-      if (res.ok) {
-        const data = await res.json();
-        setLabs(data.labs ?? []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLabsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchLabs();
-  }, [fetchLabs]);
-
-  // ── Fetch requests (FACULTY + My Requests tab) ──
-  const fetchRequests = useCallback(async () => {
-    setRequestsLoading(true);
-    try {
-      const res = await fetch('/api/cls/requests');
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data.requests ?? []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'requests' && user?.role === 'FACULTY') {
-      fetchRequests();
-    }
-  }, [activeTab, user, fetchRequests]);
-
-  // ── Fetch history (FACULTY + History tab) ──
-  const fetchHistory = useCallback(async () => {
-    setHistoryLoading(true);
-    try {
-      const res = await fetch('/api/cls/history');
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data.history ?? []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'history' && user?.role === 'FACULTY') {
-      fetchHistory();
-    }
-  }, [activeTab, user, fetchHistory]);
+  const { data: labs = [], isLoading: labsLoading } = useClsLabs();
+  const { data: requests = [], isLoading: requestsLoading } = useClsRequests();
+  const { data: history = [], isLoading: historyLoading } = useClsHistory();
 
   // ── Open request modal ──
   const handleRequestClick = (equipment: Equipment, lab: Lab) => {
@@ -979,9 +898,7 @@ export default function CLSPage() {
 
       setSubmitSuccess(`Request for "${form.equipmentName}" submitted successfully.`);
       setModal(null);
-
-      // Refresh requests list if visible
-      if (activeTab === 'requests') fetchRequests();
+      queryClient.invalidateQueries({ queryKey: ['cls', 'requests'] });
     } catch {
       setSubmitError('Network error. Please try again.');
     } finally {
@@ -997,7 +914,7 @@ export default function CLSPage() {
         method: 'PUT',
       });
       if (res.ok) {
-        fetchRequests();
+        queryClient.invalidateQueries({ queryKey: ['cls', 'requests'] });
       }
     } catch {
       // ignore

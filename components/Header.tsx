@@ -4,16 +4,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, LogOut, UserCircle, FlaskConical, Settings } from 'lucide-react';
-
-interface User {
-  userId: string;
-  email: string;
-  name: string;
-  role: string;
-  staffId?: string;
-}
+import { useCurrentUser, useLogout } from '@/lib/queries/auth';
 
 interface NavItem {
   label: string;
@@ -45,8 +38,8 @@ const getAdditionalNavItems = (role: string): NavItem[] => {
   return [];
 };
 
-const getNavItems = (user: User | null): NavItem[] =>
-  user ? [...publicNavItems, ...getAdditionalNavItems(user.role)] : publicNavItems;
+const getNavItems = (role: string | undefined): NavItem[] =>
+  role ? [...publicNavItems, ...getAdditionalNavItems(role)] : publicNavItems;
 
 /** Returns true when the nav item should be highlighted for the current path */
 function isActive(pathname: string, item: NavItem): boolean {
@@ -65,51 +58,34 @@ function getInitials(name: string): string {
 }
 
 export default function Header() {
-  const pathname = usePathname();
-  const router   = useRouter();
-
-  const [user,         setUser        ] = useState<User | null>(null);
-  const [loading,      setLoading     ] = useState(true);
+  const pathname       = usePathname();
+  const router         = useRouter();
+  const logout         = useLogout();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const { user: userData } = await res.json();
-        setUser(userData);
+  // Single cached request shared across the entire app —
+  // navigating between pages does NOT trigger a new /api/auth/me call.
+  const { data: user, isLoading: loading } = useCurrentUser();
 
-        if (
-          userData.role === 'FACULTY' &&
-          !userData.staffId &&
-          !pathname.startsWith('/onboarding')
-        ) {
-          router.push('/onboarding/teacher');
-          return;
-        }
-      }
-    } catch {
-      // unauthenticated
-    } finally {
-      setLoading(false);
+  // Redirect faculty users who haven't completed onboarding
+  useEffect(() => {
+    if (
+      user?.role === 'FACULTY' &&
+      !user.staffId &&
+      !pathname.startsWith('/onboarding')
+    ) {
+      router.push('/onboarding/teacher');
     }
-  }, [pathname, router]);
-
-  useEffect(() => { checkAuth(); }, [checkAuth]);
+  }, [user, pathname, router]);
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
-      setDropdownOpen(false);
-      router.push('/');
-      router.refresh();
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
+    setDropdownOpen(false);
+    await logout();
+    router.push('/');
+    router.refresh();
   };
 
-  const navItems = getNavItems(user);
+  const navItems = getNavItems(user?.role);
 
   return (
     <header className="bg-[#2d6a4f] text-white shadow-md">
@@ -166,7 +142,6 @@ export default function Header() {
                   onClick={() => setDropdownOpen((v) => !v)}
                   className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
                 >
-                  {/* Avatar circle */}
                   <span className="w-6 h-6 rounded-full bg-[#c9a961] text-[#1a3d2b] flex items-center justify-center text-xs font-bold shrink-0">
                     {getInitials(user.name)}
                   </span>

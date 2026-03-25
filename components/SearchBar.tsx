@@ -3,15 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, User, Building2, GraduationCap, X } from 'lucide-react';
 import Link from 'next/link';
-
-interface SearchResult {
-  type: 'faculty' | 'department' | 'person';
-  id: string;
-  name: string;
-  subtitle?: string;
-  url: string;
-  facultyId?: string;
-}
+import { useSearch } from '@/lib/queries/search';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -19,8 +11,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ placeholder = 'Search faculties, departments, or people...' }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -36,35 +27,23 @@ export default function SearchBar({ placeholder = 'Search faculties, departments
   }, []);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (query.trim().length < 2) {
-        setResults([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setResults(data.results);
-          setShowResults(true);
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
     }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(timer);
   }, [query]);
+
+  const { data: results = [], isFetching } = useSearch(debouncedQuery.trim().length >= 2 ? debouncedQuery : '');
+
+  useEffect(() => {
+    if (debouncedQuery.trim().length >= 2 && results.length >= 0) {
+      setShowResults(true);
+    }
+  }, [debouncedQuery, results]);
 
   const clearSearch = () => {
     setQuery('');
-    setResults([]);
+    setDebouncedQuery('');
     setShowResults(false);
   };
 
@@ -89,7 +68,7 @@ export default function SearchBar({ placeholder = 'Search faculties, departments
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.trim().length >= 2 && setShowResults(true)}
+          onFocus={() => debouncedQuery.trim().length >= 2 && setShowResults(true)}
           placeholder={placeholder}
           className="w-full pl-14 pr-14 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-transparent transition-all bg-transparent"
         />
@@ -103,9 +82,9 @@ export default function SearchBar({ placeholder = 'Search faculties, departments
         )}
       </div>
 
-      {showResults && (query.trim().length >= 2) && (
+      {showResults && (debouncedQuery.trim().length >= 2) && (
         <div className="absolute z-50 w-full mt-3 bg-white rounded-2xl shadow-lg border border-[#e5e5e5] max-h-96 overflow-y-auto">
-          {loading ? (
+          {isFetching ? (
             <div className="p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2d6a4f] mx-auto mb-3"></div>
               <p className="text-sm text-[#666666]">Searching...</p>
@@ -122,16 +101,16 @@ export default function SearchBar({ placeholder = 'Search faculties, departments
                   }}
                   className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f5f5f5] transition-colors border-b border-[#e5e5e5] last:border-b-0"
                 >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#f5f5f5] flex items-center justify-center">
+                  <div className="shrink-0 w-10 h-10 rounded-xl bg-[#f5f5f5] flex items-center justify-center">
                     {getIcon(result.type)}
                   </div>
-                  <div className="flex-grow min-w-0">
+                  <div className="grow min-w-0">
                     <p className="font-semibold text-[#1a1a1a] truncate text-sm">{result.name}</p>
                     {result.subtitle && (
                       <p className="text-xs text-[#666666] truncate mt-0.5">{result.subtitle}</p>
                     )}
                   </div>
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <span className="text-xs font-medium text-[#999999] uppercase tracking-wider px-2 py-1 bg-[#f5f5f5] rounded-full">
                       {result.type}
                     </span>
@@ -142,7 +121,7 @@ export default function SearchBar({ placeholder = 'Search faculties, departments
           ) : (
             <div className="p-8 text-center">
               <Search className="w-12 h-12 text-[#e5e5e5] mx-auto mb-3" />
-              <p className="text-sm font-medium text-[#666666]">No results found for "{query}"</p>
+              <p className="text-sm font-medium text-[#666666]">No results found for &quot;{debouncedQuery}&quot;</p>
               <p className="text-xs text-[#999999] mt-1">Try searching for faculties, departments, or people</p>
             </div>
           )}

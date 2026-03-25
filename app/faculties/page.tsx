@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
@@ -10,59 +9,16 @@ import {
   Users,
   GraduationCap,
   BookOpen,
-  Briefcase,
   Calendar,
   UserCircle,
   Search,
   ChevronRight,
   BarChart3,
 } from 'lucide-react';
+import { useFacultiesList } from '@/lib/queries/faculties';
 
-interface Faculty {
-  id: string;
-  name: string;
-  shortName: string;
-  dean: string;
-  establishedYear: number;
-  description: string | null;
-  totalDepartments: number;
-  totalStudents: number;
-  totalStaff: number;
-  totalPublications: number;
-  totalProjects: number;
-}
-
-/**
- * Faculties Listing Page
- *
- * Shows all academic faculties in the university
- * Data is fetched from the database via admin panel management
- */
 export default function FacultiesPage() {
-  const [faculties, setFaculties] = useState<Faculty[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    async function fetchFaculties() {
-      try {
-        const res = await fetch('/api/faculties-list');
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to fetch faculties');
-        }
-
-        setFaculties(data.faculties);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchFaculties();
-  }, []);
+  const { data: faculties = [], isLoading, error } = useFacultiesList();
 
   // Calculate total statistics
   const totalStats = {
@@ -71,21 +27,20 @@ export default function FacultiesPage() {
     students: faculties.reduce((sum, f) => sum + f.totalStudents, 0),
     staff: faculties.reduce((sum, f) => sum + f.totalStaff, 0),
     publications: faculties.reduce((sum, f) => sum + f.totalPublications, 0),
-    projects: faculties.reduce((sum, f) => sum + f.totalProjects, 0)
+    projects: faculties.reduce((sum, f) => sum + f.totalProjects, 0),
   };
 
-  // Prepare data for charts
   const facultyStudentsData = {
-    categories: faculties.map(f => f.shortName),
-    values: faculties.map(f => f.totalStudents)
+    categories: faculties.map((f) => f.shortName),
+    values: faculties.map((f) => f.totalStudents),
   };
 
   const facultyStaffData = {
-    categories: faculties.map(f => f.shortName),
-    values: faculties.map(f => f.totalStaff)
+    categories: faculties.map((f) => f.shortName),
+    values: faculties.map((f) => f.totalStaff),
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -117,7 +72,7 @@ export default function FacultiesPage() {
         <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
-            <p className="text-red-800">{error}</p>
+            <p className="text-red-800">{(error as Error).message}</p>
           </div>
         </main>
       </div>
@@ -228,11 +183,9 @@ export default function FacultiesPage() {
                   className="block group"
                 >
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-full flex flex-col overflow-hidden">
-                    {/* Gold top bar */}
                     <div className="h-2 bg-[#c9a961] w-full" />
 
                     <div className="p-6 flex flex-col flex-1">
-                      {/* Faculty Name & Short Name */}
                       <div className="mb-4">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#2d6a4f] transition-colors leading-snug">
@@ -244,7 +197,6 @@ export default function FacultiesPage() {
                         </div>
                       </div>
 
-                      {/* Dean & Year */}
                       <div className="flex flex-col gap-2 mb-4 pb-4 border-b border-gray-100">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <UserCircle className="w-4 h-4 text-[#2d6a4f] shrink-0" />
@@ -256,7 +208,6 @@ export default function FacultiesPage() {
                         </div>
                       </div>
 
-                      {/* Stats Row */}
                       <div className="grid grid-cols-2 gap-2 mb-4">
                         <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-3">
                           <Building2 className="w-4 h-4 text-[#2d6a4f]" />
@@ -292,14 +243,12 @@ export default function FacultiesPage() {
                         </div>
                       </div>
 
-                      {/* Description */}
                       {faculty.description && (
                         <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
                           {faculty.description}
                         </p>
                       )}
 
-                      {/* View Button */}
                       <div className="mt-auto pt-4 border-t border-gray-100">
                         <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#2d6a4f] group-hover:text-[#1e4d38] transition-colors">
                           View Faculty

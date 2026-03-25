@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { use } from 'react';
 import Header from '@/components/Header';
+import { useFacultiesList } from '@/lib/queries/faculties';
 import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
 import {
@@ -20,32 +20,6 @@ import {
   Search,
 } from 'lucide-react';
 
-interface Department {
-  id: string;
-  name: string;
-  head: string;
-  establishedYear: number;
-  totalStudents: number;
-  totalStaff: number;
-  totalPublications: number;
-  totalProjects: number;
-  description: string | null;
-}
-
-interface Faculty {
-  id: string;
-  name: string;
-  shortName: string;
-  dean: string;
-  establishedYear: number;
-  description: string | null;
-  totalDepartments: number;
-  totalStudents: number;
-  totalStaff: number;
-  totalPublications: number;
-  totalProjects: number;
-  departments: Department[];
-}
 
 interface PageProps {
   params: Promise<{
@@ -61,38 +35,17 @@ interface PageProps {
  */
 export default function FacultyDetailPage({ params }: PageProps) {
   const { facultyId } = use(params);
-  const [faculty, setFaculty] = useState<Faculty | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: faculties, isLoading, error: queryError } = useFacultiesList();
 
-  useEffect(() => {
-    async function fetchFaculty() {
-      try {
-        const res = await fetch('/api/faculties-list');
-        const data = await res.json();
+  const faculty = faculties?.find((f) => f.id === facultyId) ?? null;
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to fetch faculty');
-        }
+  if (!isLoading && faculties && !faculty) {
+    notFound();
+  }
 
-        const foundFaculty = data.faculties.find((f: Faculty) => f.id === facultyId);
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'An error occurred') : '';
 
-        if (!foundFaculty) {
-          notFound();
-        }
-
-        setFaculty(foundFaculty);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchFaculty();
-  }, [facultyId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -114,7 +67,7 @@ export default function FacultyDetailPage({ params }: PageProps) {
     );
   }
 
-  if (error || !faculty) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -126,6 +79,8 @@ export default function FacultyDetailPage({ params }: PageProps) {
       </div>
     );
   }
+
+  if (!faculty) return null;
 
   // Prepare chart data
   const departmentStudentsData = {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { notFound } from 'next/navigation';
+import { useDepartmentDetail } from '@/lib/queries/departments';
 import Link from 'next/link';
 import { use } from 'react';
 import Header from '@/components/Header';
@@ -23,56 +24,6 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 
-interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  designation: string;
-  bio: string | null;
-  experienceYears: string | null;
-  profileImage: string | null;
-  qualifications: string | null;
-  specialization: string | null;
-  studentsSupervised: number;
-  totalPublications: number;
-  totalProjects: number;
-  totalCourses: number;
-}
-
-interface Program {
-  id: string;
-  name: string;
-}
-
-interface ResearchArea {
-  id: string;
-  name: string;
-}
-
-interface Faculty {
-  id: string;
-  name: string;
-  shortName: string;
-  dean: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  head: string;
-  establishedYear: number;
-  totalStudents: number;
-  description: string | null;
-  faculty: Faculty;
-  staff: Staff[];
-  programs: Program[];
-  researchAreas: ResearchArea[];
-  totalStaff: number;
-  totalPrograms: number;
-  totalResearchAreas: number;
-  totalPublications: number;
-  totalProjects: number;
-}
 
 interface PageProps {
   params: Promise<{
@@ -94,34 +45,13 @@ type TabId = 'staff' | 'programs' | 'analytics';
  */
 export default function DepartmentPage({ params }: PageProps) {
   const { facultyId, departmentId } = use(params);
-  const [department, setDepartment] = useState<Department | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<TabId>('staff');
 
-  useEffect(() => {
-    async function fetchDepartment() {
-      try {
-        const res = await fetch(`/api/faculties/${facultyId}/departments/${departmentId}`);
-        const data = await res.json();
+  const { data: department, isLoading: loading, error: queryError } = useDepartmentDetail(facultyId, departmentId);
 
-        if (!res.ok) {
-          if (res.status === 404) {
-            notFound();
-          }
-          throw new Error(data.error || 'Failed to fetch department');
-        }
+  if (!loading && !department && !queryError) notFound();
 
-        setDepartment(data.department);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchDepartment();
-  }, [facultyId, departmentId]);
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'An error occurred') : '';
 
   if (loading) {
     return (
@@ -145,18 +75,20 @@ export default function DepartmentPage({ params }: PageProps) {
     );
   }
 
-  if (error || !department) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
-            <p className="text-red-800">{error || 'Department not found'}</p>
+            <p className="text-red-800">{error}</p>
           </div>
         </main>
       </div>
     );
   }
+
+  if (!department) return null;
 
   // Prepare chart data for staff publications and projects
   const staffPublicationsData = {

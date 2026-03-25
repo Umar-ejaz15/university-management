@@ -2,7 +2,8 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useFacultiesList } from '@/lib/queries/faculties';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -20,19 +21,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-interface Faculty {
-  id: string;
-  name: string;
-  shortName: string;
-  dean: string;
-  departments: Department[];
-}
-
-interface Department {
-  id: string;
-  name: string;
-  head: string;
-}
 
 const DESIGNATIONS = [
   'Professor',
@@ -69,9 +57,8 @@ const STEP_ICONS = [
 export default function TeacherOnboarding() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [faculties, setFaculties] = useState<Faculty[]>([]);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { data: faculties = [], isLoading: loading } = useFacultiesList();
 
   const [formData, setFormData] = useState({
     designation: '',
@@ -87,25 +74,6 @@ export default function TeacherOnboarding() {
   // Get departments for selected faculty
   const selectedFaculty = faculties.find(f => f.id === formData.facultyId);
   const availableDepartments = selectedFaculty?.departments || [];
-
-  useEffect(() => {
-    fetchFaculties();
-  }, []);
-
-  const fetchFaculties = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/faculties-list');
-      if (response.ok) {
-        const data = await response.json();
-        setFaculties(data.faculties);
-      }
-    } catch (error) {
-      console.error('Error fetching faculties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};

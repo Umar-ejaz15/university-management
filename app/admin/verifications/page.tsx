@@ -2,7 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import {
   CheckCircle,
@@ -17,6 +18,8 @@ import {
   Shield,
   ShieldCheck,
 } from 'lucide-react';
+import { useAdminVerifications } from '@/lib/queries/admin/verifications';
+import { useVerificationsFilterStore } from '@/lib/store/verificationsFilterStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -330,23 +333,10 @@ function TeacherCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminVerificationsPage() {
-  const [data, setData] = useState<VerifData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isFetching, refetch } = useAdminVerifications();
+  const { search, setSearch } = useVerificationsFilterStore();
   const [processing, setProcessing] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-
-  const fetchData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await fetch('/api/admin/verifications');
-      if (res.ok) setData(await res.json());
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); setRefreshing(false); }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
 
   const act = async (type: string, id: string, action: 'VERIFIED' | 'REJECTED', reason?: string) => {
     setProcessing(`${type}:${id}`);
@@ -356,8 +346,10 @@ export default function AdminVerificationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, reason }),
       });
-      if (res.ok) await fetchData(true);
-      else { const d = await res.json(); alert(d.error || 'Failed'); }
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'verifications'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      } else { const d = await res.json(); alert(d.error || 'Failed'); }
     } catch { alert('Network error'); }
     finally { setProcessing(null); }
   };
@@ -395,7 +387,7 @@ export default function AdminVerificationsPage() {
     return teachers.filter((t) => t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q) || t.department.toLowerCase().includes(q));
   }, [teachers, search]);
 
-  if (loading) return (
+  if (isLoading) return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="flex items-center justify-center h-[60vh]">
@@ -432,10 +424,10 @@ export default function AdminVerificationsPage() {
               </div>
             </div>
             <button
-              onClick={() => fetchData(true)} disabled={refreshing}
+              onClick={() => refetch()} disabled={isFetching}
               className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-60 transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
             </button>
           </div>
         </div>

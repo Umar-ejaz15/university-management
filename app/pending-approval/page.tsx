@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Clock,
@@ -14,72 +14,47 @@ import {
   Loader2,
   LogOut,
 } from 'lucide-react';
-
-interface StaffStatus {
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  rejectionReason?: string;
-  createdAt?: string;
-}
+import { useAuthMe, useLogout } from '@/lib/queries/auth';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function PendingApprovalPage() {
-  const router = useRouter();
-  const [status, setStatus] = useState<StaffStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [checking, setChecking] = useState(false);
+  const router      = useRouter();
+  const queryClient = useQueryClient();
+  const logout      = useLogout();
   const [reapplying, setReapplying] = useState(false);
 
-  const checkStatus = useCallback(async () => {
-    try {
-      setChecking(true);
+  // Shared auth cache — same request used by Header and every other page
+  const { data: authData, isLoading: loading, refetch } = useAuthMe();
+  const user  = authData?.user;
+  const staff = authData?.staff;
 
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
+  // Redirect logic
+  useEffect(() => {
+    if (loading) return;
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'FACULTY') { router.push('/uni-dashboard'); return; }
+    if (staff?.status === 'APPROVED') { router.push('/uni-dashboard'); return; }
+  }, [user, staff, loading, router]);
 
-      if (!response.ok || !data.user) {
-        router.push('/login');
-        return;
-      }
-
-      if (data.user.role !== 'FACULTY') {
-        router.push('/uni-dashboard');
-        return;
-      }
-
-      // If faculty is approved, redirect to dashboard
-      if (data.staff?.status === 'APPROVED') {
-        router.push('/uni-dashboard');
-        return;
-      }
-
-      setStatus({
-        status: data.staff?.status || 'PENDING',
-        rejectionReason: data.staff?.rejectionReason,
-        createdAt: data.staff?.createdAt,
-      });
-    } catch (error) {
-      console.error('Error checking status:', error);
-    } finally {
-      setChecking(false);
-      setLoading(false);
-    }
-  }, [router]);
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [queryClient]);
 
   const handleReapply = async () => {
     try {
       setReapplying(true);
-
-      const response = await fetch('/api/faculty/reapply', {
-        method: 'POST',
-      });
-
+      const response = await fetch('/api/faculty/reapply', { method: 'POST' });
       if (response.ok) {
-        await checkStatus();
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to reapply');
       }
-    } catch (error) {
-      console.error('Error reapplying:', error);
+    } catch {
       alert('Failed to reapply. Please try again.');
     } finally {
       setReapplying(false);
@@ -87,21 +62,16 @@ export default function PendingApprovalPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      router.push('/login');
-    }
+    await logout();
+    router.push('/login');
   };
 
-  useEffect(() => {
-    checkStatus();
-    // Auto-check status every 30 seconds
-    const interval = setInterval(checkStatus, 30000);
-    return () => clearInterval(interval);
-  }, [checkStatus]);
+  const [checking, setChecking] = useState(false);
+  const checkStatus = async () => {
+    setChecking(true);
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    setChecking(false);
+  };
 
   if (loading) {
     return (
@@ -132,7 +102,7 @@ export default function PendingApprovalPage() {
         <div className="w-full max-w-xl">
 
           {/* PENDING STATUS */}
-          {status?.status === 'PENDING' && (
+          {staff?.status === 'PENDING' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               {/* Status banner */}
               <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 flex items-start gap-3">
@@ -179,8 +149,8 @@ export default function PendingApprovalPage() {
                         <div className="pt-1.5">
                           <p className="font-semibold text-gray-900 text-sm">Profile Submitted</p>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            {status.createdAt
-                              ? new Date(status.createdAt).toLocaleDateString('en-US', {
+                            {staff?.createdAt
+                              ? new Date(staff?.createdAt).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric',
@@ -279,7 +249,7 @@ export default function PendingApprovalPage() {
           )}
 
           {/* REJECTED STATUS */}
-          {status?.status === 'REJECTED' && (
+          {staff?.status === 'REJECTED' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               {/* Status banner */}
               <div className="bg-red-50 border-b border-red-100 px-6 py-4 flex items-start gap-3">
@@ -302,7 +272,7 @@ export default function PendingApprovalPage() {
                     <p className="text-sm font-semibold text-red-700">Reason for Rejection</p>
                   </div>
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {status.rejectionReason ||
+                    {staff?.rejectionReason ||
                       'No specific reason provided. Please contact administration for details.'}
                   </p>
                 </div>

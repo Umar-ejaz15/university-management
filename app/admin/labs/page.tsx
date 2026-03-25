@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import Header from '@/components/Header';
 import {
   FlaskConical,
@@ -18,6 +18,8 @@ import {
   Hash,
   Layers,
 } from 'lucide-react';
+import { useAdminLabs } from '@/lib/queries/admin/labs';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -252,9 +254,9 @@ function EquipmentModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminLabsPage() {
-  const [labs, setLabs] = useState<Lab[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: labs = [], isLoading, isFetching } = useAdminLabs();
+
   const [expandedLab, setExpandedLab] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -262,25 +264,6 @@ export default function AdminLabsPage() {
   const [labModal, setLabModal] = useState<{ open: boolean; lab?: Lab }>({ open: false });
   // Equipment modal state
   const [eqModal, setEqModal] = useState<{ open: boolean; labId: string; labName: string; eq?: Equipment } | null>(null);
-
-  const fetchLabs = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await fetch('/api/admin/labs');
-      if (res.ok) {
-        const data = await res.json();
-        setLabs(data.labs);
-      }
-    } catch (err) {
-      console.error('Failed to fetch labs:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchLabs(); }, [fetchLabs]);
 
   // ── Lab CRUD ──────────────────────────────────────────────────────────────
 
@@ -296,7 +279,7 @@ export default function AdminLabsPage() {
       });
       if (res.ok) {
         setLabModal({ open: false });
-        await fetchLabs(true);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
       } else {
         const d = await res.json();
         alert(d.error || 'Failed to save lab');
@@ -309,7 +292,7 @@ export default function AdminLabsPage() {
     if (!confirm(`Delete "${name}" and all its equipment? This cannot be undone.`)) return;
     try {
       const res = await fetch(`/api/admin/labs/${id}`, { method: 'DELETE' });
-      if (res.ok) await fetchLabs(true);
+      if (res.ok) queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
       else alert('Failed to delete lab');
     } catch { alert('Failed to delete lab'); }
   };
@@ -331,7 +314,7 @@ export default function AdminLabsPage() {
       });
       if (res.ok) {
         setEqModal(null);
-        await fetchLabs(true);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
       } else {
         const d = await res.json();
         alert(d.error || 'Failed to save equipment');
@@ -344,7 +327,7 @@ export default function AdminLabsPage() {
     if (!confirm(`Delete "${eqName}"?`)) return;
     try {
       const res = await fetch(`/api/admin/labs/${labId}/equipment/${eqId}`, { method: 'DELETE' });
-      if (res.ok) await fetchLabs(true);
+      if (res.ok) queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
       else alert('Failed to delete equipment');
     } catch { alert('Failed to delete equipment'); }
   };
@@ -374,11 +357,11 @@ export default function AdminLabsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => fetchLabs(true)}
-                disabled={refreshing}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] })}
+                disabled={isFetching}
                 className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-60 transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
               <button
@@ -429,7 +412,7 @@ export default function AdminLabsPage() {
         </div>
 
         {/* Labs list */}
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="w-10 h-10 border-3 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin mx-auto mb-3" />
@@ -479,7 +462,7 @@ export default function AdminLabsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
-                        onClick={() => setLabModal({ open: true, lab })}
+                        onClick={() => setLabModal({ open: true, lab: lab as unknown as Lab })}
                         className="p-2 text-gray-400 hover:text-[#2d6a4f] hover:bg-[#2d6a4f]/8 rounded-lg transition-colors"
                         title="Edit lab"
                       >
@@ -553,7 +536,7 @@ export default function AdminLabsPage() {
                                   <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                       <button
-                                        onClick={() => setEqModal({ open: true, labId: lab.id, labName: lab.name, eq })}
+                                        onClick={() => setEqModal({ open: true, labId: lab.id, labName: lab.name, eq: eq as unknown as Equipment })}
                                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                       >
                                         <Pencil className="w-3.5 h-3.5" />

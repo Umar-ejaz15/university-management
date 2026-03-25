@@ -5,7 +5,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
+import { useTeacherProfile } from '@/lib/queries/teacher/profile';
+import { useDepartments } from '@/lib/queries/departments';
 import {
   User,
   BookOpen,
@@ -153,14 +156,20 @@ const DESIGNATIONS = [
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students'
   >('profile');
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const { data: profileData, isLoading: profileLoading } = useTeacherProfile();
+  const { data: departmentsData = [], isLoading: deptsLoading } = useDepartments();
+
+  const loading = profileLoading || deptsLoading;
+  const departments = departmentsData;
 
   // Profile verification state
   const [profileVerifStatus, setProfileVerifStatus] = useState<VerifStatus>('PENDING');
@@ -221,53 +230,31 @@ export default function EditProfilePage() {
   const [editCourseData, setEditCourseData] = useState<Course | null>(null);
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
 
-  // ─── Data fetching ──────────────────────────────────────────────────────────
+  // ─── Initialize form from TQ cache ─────────────────────────────────────────
 
   useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  const fetchInitialData = async () => {
-    try {
-      setLoading(true);
-      const [profileRes, deptRes] = await Promise.all([
-        fetch('/api/teacher/profile'),
-        fetch('/api/departments'),
-      ]);
-
-      if (profileRes.ok) {
-        const data = await profileRes.json();
-        const s = data.staff;
-        setForm({
-          designation: s.designation || '',
-          departmentId: s.departmentId || '',
-          specialization: s.specialization || '',
-          experienceYears: s.experienceYears || '',
-          qualifications: s.qualifications || '',
-          bio: s.bio || '',
-          profileImage: s.profileImage || '',
-          studentsSupervised: s.studentsSupervised || 0,
-          administrativeDuties: s.administrativeDuties || '',
-        });
-        setStudentsDetails(s.studentsSupervisedDetails || []);
-        setPublications(s.publications || []);
-        setProjects(s.projects || []);
-        setCourses(s.courses || []);
-        setProfileVerifStatus(s.profileVerificationStatus || 'PENDING');
-        setProfileVerifReason(s.profileRejectionReason || null);
-      }
-
-      if (deptRes.ok) {
-        const data = await deptRes.json();
-        setDepartments(data.departments);
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load profile data');
-    } finally {
-      setLoading(false);
+    if (profileData && !initialized) {
+      const s = profileData;
+      setForm({
+        designation: s.designation || '',
+        departmentId: s.departmentId || '',
+        specialization: s.specialization || '',
+        experienceYears: s.experienceYears || '',
+        qualifications: s.qualifications || '',
+        bio: s.bio || '',
+        profileImage: s.profileImage || '',
+        studentsSupervised: s.studentsSupervised || 0,
+        administrativeDuties: '',
+      });
+      setStudentsDetails((s as { studentsSupervisedDetails?: Array<{ name: string; email?: string; departmentId?: string }> }).studentsSupervisedDetails || []);
+      setPublications((s as { publications?: Publication[] }).publications || []);
+      setProjects((s as { projects?: Project[] }).projects || []);
+      setCourses((s as { courses?: Course[] }).courses || []);
+      setProfileVerifStatus((s.profileVerificationStatus as VerifStatus) || 'PENDING');
+      setProfileVerifReason(s.profileRejectionReason || null);
+      setInitialized(true);
     }
-  };
+  }, [profileData, initialized]);
 
   const update = (key: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -314,6 +301,7 @@ export default function EditProfilePage() {
       setProfileVerifStatus('PENDING');
       setProfileVerifReason(null);
       setSuccess('Changes submitted for admin verification.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'profile'] });
     } catch (err) {
       setError('An error occurred while saving');
     } finally {
@@ -348,6 +336,7 @@ export default function EditProfilePage() {
       setNewPublication({ title: '', year: new Date().getFullYear(), journal: '' });
       setShowAddPubModal(false);
       setSuccess('Publication submitted for admin verification.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'publications'] });
     } catch (err) {
       setError('Failed to add publication');
     } finally {
@@ -384,6 +373,7 @@ export default function EditProfilePage() {
       setEditingPublication(null);
       setEditPublicationData(null);
       setSuccess('Publication updated successfully.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'publications'] });
     } catch (err) {
       setError('Failed to update publication');
     } finally {
@@ -397,6 +387,7 @@ export default function EditProfilePage() {
       if (res.ok) {
         setPublications(publications.filter((p) => p.id !== id));
         setSuccess('Publication deleted');
+        queryClient.invalidateQueries({ queryKey: ['teacher', 'publications'] });
       }
     } catch (err) {
       setError('Failed to delete publication');
@@ -430,6 +421,7 @@ export default function EditProfilePage() {
       setNewProject({ title: '', description: '', status: 'ONGOING', startDate: '', endDate: '' });
       setShowAddProjectModal(false);
       setSuccess('Project submitted for admin verification.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'projects'] });
     } catch (err) {
       setError('Failed to add project');
     } finally {
@@ -473,6 +465,7 @@ export default function EditProfilePage() {
       setEditingProject(null);
       setEditProjectData(null);
       setSuccess('Project updated — pending re-verification.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'projects'] });
     } catch (err) {
       setError('Failed to update project');
     } finally {
@@ -486,6 +479,7 @@ export default function EditProfilePage() {
       if (res.ok) {
         setProjects(projects.filter((p) => p.id !== id));
         setSuccess('Project deleted');
+        queryClient.invalidateQueries({ queryKey: ['teacher', 'projects'] });
       }
     } catch (err) {
       setError('Failed to delete project');
@@ -519,6 +513,7 @@ export default function EditProfilePage() {
       setNewCourse({ name: '', credits: 3, students: 0 });
       setShowAddCourseModal(false);
       setSuccess('Course submitted for admin verification.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'courses'] });
     } catch (err) {
       setError('Failed to add course');
     } finally {
@@ -553,6 +548,7 @@ export default function EditProfilePage() {
       setEditingCourse(null);
       setEditCourseData(null);
       setSuccess('Course updated successfully.');
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'courses'] });
     } catch (err) {
       setError('Failed to update course');
     } finally {
@@ -566,6 +562,7 @@ export default function EditProfilePage() {
       if (res.ok) {
         setCourses(courses.filter((c) => c.id !== id));
         setSuccess('Course deleted');
+        queryClient.invalidateQueries({ queryKey: ['teacher', 'courses'] });
       }
     } catch (err) {
       setError('Failed to delete course');

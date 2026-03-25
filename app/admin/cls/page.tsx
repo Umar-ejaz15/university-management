@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useAdminClsRequests,
+  useAdminClsStats,
+  useAdminClsHistory,
+  type CLSRequest,
+} from '@/lib/queries/admin/cls';
+import { useAdminClsFilterStore } from '@/lib/store/adminClsFilterStore';
 import {
   RefreshCw,
   Clock,
@@ -19,47 +27,6 @@ import Header from '@/components/Header';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'RETURNED';
-
-interface CLSRequest {
-  id: string;
-  teacherName: string;
-  teacherEmail: string;
-  equipmentName: string;
-  labName: string;
-  purpose: string;
-  studentInfo?: string | null;
-  fromDate: string;
-  toDate: string;
-  status: RequestStatus;
-  approvedAt?: string;
-  returnedAt?: string;
-  rejectionReason?: string;
-  adminNotes?: string;
-}
-
-interface AdminEquipmentHistory {
-  staffId: string;
-  teacherName: string;
-  teacherEmail: string;
-  equipmentId: string;
-  equipmentName: string;
-  labName: string;
-  totalRequests: number;
-  pending: number;
-  approved: number;
-  rejected: number;
-  returned: number;
-  lastRequestedAt: string;
-}
-
-interface CLSStats {
-  total: number;
-  pending: number;
-  approved: number;
-  returned: number;
-  rejected: number;
-}
-
 type TabValue = 'ALL' | RequestStatus;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -327,64 +294,23 @@ function ViewModal({ request, onClose }: { request: CLSRequest; onClose: () => v
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminCLSPage() {
-  const [requests, setRequests]   = useState<CLSRequest[]>([]);
-  const [stats, setStats]         = useState<CLSStats | null>(null);
-  const [activeTab, setActiveTab] = useState<TabValue>('ALL');
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const { activeTab, setActiveTab } = useAdminClsFilterStore();
+
   const [processing, setProcessing] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<AdminEquipmentHistory[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
 
   const [approveModal, setApproveModal] = useState<CLSRequest | null>(null);
   const [rejectModal,  setRejectModal]  = useState<CLSRequest | null>(null);
   const [viewModal,    setViewModal]    = useState<CLSRequest | null>(null);
 
-  // ── Data fetching ─────────────────────────────────────────────────────────
-
-  const fetchData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const statusParam = activeTab === 'ALL' ? '' : activeTab;
-      const [reqRes, statsRes] = await Promise.all([
-        fetch(`/api/admin/cls/requests?status=${statusParam}&page=1&limit=50`),
-        fetch('/api/admin/cls/stats'),
-      ]);
-      if (reqRes.ok) {
-        const data = await reqRes.json();
-        setRequests(data.requests ?? data ?? []);
-      }
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        setStats(data);
-      }
-    } catch (err) {
-      console.error('CLS fetch error:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeTab]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const fetchHistory = useCallback(async () => {
-    setHistoryLoading(true);
-    try {
-      const res = await fetch('/api/admin/cls/history');
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data.history ?? []);
-      }
-    } catch { /* ignore */ }
-    finally { setHistoryLoading(false); }
-  }, []);
-
-  useEffect(() => { if (showHistory) fetchHistory(); }, [showHistory, fetchHistory]);
+  const { data: requests = [], isLoading: loading, isFetching: refreshing } = useAdminClsRequests(activeTab);
+  const { data: stats } = useAdminClsStats();
+  const { data: history = [], isLoading: historyLoading } = useAdminClsHistory();
 
   // ── Actions ───────────────────────────────────────────────────────────────
+
+  const invalidateCls = () => queryClient.invalidateQueries({ queryKey: ['admin', 'cls'] });
 
   const handleApprove = async (id: string, notes: string) => {
     setProcessing(id);
@@ -396,7 +322,7 @@ export default function AdminCLSPage() {
       });
       if (res.ok) {
         setApproveModal(null);
-        await fetchData(true);
+        invalidateCls();
       } else {
         const d = await res.json();
         alert(d.error ?? 'Failed to approve request');
@@ -415,7 +341,7 @@ export default function AdminCLSPage() {
       });
       if (res.ok) {
         setRejectModal(null);
-        await fetchData(true);
+        invalidateCls();
       } else {
         const d = await res.json();
         alert(d.error ?? 'Failed to reject request');
@@ -434,10 +360,7 @@ export default function AdminCLSPage() {
     { value: 'REJECTED', label: 'Rejected' },
   ];
 
-  const displayedRequests =
-    activeTab === 'ALL'
-      ? requests
-      : requests.filter((r) => r.status === activeTab);
+  const displayedRequests = requests;
 
   // ── Duration cell ─────────────────────────────────────────────────────────
 
@@ -486,7 +409,7 @@ export default function AdminCLSPage() {
                 Request History
               </button>
               <button
-                onClick={() => fetchData(true)}
+                onClick={() => invalidateCls()}
                 disabled={refreshing}
                 className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] disabled:opacity-60 transition-colors"
               >

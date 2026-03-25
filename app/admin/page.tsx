@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   UserCheck,
@@ -21,6 +22,7 @@ import {
   Shield,
 } from 'lucide-react';
 import Header from '@/components/Header';
+import { useAdminStats, usePendingFaculty } from '@/lib/queries/admin/stats';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -123,10 +125,11 @@ function QuickActionCard({ icon, iconBg, title, description, href, badge }: Quic
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [stats, setStats]               = useState<AdminStats | null>(null);
-  const [pendingFaculty, setPendingFaculty] = useState<PendingFaculty[]>([]);
-  const [loading, setLoading]           = useState(true);
+  const { data: stats, isLoading } = useAdminStats();
+  const { data: pendingFaculty = [] } = usePendingFaculty();
+
   const [processing, setProcessing]     = useState<string | null>(null);
   const [now, setNow]                   = useState(new Date());
 
@@ -143,34 +146,6 @@ export default function AdminDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [statsRes, pendingRes, verifRes] = await Promise.all([
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/pending-faculty'),
-        fetch('/api/admin/verifications'),
-      ]);
-      if (!statsRes.ok || !pendingRes.ok) {
-        router.push('/login');
-        return;
-      }
-      const statsData   = await statsRes.json();
-      const pendingData = await pendingRes.json();
-      const verifData   = verifRes.ok ? await verifRes.json() : null;
-      setStats({ ...statsData, pendingVerifications: verifData?.totalPending ?? 0 });
-      setPendingFaculty(pendingData.faculty || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
   // ── Actions ───────────────────────────────────────────────────────────────
 
   const handleApprove = async (facultyId: string) => {
@@ -183,7 +158,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({ notes: '' }),
       });
       if (response.ok) {
-        await fetchData();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'pending-faculty'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to approve faculty');
@@ -211,7 +187,8 @@ export default function AdminDashboard() {
       if (response.ok) {
         setRejectionModal(null);
         setRejectionReason('');
-        await fetchData();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'pending-faculty'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to reject faculty');
@@ -226,7 +203,7 @@ export default function AdminDashboard() {
 
   // ── Loading state ─────────────────────────────────────────────────────────
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -268,7 +245,10 @@ export default function AdminDashboard() {
               </div>
             </div>
             <button
-              onClick={fetchData}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+                queryClient.invalidateQueries({ queryKey: ['admin', 'pending-faculty'] });
+              }}
               className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] transition-colors shadow-sm shadow-[#2d6a4f]/20"
             >
               <RefreshCw className="w-4 h-4" />

@@ -21,8 +21,8 @@ import {
   CheckCircle2,
   FileText,
 } from 'lucide-react';
+import { useProjects, useInvalidateProjects, type Project } from '@/lib/queries/projects';
 import { useCurrentUser } from '@/lib/queries/auth';
-import { useProjects, useInvalidateProjects } from '@/lib/queries/projects';
 import { useProjectsFilterStore } from '@/lib/store/projectsFilterStore';
 
 interface ProjectFormState {
@@ -176,29 +176,6 @@ function SubmitProjectModal({
   );
 }
 
-interface Project {
-  id: string;
-  title: string;
-  description: string | null;
-  status: 'ONGOING' | 'COMPLETED' | 'PENDING';
-  imageUrl: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  studentCount: number;
-  fundingAgency: string | null;
-  fundingAmount: string | null;
-  collaborators: string | null;
-  staff: {
-    id: string;
-    name: string;
-    designation: string;
-    profileImage: string | null;
-    department: { id: string; name: string };
-  };
-}
-
-interface Department { id: string; name: string }
-
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Projects' },
   { value: 'ONGOING', label: 'Ongoing' },
@@ -227,13 +204,10 @@ function getInitials(name: string) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
-// ─── Project Card ─────────────────────────────────────────────────────────────
-
 function ProjectCard({ project }: { project: Project }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2d6a4f]/20 transition-all overflow-hidden group flex flex-col">
-      {/* Image or gradient placeholder */}
-      <div className="relative h-44 overflow-hidden bg-gradient-to-br from-[#1a3d2b] to-[#2d6a4f]">
+      <div className="relative h-44 overflow-hidden bg-linear-to-br from-[#1a3d2b] to-[#2d6a4f]">
         {project.imageUrl ? (
           <img
             src={project.imageUrl}
@@ -245,12 +219,10 @@ function ProjectCard({ project }: { project: Project }) {
             <FlaskConical className="w-16 h-16 text-white/20" />
           </div>
         )}
-        {/* Status badge over image */}
         <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border backdrop-blur-sm bg-white/90 ${statusStyle(project.status)}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${statusDot(project.status)}`} />
           {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
         </span>
-        {/* Funding badge */}
         {project.fundingAgency && (
           <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-[#c9a961]/90 text-[#1a3d2b] backdrop-blur-sm">
             <Briefcase className="w-3 h-3" /> {project.fundingAgency}
@@ -258,7 +230,6 @@ function ProjectCard({ project }: { project: Project }) {
         )}
       </div>
 
-      {/* Body */}
       <div className="flex flex-col flex-1 p-5">
         <h3 className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2 group-hover:text-[#2d6a4f] transition-colors">
           {project.title}
@@ -267,7 +238,6 @@ function ProjectCard({ project }: { project: Project }) {
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-3">{project.description}</p>
         )}
 
-        {/* Meta row */}
         <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-4">
           {(project.startDate || project.endDate) && (
             <span className="flex items-center gap-1">
@@ -290,9 +260,7 @@ function ProjectCard({ project }: { project: Project }) {
           )}
         </div>
 
-        {/* Divider */}
         <div className="mt-auto pt-4 border-t border-gray-50 flex items-center gap-3">
-          {/* Researcher */}
           <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-100">
             {project.staff.profileImage ? (
               <img src={project.staff.profileImage} alt={project.staff.name} className="w-full h-full object-cover" />
@@ -318,20 +286,22 @@ function ProjectCard({ project }: { project: Project }) {
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
-
-export default function ProjectsPage() {
-  const { data: user } = useCurrentUser();
+export default function PublicProjectsPage() {
   const { data, isLoading } = useProjects();
+  const { data: user } = useCurrentUser();
   const invalidateProjects = useInvalidateProjects();
 
-  const projects: Project[] = data?.projects || [];
-  const departments: Department[] = data?.departments || [];
+  const projects    = data?.projects   ?? [];
+  const departments = data?.departments ?? [];
 
-  const { search, setSearch, statusFilter, setStatusFilter, deptFilter, setDeptFilter } = useProjectsFilterStore();
+  // Persistent filter state — survives navigation back to this page
+  const {
+    search, statusFilter, deptFilter,
+    setSearch, setStatusFilter, setDeptFilter, clearFilters,
+  } = useProjectsFilterStore();
 
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [submitSuccess,   setSubmitSuccess  ] = useState('');
 
   const filtered = useMemo(() => {
     let list = projects;
@@ -350,19 +320,13 @@ export default function ProjectsPage() {
   }, [projects, statusFilter, deptFilter, search]);
 
   const counts = useMemo(() => ({
-    all: projects.length,
-    ONGOING: projects.filter((p) => p.status === 'ONGOING').length,
+    all:       projects.length,
+    ONGOING:   projects.filter((p) => p.status === 'ONGOING').length,
     COMPLETED: projects.filter((p) => p.status === 'COMPLETED').length,
-    PENDING: projects.filter((p) => p.status === 'PENDING').length,
+    PENDING:   projects.filter((p) => p.status === 'PENDING').length,
   }), [projects]);
 
   const hasFilters = statusFilter !== 'all' || deptFilter !== 'all' || search.trim() !== '';
-
-  const clearFilters = () => {
-    setSearch('');
-    setStatusFilter('all');
-    setDeptFilter('all');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -385,7 +349,7 @@ export default function ProjectsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Research Projects</h1>
               </div>
               <p className="text-white/60 text-sm">
-                Explore active research initiatives across all departments
+                Explore verified research initiatives across all departments
               </p>
               {submitSuccess && (
                 <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200 bg-white/10 border border-white/20 rounded-lg px-3 py-2">
@@ -406,9 +370,9 @@ export default function ProjectsPage() {
             {/* Quick stats */}
             <div className="flex gap-3">
               {[
-                { label: 'Total', value: counts.all, color: 'bg-white/15' },
-                { label: 'Ongoing', value: counts.ONGOING, color: 'bg-emerald-500/30' },
-                { label: 'Completed', value: counts.COMPLETED, color: 'bg-white/10' },
+                { label: 'Total',     value: counts.all,       color: 'bg-white/15'      },
+                { label: 'Ongoing',   value: counts.ONGOING,   color: 'bg-emerald-500/30' },
+                { label: 'Completed', value: counts.COMPLETED, color: 'bg-white/10'       },
               ].map((s) => (
                 <div key={s.label} className={`${s.color} backdrop-blur-sm rounded-xl px-4 py-3 text-center border border-white/10 min-w-16`}>
                   <p className="text-xl font-bold text-white">{s.value}</p>
@@ -478,7 +442,6 @@ export default function ProjectsPage() {
               </select>
             </div>
 
-            {/* Clear filters */}
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -497,7 +460,6 @@ export default function ProjectsPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -518,7 +480,7 @@ export default function ProjectsPage() {
             </div>
             <p className="text-gray-700 font-semibold text-lg">No projects found</p>
             <p className="text-sm text-gray-400 mt-1">
-              {hasFilters ? 'Try adjusting your filters.' : 'No research projects have been added yet.'}
+              {hasFilters ? 'Try adjusting your filters.' : 'No verified research projects have been published yet.'}
             </p>
             {hasFilters && (
               <button onClick={clearFilters} className="mt-4 px-5 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-semibold hover:bg-[#235a40] transition-colors">
@@ -539,7 +501,7 @@ export default function ProjectsPage() {
         <SubmitProjectModal
           onClose={() => setShowSubmitModal(false)}
           onSuccess={() => {
-            setSubmitSuccess('Project request submitted successfully! It will appear here once approved.');
+            setSubmitSuccess('Project request submitted! It will appear here once verified by admin.');
             invalidateProjects();
           }}
         />

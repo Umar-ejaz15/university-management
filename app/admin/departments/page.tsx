@@ -1,37 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { GraduationCap, Plus, Edit2, Trash2, RefreshCw, BookOpen, Users, Building2, X } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import { useAdminDepartments, type AdminDepartment } from '@/lib/queries/admin/departments';
+import { useAdminFaculties } from '@/lib/queries/admin/faculties';
 
-interface Faculty {
-  id: string;
-  name: string;
-  shortName: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  head: string;
-  establishedYear: number;
-  totalStudents: number;
-  description: string | null;
-  facultyId: string;
-  faculty: Faculty;
-  totalPublications: number;
-  totalProjects: number;
-  _count?: {
-    staff: number;
-    programs: number;
-  };
-}
+type Department = AdminDepartment;
 
 export default function AdminDepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [faculties, setFaculties] = useState<Faculty[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: departments = [], isLoading } = useAdminDepartments();
+  const { data: faculties = [] } = useAdminFaculties();
+
   const [showModal, setShowModal] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [formData, setFormData] = useState({
@@ -44,38 +27,6 @@ export default function AdminDepartmentsPage() {
   });
   const [programs, setPrograms] = useState<string[]>([]);
   const [newProgram, setNewProgram] = useState('');
-
-  useEffect(() => {
-    fetchDepartments();
-    fetchFaculties();
-  }, []);
-
-  const fetchDepartments = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data.departments);
-      }
-    } catch (error) {
-      console.error('Error fetching departments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFaculties = async () => {
-    try {
-      const response = await fetch('/api/admin/faculties');
-      if (response.ok) {
-        const data = await response.json();
-        setFaculties(data.faculties);
-      }
-    } catch (error) {
-      console.error('Error fetching faculties:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +62,7 @@ export default function AdminDepartmentsPage() {
           description: '',
           facultyId: '',
         });
-        await fetchDepartments();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to save department');
@@ -126,8 +77,8 @@ export default function AdminDepartmentsPage() {
     setEditingDepartment(department);
     setFormData({
       name: department.name,
-      head: department.head,
-      establishedYear: department.establishedYear,
+      head: department.head ?? '',
+      establishedYear: department.establishedYear ?? 0,
       totalStudents: department.totalStudents,
       description: department.description || '',
       facultyId: department.facultyId,
@@ -159,7 +110,7 @@ export default function AdminDepartmentsPage() {
       });
 
       if (response.ok) {
-        await fetchDepartments();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to delete department');
@@ -170,7 +121,7 @@ export default function AdminDepartmentsPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -202,7 +153,7 @@ export default function AdminDepartmentsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={fetchDepartments}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] })}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-medium transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />

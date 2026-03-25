@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, Edit2, Trash2, RefreshCw, GraduationCap, Calendar, Users } from 'lucide-react';
 import Header from '@/components/Header';
+import { useAdminFaculties } from '@/lib/queries/admin/faculties';
 
 interface Faculty {
   id: string;
@@ -19,8 +21,9 @@ interface Faculty {
 }
 
 export default function AdminFacultiesPage() {
-  const [faculties, setFaculties] = useState<Faculty[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: faculties = [], isLoading } = useAdminFaculties();
+
   const [showModal, setShowModal] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
   const [formData, setFormData] = useState({
@@ -30,25 +33,6 @@ export default function AdminFacultiesPage() {
     establishedYear: new Date().getFullYear(),
     description: '',
   });
-
-  useEffect(() => {
-    fetchFaculties();
-  }, []);
-
-  const fetchFaculties = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/faculties');
-      if (response.ok) {
-        const data = await response.json();
-        setFaculties(data.faculties);
-      }
-    } catch (error) {
-      console.error('Error fetching faculties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +60,7 @@ export default function AdminFacultiesPage() {
           establishedYear: new Date().getFullYear(),
           description: '',
         });
-        await fetchFaculties();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'faculties'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to save faculty');
@@ -110,7 +94,7 @@ export default function AdminFacultiesPage() {
       });
 
       if (response.ok) {
-        await fetchFaculties();
+        queryClient.invalidateQueries({ queryKey: ['admin', 'faculties'] });
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to delete faculty');
@@ -121,7 +105,7 @@ export default function AdminFacultiesPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -153,7 +137,7 @@ export default function AdminFacultiesPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={fetchFaculties}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'faculties'] })}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-medium transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />

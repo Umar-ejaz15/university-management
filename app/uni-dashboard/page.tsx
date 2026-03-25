@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BarChart from '@/components/charts/BarChart';
@@ -30,25 +32,28 @@ export default async function UniDashboard() {
     projectsByStatus,
   ] = await Promise.all([
     prisma.staff.count({ where: { status: 'APPROVED' } }),
-    prisma.project.count(),
+    prisma.project.count({ where: { verificationStatus: 'VERIFIED' } }),
     prisma.publication.count(),
     prisma.staff.aggregate({ where: { status: 'APPROVED' }, _sum: { studentsSupervised: true } }),
     prisma.department.findMany({
       include: {
         staff: {
           where: { status: 'APPROVED' },
-          include: { publications: true, projects: true },
+          include: {
+            publications: true,
+            projects: { where: { verificationStatus: 'VERIFIED' } },
+          },
         },
       },
       orderBy: { name: 'asc' },
     }),
     prisma.publication.groupBy({ by: ['year'], _count: { id: true }, orderBy: { year: 'asc' } }),
-    prisma.project.groupBy({ by: ['status'], _count: { id: true } }),
+    prisma.project.groupBy({ by: ['status'], where: { verificationStatus: 'VERIFIED' }, _count: { id: true } }),
   ]);
 
   const currentYear = new Date().getFullYear();
   const publicationsThisYear = await prisma.publication.count({ where: { year: currentYear } });
-  const ongoingProjects = await prisma.project.count({ where: { status: 'ONGOING' } });
+  const ongoingProjects = await prisma.project.count({ where: { status: 'ONGOING', verificationStatus: 'VERIFIED' } });
 
   // Defensive helpers for department names
   type DepartmentWithStaff = {
@@ -241,7 +246,7 @@ export default async function UniDashboard() {
                 <PieChartIcon className="w-5 h-5 text-[#2d6a4f]" />
                 <h3 className="text-base font-bold text-gray-900">Project Status Overview</h3>
                 <Link
-                  href="/admin/projects"
+                  href="/uni-dashboard/project"
                   className="ml-auto text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   View All
@@ -359,7 +364,7 @@ export default async function UniDashboard() {
               </div>
             </Link>
 
-            <Link href="/admin/projects" className="group">
+            <Link href="/uni-dashboard/project" className="group">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 flex flex-col gap-3">
                 <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center">
                   <FlaskConical className="w-5 h-5 text-blue-600" />
@@ -372,7 +377,7 @@ export default async function UniDashboard() {
               </div>
             </Link>
 
-            <Link href="/admin/publications" className="group">
+            <Link href="/faculties" className="group">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 flex flex-col gap-3">
                 <div className="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-purple-600" />
@@ -385,7 +390,7 @@ export default async function UniDashboard() {
               </div>
             </Link>
 
-            <Link href="/admin/staff" className="group">
+            <Link href="/staff" className="group">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 flex flex-col gap-3">
                 <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center">
                   <Users className="w-5 h-5 text-amber-600" />
