@@ -8,17 +8,26 @@ export interface ProjectStaff {
   department: { id: string; name: string };
 }
 
+export type ProjectKind = 'RESEARCH' | 'INDUSTRY';
+export type ProjectScope = 'NATIONAL' | 'INTERNATIONAL';
+export type ProjectLifecycle = 'SUBMITTED' | 'ONGOING' | 'COMPLETED' | 'PENDING';
+
 export interface Project {
   id: string;
   title: string;
   description: string | null;
-  status: 'ONGOING' | 'COMPLETED' | 'PENDING';
+  status: ProjectLifecycle;
+  projectKind: ProjectKind;
+  scope: ProjectScope;
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
   imageUrl: string | null;
   startDate: string | null;
   endDate: string | null;
   studentCount: number;
   fundingAgency: string | null;
   fundingAmount: string | null;
+  budgetAmount: string | null;
+  currency: string | null;
   collaborators: string | null;
   staff: ProjectStaff;
 }

@@ -41,7 +41,7 @@ export default async function AllCoursesPage({ params }: PageProps) {
 
       {/* Page header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="px-6 py-6">
           <Link
             href={`/faculty/${id}`}
             className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors"
@@ -79,7 +79,7 @@ export default async function AllCoursesPage({ params }: PageProps) {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-6 py-8">
         {staff.courses.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
             <GraduationCap className="w-10 h-10 text-gray-300 mb-3" />

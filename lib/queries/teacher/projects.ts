@@ -7,12 +7,16 @@ export interface TeacherProject {
   objectives: string | null;
   methodology: string | null;
   outcomes: string | null;
-  status: 'ONGOING' | 'COMPLETED' | 'PENDING';
+  status: 'SUBMITTED' | 'ONGOING' | 'COMPLETED' | 'PENDING';
+  projectKind: 'RESEARCH' | 'INDUSTRY';
+  scope: 'NATIONAL' | 'INTERNATIONAL';
   startDate: string | null;
   endDate: string | null;
   studentCount: number;
   fundingAgency: string | null;
   fundingAmount: string | null;
+  budgetAmount: string | null;
+  currency: string | null;
   collaborators: string | null;
   projectUrl: string | null;
   imageUrl: string | null;

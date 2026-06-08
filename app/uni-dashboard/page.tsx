@@ -22,64 +22,132 @@ import {
 
 export default async function UniDashboard() {
   // Fetch aggregated data
+  const currentYear = new Date().getFullYear();
+
+  // Run all aggregations in parallel — no large relation loads
   const [
     totalFaculty,
     totalProjects,
     totalPublications,
     totalStudentsSupervised,
-    departments,
+    publicationsThisYear,
+    ongoingProjects,
     publicationsByYear,
     projectsByStatus,
+    fundingGroups,
+    departmentsRaw,
+    staffCountByDept,
+    pubCountByDept,
+    projCountByDept,
+    studentsByDeptRaw,
   ] = await Promise.all([
     prisma.staff.count({ where: { status: 'APPROVED' } }),
-    prisma.project.count({ where: { verificationStatus: 'VERIFIED' } }),
+    prisma.project.count(),
     prisma.publication.count(),
     prisma.staff.aggregate({ where: { status: 'APPROVED' }, _sum: { studentsSupervised: true } }),
+    prisma.publication.count({ where: { year: currentYear } }),
+    prisma.project.count({ where: { status: 'ONGOING' } }),
+    prisma.publication.groupBy({ by: ['year'], _count: { id: true }, orderBy: { year: 'asc' } }),
+    prisma.project.groupBy({ by: ['status'], _count: { id: true } }),
+    prisma.project.groupBy({
+      by: ['projectKind', 'status'],
+      where: { verificationStatus: 'VERIFIED' },
+      _count: { id: true },
+      _sum: { budgetAmount: true },
+    }),
+    // Only fetch department names — no nested relations
     prisma.department.findMany({
-      include: {
-        staff: {
-          where: { status: 'APPROVED' },
-          include: {
-            publications: true,
-            projects: { where: { verificationStatus: 'VERIFIED' } },
-          },
-        },
-      },
+      select: { id: true, name: true },
       orderBy: { name: 'asc' },
     }),
-    prisma.publication.groupBy({ by: ['year'], _count: { id: true }, orderBy: { year: 'asc' } }),
-    prisma.project.groupBy({ by: ['status'], where: { verificationStatus: 'VERIFIED' }, _count: { id: true } }),
+    // Staff count per department (approved only)
+    prisma.staff.groupBy({
+      by: ['departmentId'],
+      where: { status: 'APPROVED' },
+      _count: { id: true },
+    }),
+    // Publication count per department (via staff join — aggregate in JS)
+    prisma.publication.groupBy({
+      by: ['staffId'],
+      _count: { id: true },
+    }),
+    // Project count per department (via staff join — aggregate in JS)
+    prisma.project.groupBy({
+      by: ['staffId'],
+      _count: { id: true },
+    }),
+    // Students supervised per department
+    prisma.staff.groupBy({
+      by: ['departmentId'],
+      where: { status: 'APPROVED' },
+      _sum: { studentsSupervised: true },
+    }),
   ]);
 
-  const currentYear = new Date().getFullYear();
-  const publicationsThisYear = await prisma.publication.count({ where: { year: currentYear } });
-  const ongoingProjects = await prisma.project.count({ where: { status: 'ONGOING', verificationStatus: 'VERIFIED' } });
+  // Build staffId → departmentId map for pub/proj aggregation
+  const staffDeptMap = await prisma.staff.findMany({
+    where: { status: 'APPROVED' },
+    select: { id: true, departmentId: true },
+  });
+  const staffToDept: Record<string, string> = {};
+  for (const s of staffDeptMap) staffToDept[s.id] = s.departmentId;
 
-  // Defensive helpers for department names
-  type DepartmentWithStaff = {
-    name: string;
-    staff: Array<{
-      publications?: Array<unknown>;
-      projects?: Array<unknown>;
-      studentsSupervised?: number | null;
-    }>;
+  // Aggregate pubs per dept
+  const pubsByDept: Record<string, number> = {};
+  for (const p of pubCountByDept) {
+    const deptId = staffToDept[p.staffId];
+    if (deptId) pubsByDept[deptId] = (pubsByDept[deptId] ?? 0) + p._count.id;
+  }
+  // Aggregate verified projects per dept
+  const projsByDept: Record<string, number> = {};
+  for (const p of projCountByDept) {
+    const deptId = staffToDept[p.staffId];
+    if (deptId) projsByDept[deptId] = (projsByDept[deptId] ?? 0) + p._count.id;
+  }
+  // Staff count per dept
+  const staffCountMap: Record<string, number> = {};
+  for (const s of staffCountByDept) staffCountMap[s.departmentId] = s._count.id;
+  // Students per dept
+  const studentsMap: Record<string, number> = {};
+  for (const s of studentsByDeptRaw) studentsMap[s.departmentId] = Number(s._sum.studentsSupervised ?? 0);
+
+  // Build per-department chart data
+  const departments = departmentsRaw;
+
+  type KindSummary = { ongoing: number; completed: number; total: number; budget: number };
+  const makeKind = (): KindSummary => ({ ongoing: 0, completed: 0, total: 0, budget: 0 });
+  const funding: Record<'RESEARCH' | 'INDUSTRY', KindSummary> = {
+    RESEARCH: makeKind(),
+    INDUSTRY: makeKind(),
   };
+  for (const g of fundingGroups) {
+    const bucket = funding[g.projectKind as 'RESEARCH' | 'INDUSTRY'];
+    if (!bucket) continue;
+    bucket.total += g._count.id;
+    if (g.status === 'ONGOING') bucket.ongoing += g._count.id;
+    if (g.status === 'COMPLETED') bucket.completed += g._count.id;
+    bucket.budget += Number(g._sum.budgetAmount ?? 0);
+  }
+  const fmtPKR = (n: number) =>
+    n >= 1_000_000 ? `PKR ${(n / 1_000_000).toFixed(2)}M` : `PKR ${n.toLocaleString()}`;
 
-  const safeDeptName = (d: DepartmentWithStaff) => ((d?.name ?? '') as string).replace('Department of ', '') || 'Unknown';
+  type DeptRow = { id: string; name: string };
+
+  const safeDeptName = (d: DeptRow) => (d?.name ?? '').replace('Department of ', '') || 'Unknown';
 
   const staffByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: DepartmentWithStaff) => d.staff.length),
+    values: departments.map((d: DeptRow) => staffCountMap[d.id] ?? 0),
   };
 
   const projectsByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.projects?.length || 0), 0)),
+    values: departments.map((d: DeptRow) => projsByDept[d.id] ?? 0),
   };
 
   const studentsByDept = {
     categories: departments.map(safeDeptName),
-    values: departments.map((d: DepartmentWithStaff) => d.staff.reduce((sum: number, s) => sum + (s.studentsSupervised ?? 0), 0)),
+    values: departments.map((d: DeptRow) => studentsMap[d.id] ?? 0),
   };
 
   type PublicationByYear = { year: number; _count: { id: number } };
@@ -94,11 +162,13 @@ export default async function UniDashboard() {
     }),
   };
 
+  const submittedCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'SUBMITTED')?._count.id || 0;
   const ongoingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'ONGOING')?._count.id || 0;
   const completedCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'COMPLETED')?._count.id || 0;
   const pendingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'PENDING')?._count.id || 0;
 
   const projectsStatusPieData = [
+    { name: 'Submitted', value: submittedCount },
     { name: 'Ongoing', value: ongoingCount },
     { name: 'Completed', value: completedCount },
     { name: 'Pending', value: pendingCount },
@@ -107,7 +177,7 @@ export default async function UniDashboard() {
   type DeptDistribution = { name: string; value: number };
 
   const departmentDistribution = departments
-    .map((d: DepartmentWithStaff) => ({ name: safeDeptName(d), value: d.staff.length }))
+    .map((d: DeptRow) => ({ name: safeDeptName(d), value: staffCountMap[d.id] ?? 0 }))
     .sort((a: DeptDistribution, b: DeptDistribution) => b.value - a.value);
 
   return (
@@ -116,7 +186,7 @@ export default async function UniDashboard() {
 
       {/* Hero Banner */}
       <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="px-6 py-10">
           <div className="flex flex-col gap-6">
             {/* University Branding */}
             <div>
@@ -141,7 +211,7 @@ export default async function UniDashboard() {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-6 py-8">
 
         {/* Key Metrics Strip */}
         <section className="mb-10">
@@ -168,7 +238,7 @@ export default async function UniDashboard() {
               </div>
             </div>
 
-            {/* Research Projects */}
+            {/* All Projects */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5 border-l-4 border-l-blue-500">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 p-3 rounded-xl flex-shrink-0">
@@ -176,7 +246,7 @@ export default async function UniDashboard() {
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-gray-900 leading-none">{totalProjects}</p>
-                  <p className="text-sm text-gray-500 mt-1">Research Projects</p>
+                  <p className="text-sm text-gray-500 mt-1">Projects</p>
                   <p className="text-xs text-blue-500 mt-0.5">Ongoing: {ongoingProjects}</p>
                 </div>
                 <span className="ml-auto text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Total</span>
@@ -217,6 +287,91 @@ export default async function UniDashboard() {
           </div>
         </section>
 
+        {/* Projects & Funding — Combined */}
+        <section className="mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-1 h-6 bg-[#2d6a4f] rounded-full block" />
+            <h2 className="text-xl font-bold text-gray-900">Projects &amp; Funding</h2>
+            <span className="text-sm text-gray-400 ml-auto">Budget data from approved projects</span>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 border-l-4 border-l-[#2d6a4f]">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-[#e8f5e9] p-2.5 rounded-xl">
+                <BarChart3 className="w-5 h-5 text-[#2d6a4f]" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900">All Projects</h3>
+              <span className="ml-auto text-xs font-semibold text-[#2d6a4f] bg-[#e8f5e9] px-3 py-1 rounded-full">
+                {funding.RESEARCH.total + funding.INDUSTRY.total} approved
+              </span>
+            </div>
+
+            {/* Combined totals row */}
+            <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-100">
+              <div className="text-center">
+                <p className="text-3xl font-extrabold text-emerald-600 leading-none">{funding.RESEARCH.ongoing + funding.INDUSTRY.ongoing}</p>
+                <p className="text-xs text-gray-500 mt-1">Ongoing</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-extrabold text-gray-700 leading-none">{funding.RESEARCH.completed + funding.INDUSTRY.completed}</p>
+                <p className="text-xs text-gray-500 mt-1">Completed</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-extrabold text-[#c9a961] leading-none">{fmtPKR(funding.RESEARCH.budget + funding.INDUSTRY.budget)}</p>
+                <p className="text-xs text-gray-500 mt-1">Total Budget</p>
+              </div>
+            </div>
+
+            {/* Research vs Industry breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-blue-50/60 rounded-xl p-4 border border-blue-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Briefcase className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-blue-700">Research</span>
+                  <span className="ml-auto text-xs font-bold text-blue-600">{funding.RESEARCH.total} total</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-lg font-extrabold text-emerald-600">{funding.RESEARCH.ongoing}</p>
+                    <p className="text-xs text-gray-500">Ongoing</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-extrabold text-gray-700">{funding.RESEARCH.completed}</p>
+                    <p className="text-xs text-gray-500">Done</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-gray-800">{fmtPKR(funding.RESEARCH.budget)}</p>
+                    <p className="text-xs text-gray-500">Budget</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/60 rounded-xl p-4 border border-amber-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="w-4 h-4 text-amber-600" />
+                  <span className="text-sm font-semibold text-amber-700">Industry</span>
+                  <span className="ml-auto text-xs font-bold text-amber-600">{funding.INDUSTRY.total} total</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-lg font-extrabold text-emerald-600">{funding.INDUSTRY.ongoing}</p>
+                    <p className="text-xs text-gray-500">Ongoing</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-extrabold text-gray-700">{funding.INDUSTRY.completed}</p>
+                    <p className="text-xs text-gray-500">Done</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-gray-800">{fmtPKR(funding.INDUSTRY.budget)}</p>
+                    <p className="text-xs text-gray-500">Budget</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Research Analytics */}
         <section className="mb-10">
           <div className="flex items-center gap-3 mb-6">
@@ -252,9 +407,9 @@ export default async function UniDashboard() {
                   View All
                 </Link>
               </div>
-              <p className="text-sm text-gray-400 mb-4">Ongoing, completed, and pending project breakdown</p>
+              <p className="text-sm text-gray-400 mb-4">Full breakdown across all project lifecycle stages</p>
               <div className="flex items-center justify-center min-h-[280px]">
-                <PieChart data={projectsStatusPieData} colors={['#2d6a4f', '#1976d2', '#e65100']} donut={true} height={300} />
+                <PieChart data={projectsStatusPieData} colors={['#c9a961', '#2d6a4f', '#1976d2', '#e65100']} donut={true} height={300} />
               </div>
             </div>
 
@@ -267,7 +422,7 @@ export default async function UniDashboard() {
               <div className="flex items-center justify-center min-h-[280px]">
                 <BarChart data={{
                   categories: departments.map(safeDeptName),
-                  values: departments.map((d: any) => d.staff.reduce((sum: number, s: any) => sum + (s.publications?.length || 0), 0)),
+                  values: departments.map((d: DeptRow) => pubsByDept[d.id] ?? 0),
                 }} color="#7b1fa2" showValues={true} />
               </div>
             </div>

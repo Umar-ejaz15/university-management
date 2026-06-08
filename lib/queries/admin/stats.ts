@@ -1,11 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 
+export interface KindBreakdown {
+  ongoing: number;
+  completed: number;
+  total: number;
+  budget: number;
+}
+
 export interface AdminStats {
   totalFaculty: number;
   pendingCount: number;
   rejectedCount: number;
   totalDepartments: number;
   pendingVerifications?: number;
+  pendingProjectCount?: number;
+  pendingClsCount?: number;
+  projectBreakdown?: { RESEARCH: KindBreakdown; INDUSTRY: KindBreakdown };
 }
 
 export interface PendingFaculty {

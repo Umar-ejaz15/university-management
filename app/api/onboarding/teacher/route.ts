@@ -70,6 +70,17 @@ export async function POST(request: NextRequest) {
       data: { staffId: staff.id },
     });
 
+    // Notify admin of new faculty application (non-critical)
+    prisma.notification.create({
+      data: {
+        type: 'FACULTY_APPLIED',
+        title: 'New Faculty Application',
+        message: `${user.name} applied as ${designation} in the ${department.name} department and is awaiting approval`,
+        link: '/admin/applications',
+        metadata: { staffId: staff.id, designation, departmentId },
+      },
+    }).catch(() => {});
+
     return NextResponse.json(
       {
         message: 'Onboarding completed successfully',

@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, status, startDate, endDate, studentCount } = body;
+    const { title, description, startDate, endDate, studentCount } = body;
 
     // Verify ownership
     const existing = await prisma.project.findUnique({
@@ -78,11 +78,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: {
         title: title?.trim() ?? existing.title,
         description: description?.trim() ?? existing.description,
-        status: status ?? existing.status,
+        objectives: body.objectives !== undefined ? (body.objectives?.trim() || null) : existing.objectives,
+        methodology: body.methodology !== undefined ? (body.methodology?.trim() || null) : existing.methodology,
+        outcomes: body.outcomes !== undefined ? (body.outcomes?.trim() || null) : existing.outcomes,
+        collaborators: body.collaborators !== undefined ? (body.collaborators?.trim() || null) : existing.collaborators,
+        projectUrl: body.projectUrl !== undefined ? (body.projectUrl?.trim() || null) : existing.projectUrl,
+        projectKind: body.projectKind === 'INDUSTRY' || body.projectKind === 'RESEARCH' ? body.projectKind : existing.projectKind,
+        scope: body.scope === 'INTERNATIONAL' || body.scope === 'NATIONAL' ? body.scope : existing.scope,
         startDate: startDate ? new Date(startDate) : existing.startDate,
         endDate: endDate ? new Date(endDate) : existing.endDate,
         studentCount: typeof studentCount === 'number' ? studentCount : existing.studentCount,
         imageUrl: body.imageUrl !== undefined ? (body.imageUrl?.trim() || null) : existing.imageUrl,
+        // Editing a project sends it back through ORIC review.
+        // Budget/funding fields are intentionally NOT writable here (admin-only).
+        status: 'SUBMITTED',
         verificationStatus: 'PENDING',
         rejectionReason: null,
       },

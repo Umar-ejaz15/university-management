@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, Edit2, Trash2, RefreshCw, GraduationCap, Calendar, Users } from 'lucide-react';
-import Header from '@/components/Header';
 import { useAdminFaculties } from '@/lib/queries/admin/faculties';
 
 interface Faculty {
@@ -117,12 +116,11 @@ export default function AdminFacultiesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen">
 
       {/* Hero Header */}
       <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="px-6 py-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -166,7 +164,7 @@ export default function AdminFacultiesPage() {
       </div>
 
       {/* Stats Strip */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-5">
+      <div className="px-6 -mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center gap-4">
             <div className="w-11 h-11 bg-[#2d6a4f]/10 rounded-xl flex items-center justify-center shrink-0">
@@ -203,7 +201,7 @@ export default function AdminFacultiesPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-6 py-8">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Table Header */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">

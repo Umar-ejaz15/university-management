@@ -45,7 +45,7 @@ export default function FacultiesPage() {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="px-6 py-12">
             <div className="flex items-center gap-3 mb-3">
               <span className="w-2 h-7 bg-[#c9a961] rounded-full block" />
               <span className="text-[#c9a961] text-sm font-semibold tracking-widest uppercase">MNSUAM</span>
@@ -54,7 +54,7 @@ export default function FacultiesPage() {
             <p className="text-green-200 text-base">Excellence in Agriculture &amp; Sciences</p>
           </div>
         </section>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <main className="px-6 py-12">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6a4f] mx-auto mb-4"></div>
@@ -70,7 +70,7 @@ export default function FacultiesPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <main className="px-6 py-10">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
             <p className="text-red-800">{(error as Error).message}</p>
           </div>
@@ -85,7 +85,7 @@ export default function FacultiesPage() {
 
       {/* Hero Banner */}
       <section className="bg-gradient-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="px-6 py-12">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
@@ -117,7 +117,7 @@ export default function FacultiesPage() {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-6 py-8">
 
         {/* Stats Row */}
         <section className="mb-10">

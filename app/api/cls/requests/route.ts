@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
     // Verify the equipment exists
     const equipment = await prisma.equipment.findUnique({
       where: { id: equipmentId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, lab: { select: { name: true } } },
     });
 
     if (!equipment) {
@@ -209,6 +209,21 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Notify admin of new CLS request (non-critical)
+    const staff = await prisma.staff.findUnique({
+      where: { id: dbUser.staffId },
+      select: { name: true },
+    });
+    prisma.notification.create({
+      data: {
+        type: 'CLS_REQUEST',
+        title: 'New Equipment Request',
+        message: `${staff?.name ?? 'A teacher'} requested "${equipment.name}" from ${equipment.lab?.name ?? 'a lab'} — awaiting approval`,
+        link: '/admin/cls',
+        metadata: { requestId: equipmentRequest.id, equipmentId, staffId: dbUser.staffId },
+      },
+    }).catch(() => {});
 
     return NextResponse.json(
       { message: 'Equipment request submitted successfully', request: equipmentRequest },

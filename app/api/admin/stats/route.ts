@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
       totalPublications,
       totalProjects,
       recentActivityCount,
+      pendingProjectCount,
+      pendingClsCount,
+      projectGroups,
     ] = await Promise.all([
       // Total approved faculty
       prisma.staff.count({
@@ -81,7 +84,41 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
+
+      // Projects awaiting ORIC approval
+      prisma.project.count({ where: { verificationStatus: 'PENDING' } }),
+
+      // CLS equipment requests awaiting approval
+      prisma.equipmentRequest.count({ where: { status: 'PENDING' } }),
+
+      // Approved projects grouped by kind + status, with budget totals
+      prisma.project.groupBy({
+        by: ['projectKind', 'status'],
+        where: { verificationStatus: 'VERIFIED' },
+        _count: { id: true },
+        _sum: { budgetAmount: true },
+      }),
     ]);
+
+    // Shape the project breakdown into Research/Industry × Ongoing/Completed
+    const emptyKind = () => ({
+      ongoing: 0,
+      completed: 0,
+      total: 0,
+      budget: 0,
+    });
+    const breakdown = { RESEARCH: emptyKind(), INDUSTRY: emptyKind() };
+
+    for (const g of projectGroups) {
+      const kind = g.projectKind as 'RESEARCH' | 'INDUSTRY';
+      const bucket = breakdown[kind];
+      if (!bucket) continue;
+      const count = g._count.id;
+      bucket.total += count;
+      if (g.status === 'ONGOING') bucket.ongoing += count;
+      if (g.status === 'COMPLETED') bucket.completed += count;
+      bucket.budget += Number(g._sum.budgetAmount ?? 0);
+    }
 
     return NextResponse.json({
       totalFaculty,
@@ -91,6 +128,9 @@ export async function GET(request: NextRequest) {
       totalPublications,
       totalProjects,
       recentActivityCount,
+      pendingProjectCount,
+      pendingClsCount,
+      projectBreakdown: breakdown,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {

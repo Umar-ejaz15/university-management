@@ -66,7 +66,7 @@ export default function StaffListingPage() {
 
       {/* Hero */}
       <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="px-6 py-14">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
@@ -94,7 +94,7 @@ export default function StaffListingPage() {
 
       {/* Stats Strip */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-6">
           <div className="grid grid-cols-3 divide-x divide-gray-100">
             <div className="flex items-center gap-4 py-5 px-6">
               <div className="w-10 h-10 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function StaffListingPage() {
       </div>
 
       {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-6 py-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
@@ -183,7 +183,7 @@ export default function StaffListingPage() {
       </div>
 
       {/* Staff Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="px-6 pb-16">
         {filteredStaff.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-20 text-center">
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">

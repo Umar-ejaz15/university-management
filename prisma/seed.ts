@@ -294,7 +294,12 @@ async function main() {
     projects: Array<{
       title: string;
       description: string;
-      status: 'ONGOING' | 'COMPLETED' | 'PENDING';
+      status: 'SUBMITTED' | 'ONGOING' | 'COMPLETED' | 'PENDING';
+      verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
+      projectKind?: 'RESEARCH' | 'INDUSTRY';
+      scope?: 'NATIONAL' | 'INTERNATIONAL';
+      budgetAmount?: number;
+      fundingAgency?: string;
       studentCount: number;
       startDate: Date;
       endDate?: Date;
@@ -347,10 +352,16 @@ async function main() {
 
     // Create projects
     for (const proj of data.projects) {
+      const { verificationStatus, projectKind, scope, budgetAmount, fundingAgency, ...rest } = proj;
       await prisma.project.create({
         data: {
-          ...proj,
+          ...rest,
           staffId: staff.id,
+          verificationStatus: verificationStatus ?? (rest.status === 'SUBMITTED' ? 'PENDING' : 'VERIFIED'),
+          projectKind: projectKind ?? 'RESEARCH',
+          scope: scope ?? 'NATIONAL',
+          ...(budgetAmount !== undefined ? { budgetAmount } : {}),
+          ...(fundingAgency !== undefined ? { fundingAgency } : {}),
         },
       });
     }

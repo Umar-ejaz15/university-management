@@ -124,25 +124,147 @@ model Project {
   id             String        @id @default(cuid())
   title          String
   description    String?       @db.Text
-  objectives     String?       @db.Text  // Project objectives and goals
-  methodology    String?       @db.Text  // Research methodology
-  outcomes       String?       @db.Text  // Project outcomes and results
+  objectives     String?       @db.Text
+  methodology    String?       @db.Text
+  outcomes       String?       @db.Text
   studentCount   Int           @default(0)
-  fundingAmount  String?       // e.g., "PKR 2,000,000" or "USD 50,000"
-  fundingAgency  String?       // e.g., "HEC", "NSF", "Industry Partner"
-  collaborators  String?       // Names of collaborating researchers/institutions
+
+  // ── Classification (Faculty fills) ──────────────────────────────────────
+  projectKind    ProjectKind   @default(RESEARCH)
+  scope          ProjectScope  @default(NATIONAL)
+  thematicArea   String?
+  projectCategory String?      // e.g. "RESEARCH", "DEVELOPMENT", "INNOVATION"
+  projectType    String?       // e.g. "INDIVIDUAL", "GROUP", "JOINT"
+  funderType     String?       // e.g. "HEC", "MNSUAM", "INDUSTRY", "INTERNATIONAL"
+  funderLocation String?       // "NATIONAL" | "INTERNATIONAL"
+  funderCountry  String?
+  fundingCallTitle String?
+  dateOfCirculation DateTime?
+  submissionDeadline DateTime?
+  shiftedToMnsuam DateTime?
+
+  // ── Industry project specifics (Faculty fills) ───────────────────────────
+  projectFileNo  String?
+  financialYear  String?       // e.g. "2024-25"
+  awardDate      DateTime?
+  sponsoringAgency String?
+  sponsorCountry String?
+  sponsorAddress String?       @db.Text
+  counterpartName String?
+  counterpartCountry String?
+  counterpartAddress String?   @db.Text
+
+  // ── Funding (ORIC/Admin manages) ─────────────────────────────────────────
+  fundingAmount  String?
+  budgetAmount   Decimal?      @db.Decimal(14, 2)
+  currency       String?       @default("PKR")
+  fundingAgency  String?
+  collaborators  String?
+  oricOverheadAmount Decimal?  @db.Decimal(14, 2)
+  overheadStatus String?       @default("Approved")
+
+  // ── Post-Award (ORIC fills after approval) ───────────────────────────────
+  awardLetterDate    DateTime?
+  fundingAgencyRefNo String?
+  awardLetterUrl     String?
+  specialConditions  String?   @db.Text
+
+  // ── Work plan ────────────────────────────────────────────────────────────
+  targetBeneficiaries String?  @db.Text
+  reportingFrequency  String?  @default("Annual")
+
+  // ── Deliverables & status (ORIC tracks) ──────────────────────────────────
+  deliverables   String?       @db.Text
+  monitoringPlan String?       @db.Text
+  reportsStatus  String?       @default("No Report Due")
+  fileStatus     String?       @default("File Received")
+  remarks        String?       @db.Text
+
+  // ── Post-completion (ORIC fills) ──────────────────────────────────────────
+  innovationType          String?
+  patentable              Boolean?
+  patentFiledDate         DateTime?
+  innovativeStatus        String?
+  commercializationStatus String?
+
   projectUrl          String?
   imageUrl            String?
   verificationStatus  VerificationStatus @default(PENDING)
   rejectionReason     String?
-  status              ProjectStatus @default(ONGOING)
+  status              ProjectStatus @default(SUBMITTED)
   startDate      DateTime?
   endDate        DateTime?
   staffId        String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   staff          Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  installments   Installment[]
+  coPIs          ProjectCoPI[]
+  teamMembers    ProjectTeamMember[]
+  reports        ProjectReport[]
 
+  @@index([status])
+  @@index([projectKind])
+  @@index([verificationStatus])
+}
+
+model ProjectCoPI {
+  id           String   @id @default(cuid())
+  projectId    String
+  name         String
+  designation  String?
+  organization String?
+  contact      String?
+  email        String?
+  type         String   @default("Internal")
+  createdAt    DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ProjectTeamMember {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  designation String?
+  department  String?
+  role        String?
+  createdAt   DateTime @default(now())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ProjectReport {
+  id             String    @id @default(cuid())
+  projectId      String
+  reportType     String    @default("Progress")
+  dueDate        DateTime?
+  submissionDate DateTime?
+  status         String    @default("Due")
+  fileUrl        String?
+  createdAt      DateTime  @default(now())
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Installment {
+  id            String            @id @default(cuid())
+  projectId     String
+  installmentNo Int               // 1, 2, 3 ...
+  amount        Decimal           @db.Decimal(14, 2)
+  dueDate       DateTime?
+  releaseDate   DateTime?
+  status        InstallmentStatus @default(PENDING)
+  note          String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, installmentNo])
+  @@index([projectId])
   @@index([status])
 }
 
@@ -258,9 +380,25 @@ enum RequestStatus {
 }
 
 enum ProjectStatus {
+  SUBMITTED
   ONGOING
   COMPLETED
   PENDING
+}
+
+enum ProjectKind {
+  RESEARCH
+  INDUSTRY
+}
+
+enum ProjectScope {
+  NATIONAL
+  INTERNATIONAL
+}
+
+enum InstallmentStatus {
+  PENDING
+  RELEASED
 }
 
 enum UserRole {
@@ -279,4 +417,18 @@ enum PublicationType {
   TECHNICAL_REPORT
   WORKING_PAPER
   PREPRINT
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  link      String?
+  metadata  Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
 }

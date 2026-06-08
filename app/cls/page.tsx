@@ -932,7 +932,7 @@ export default function CLSPage() {
 
       {/* Page hero */}
       <div className="bg-[#2d6a4f] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-6 py-8">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -967,7 +967,7 @@ export default function CLSPage() {
 
       {/* Tab nav */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-6">
           <div className="flex gap-0">
             <button
               onClick={() => setActiveTab('catalog')}
@@ -1027,7 +1027,7 @@ export default function CLSPage() {
       </div>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="px-6 py-6">
         {/* Toast messages */}
         {submitSuccess && (
           <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm">

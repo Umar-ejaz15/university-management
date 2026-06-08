@@ -617,7 +617,7 @@ export default function EditProfilePage() {
 
       {/* ── Page Hero ─────────────────────────────────────────────────────── */}
       <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="px-6 py-10">
           <div className="flex items-center justify-between gap-4">
             <div>
               <button
@@ -643,7 +643,7 @@ export default function EditProfilePage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-6 py-8">
 
         {/* ── Alerts ──────────────────────────────────────────────────────── */}
         {error && (
@@ -1099,23 +1099,22 @@ export default function EditProfilePage() {
                     <p className="text-xs text-gray-400">{projects.length} total</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setNewProject({
-                      title: '',
-                      description: '',
-                      status: 'ONGOING',
-                      startDate: '',
-                      endDate: '',
-                      studentCount: 0,
-                    });
-                    setShowAddProjectModal(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-[#c9a961] text-[#1a3d2b] rounded-xl text-sm font-bold hover:bg-[#b8963a] transition-colors shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Project
-                </button>
+                <div className="flex gap-2">
+                  <a
+                    href="/faculty/projects/new"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] transition-colors shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Research Project
+                  </a>
+                  <a
+                    href="/faculty/projects/industry"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-colors shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Industry Project
+                  </a>
+                </div>
               </div>
 
               {/* Projects cards grid */}
@@ -1123,7 +1122,7 @@ export default function EditProfilePage() {
                 <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-2xl">
                   <FlaskConical className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   <p className="text-gray-500 font-medium">No projects yet</p>
-                  <p className="text-gray-400 text-sm mt-1">Click &ldquo;Add Project&rdquo; to get started.</p>
+                  <p className="text-gray-400 text-sm mt-1">Use the buttons above to submit a Research or Industry project to ORIC.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

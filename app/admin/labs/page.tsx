@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Header from '@/components/Header';
 import {
   FlaskConical,
   Plus,
@@ -339,12 +338,11 @@ export default function AdminLabsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen">
 
       {/* Page header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2d6a4f] to-[#40916c] flex items-center justify-center shadow-lg shadow-[#2d6a4f]/20">
@@ -376,7 +374,7 @@ export default function AdminLabsPage() {
         </div>
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="px-6 py-8 space-y-6">
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

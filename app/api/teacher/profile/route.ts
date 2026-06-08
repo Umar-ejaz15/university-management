@@ -68,7 +68,9 @@ export async function PUT(request: NextRequest) {
         studentsSupervised: studentsSupervised ?? undefined,
         administrativeDuties: administrativeDuties || undefined,
         studentsSupervisedDetails: studentsSupervisedDetails ?? undefined,
-        profileVerificationStatus: 'PENDING',
+        // Per ORIC policy, only Projects require admin approval; profile edits
+        // (like publications & courses) are auto-verified on save.
+        profileVerificationStatus: 'VERIFIED',
         profileRejectionReason: null,
       },
       include: {

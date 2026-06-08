@@ -64,15 +64,24 @@ export async function PUT(
         });
         break;
 
-      case 'project':
+      case 'project': {
+        // Approving a freshly-submitted project moves it into the ONGOING phase.
+        const current = await prisma.project.findUnique({
+          where: { id },
+          select: { status: true },
+        });
+        const nextStatus =
+          action === 'VERIFIED' && current?.status === 'SUBMITTED' ? 'ONGOING' : undefined;
         await prisma.project.update({
           where: { id },
           data: {
             verificationStatus: action,
             rejectionReason: action === 'REJECTED' ? reason!.trim() : null,
+            ...(nextStatus ? { status: nextStatus } : {}),
           },
         });
         break;
+      }
 
       case 'course':
         await prisma.course.update({

@@ -13,48 +13,111 @@ import {
   Briefcase,
   ChevronRight,
   X,
-  Filter,
   BookOpen,
   Plus,
   Loader2,
   AlertCircle,
   CheckCircle2,
   FileText,
+  SlidersHorizontal,
+  Globe,
+  Landmark,
+  TrendingUp,
+  Clock,
+  BadgeCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { useProjects, useInvalidateProjects, type Project } from '@/lib/queries/projects';
 import { useCurrentUser } from '@/lib/queries/auth';
 import { useProjectsFilterStore } from '@/lib/store/projectsFilterStore';
 
+// ─── Status helpers ───────────────────────────────────────────────────────────
+
+function statusStyle(s: string) {
+  switch (s) {
+    case 'SUBMITTED': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'ONGOING':   return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'COMPLETED': return 'bg-gray-100 text-gray-600 border-gray-200';
+    case 'PENDING':   return 'bg-amber-50 text-amber-700 border-amber-200';
+    default:          return 'bg-gray-100 text-gray-500 border-gray-200';
+  }
+}
+
+function statusDot(s: string) {
+  switch (s) {
+    case 'SUBMITTED': return 'bg-blue-500';
+    case 'ONGOING':   return 'bg-emerald-500';
+    case 'COMPLETED': return 'bg-gray-400';
+    default:          return 'bg-amber-400';
+  }
+}
+
+function statusLabel(s: string) {
+  switch (s) {
+    case 'SUBMITTED': return 'Under Review';
+    case 'ONGOING':   return 'Ongoing';
+    case 'COMPLETED': return 'Completed';
+    case 'PENDING':   return 'Pending';
+    default:          return s;
+  }
+}
+
+function kindStyle(k: string) {
+  return k === 'INDUSTRY'
+    ? 'bg-[#c9a961]/15 text-[#8a6b2e] border-[#c9a961]/30'
+    : 'bg-teal-50 text-teal-700 border-teal-200';
+}
+
+function scopeStyle(s: string) {
+  return s === 'INTERNATIONAL'
+    ? 'bg-purple-50 text-purple-700 border-purple-200'
+    : 'bg-sky-50 text-sky-700 border-sky-200';
+}
+
+function fmtDate(d: string | null) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+}
+
+// ─── Submit Modal ─────────────────────────────────────────────────────────────
+
 interface ProjectFormState {
   title: string;
   description: string;
-  status: 'ONGOING' | 'COMPLETED' | 'PENDING';
+  projectKind: 'RESEARCH' | 'INDUSTRY';
+  scope: 'NATIONAL' | 'INTERNATIONAL';
+  objectives: string;
+  methodology: string;
+  outcomes: string;
+  collaborators: string;
   startDate: string;
   endDate: string;
   studentCount: string;
-  fundingAgency: string;
-  fundingAmount: string;
 }
 
-function SubmitProjectModal({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
+function SubmitProjectModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState<ProjectFormState>({
     title: '',
     description: '',
-    status: 'ONGOING',
+    projectKind: 'RESEARCH',
+    scope: 'NATIONAL',
+    objectives: '',
+    methodology: '',
+    outcomes: '',
+    collaborators: '',
     startDate: '',
     endDate: '',
     studentCount: '',
-    fundingAgency: '',
-    fundingAmount: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const patch = (k: Partial<ProjectFormState>) => setForm((f) => ({ ...f, ...k }));
+  const inputCls = 'w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] transition bg-gray-50 focus:bg-white';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,106 +131,136 @@ function SubmitProjectModal({
         body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim() || null,
-          status: form.status,
+          projectKind: form.projectKind,
+          scope: form.scope,
+          objectives: form.objectives.trim() || null,
+          methodology: form.methodology.trim() || null,
+          outcomes: form.outcomes.trim() || null,
+          collaborators: form.collaborators.trim() || null,
           startDate: form.startDate || null,
           endDate: form.endDate || null,
           studentCount: form.studentCount ? parseInt(form.studentCount) : 0,
-          fundingAgency: form.fundingAgency.trim() || null,
-          fundingAmount: form.fundingAmount.trim() || null,
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Failed to submit request.'); return; }
+      if (!res.ok) { setError(data.error || 'Failed to submit.'); return; }
       onSuccess();
       onClose();
-    } catch {
-      setError('Network error. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { setError('Network error. Please try again.'); }
+    finally { setSubmitting(false); }
   };
-
-  const inputCls = 'w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#2d6a4f]/10 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center">
               <FlaskConical className="w-4 h-4 text-[#2d6a4f]" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Submit Project Request</h2>
-              <p className="text-xs text-gray-500">Your request will be reviewed by admin</p>
+              <h2 className="text-base font-semibold text-gray-900">Submit Project for ORIC</h2>
+              <p className="text-xs text-gray-500">Budget & installments are set by ORIC after approval</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Project Title <span className="text-red-500">*</span></label>
-            <input required type="text" placeholder="e.g., AI-Powered Crop Disease Detection" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Description</label>
-            <textarea rows={3} placeholder="Briefly describe the project objectives and methodology..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} resize-none`} />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ProjectFormState['status'] })} className={inputCls}>
-              <option value="ONGOING">Ongoing</option>
-              <option value="PENDING">Pending / Proposed</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Project Title <span className="text-red-500">*</span>
+            </label>
+            <input required type="text" placeholder="e.g., AI-Powered Crop Disease Detection"
+              value={form.title} onChange={(e) => patch({ title: e.target.value })} className={inputCls} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Start Date</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inputCls} />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Project Type</label>
+              <select value={form.projectKind} onChange={(e) => patch({ projectKind: e.target.value as 'RESEARCH' | 'INDUSTRY' })} className={inputCls}>
+                <option value="RESEARCH">Research</option>
+                <option value="INDUSTRY">Industry</option>
+              </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">End Date</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Students Involved</label>
-              <input type="number" min="0" placeholder="0" value={form.studentCount} onChange={(e) => setForm({ ...form, studentCount: e.target.value })} className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Funding Agency</label>
-              <input type="text" placeholder="e.g., HEC, NSF" value={form.fundingAgency} onChange={(e) => setForm({ ...form, fundingAgency: e.target.value })} className={inputCls} />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Scope</label>
+              <select value={form.scope} onChange={(e) => patch({ scope: e.target.value as 'NATIONAL' | 'INTERNATIONAL' })} className={inputCls}>
+                <option value="NATIONAL">National</option>
+                <option value="INTERNATIONAL">International</option>
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Funding Amount</label>
-            <input type="text" placeholder="e.g., PKR 1,500,000" value={form.fundingAmount} onChange={(e) => setForm({ ...form, fundingAmount: e.target.value })} className={inputCls} />
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
+            <textarea rows={3} placeholder="Brief overview of the project..."
+              value={form.description} onChange={(e) => patch({ description: e.target.value })}
+              className={`${inputCls} resize-none`} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Objectives</label>
+            <textarea rows={2} placeholder="What are the key goals of this project?"
+              value={form.objectives} onChange={(e) => patch({ objectives: e.target.value })}
+              className={`${inputCls} resize-none`} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Methodology</label>
+              <textarea rows={2} value={form.methodology} onChange={(e) => patch({ methodology: e.target.value })}
+                placeholder="Research approach..." className={`${inputCls} resize-none`} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Expected Outcomes</label>
+              <textarea rows={2} value={form.outcomes} onChange={(e) => patch({ outcomes: e.target.value })}
+                placeholder="Anticipated results..." className={`${inputCls} resize-none`} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Collaborators</label>
+            <input type="text" placeholder="Names of collaborating researchers or institutions"
+              value={form.collaborators} onChange={(e) => patch({ collaborators: e.target.value })} className={inputCls} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Start Date</label>
+              <input type="date" value={form.startDate} onChange={(e) => patch({ startDate: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">End Date</label>
+              <input type="date" value={form.endDate} onChange={(e) => patch({ endDate: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Students Involved</label>
+              <input type="number" min="0" placeholder="0"
+                value={form.studentCount} onChange={(e) => patch({ studentCount: e.target.value })} className={inputCls} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+            <BadgeCheck className="w-4 h-4 shrink-0" />
+            Budget and installment schedule will be set by ORIC after your project is approved.
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-lg transition-colors">
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><FileText className="w-4 h-4" />Submit Request</>}
+            <button type="submit" disabled={submitting} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-xl transition-colors">
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><FileText className="w-4 h-4" />Submit to ORIC</>}
             </button>
           </div>
         </form>
@@ -176,72 +269,61 @@ function SubmitProjectModal({
   );
 }
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Projects' },
-  { value: 'ONGOING', label: 'Ongoing' },
-  { value: 'COMPLETED', label: 'Completed' },
-  { value: 'PENDING', label: 'Pending' },
-];
-
-function statusStyle(s: string) {
-  if (s === 'ONGOING') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (s === 'COMPLETED') return 'bg-gray-100 text-gray-600 border-gray-200';
-  return 'bg-amber-50 text-amber-700 border-amber-200';
-}
-
-function statusDot(s: string) {
-  if (s === 'ONGOING') return 'bg-emerald-500';
-  if (s === 'COMPLETED') return 'bg-gray-400';
-  return 'bg-amber-500';
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return null;
-  return new Date(d).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' });
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
-}
+// ─── Project Card ─────────────────────────────────────────────────────────────
 
 function ProjectCard({ project }: { project: Project }) {
+  const budget = project.budgetAmount
+    ? `${project.currency ?? 'PKR'} ${parseFloat(project.budgetAmount).toLocaleString()}`
+    : project.fundingAmount ?? null;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2d6a4f]/20 transition-all overflow-hidden group flex flex-col">
-      <div className="relative h-44 overflow-hidden bg-linear-to-br from-[#1a3d2b] to-[#2d6a4f]">
+      {/* Image / Hero */}
+      <div className="relative h-40 overflow-hidden bg-linear-to-br from-[#1a3d2b] to-[#2d6a4f] shrink-0">
         {project.imageUrl ? (
-          <img
-            src={project.imageUrl}
-            alt={project.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <img src={project.imageUrl} alt={project.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <FlaskConical className="w-16 h-16 text-white/20" />
+            <FlaskConical className="w-14 h-14 text-white/15" />
           </div>
         )}
+        {/* Status badge */}
         <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border backdrop-blur-sm bg-white/90 ${statusStyle(project.status)}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${statusDot(project.status)}`} />
-          {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
+          {statusLabel(project.status)}
         </span>
-        {project.fundingAgency && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-[#c9a961]/90 text-[#1a3d2b] backdrop-blur-sm">
-            <Briefcase className="w-3 h-3" /> {project.fundingAgency}
-          </span>
-        )}
+        {/* Kind badge */}
+        <span className={`absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border bg-white/90 ${kindStyle(project.projectKind)}`}>
+          {project.projectKind === 'INDUSTRY' ? <Landmark className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+          {project.projectKind === 'INDUSTRY' ? 'Industry' : 'Research'}
+        </span>
       </div>
 
-      <div className="flex flex-col flex-1 p-5">
-        <h3 className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2 group-hover:text-[#2d6a4f] transition-colors">
+      <div className="flex flex-col flex-1 p-4">
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${scopeStyle(project.scope)}`}>
+            {project.scope === 'INTERNATIONAL' ? <Globe className="w-2.5 h-2.5" /> : null}
+            {project.scope === 'NATIONAL' ? 'National' : 'International'}
+          </span>
+          {project.fundingAgency && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#c9a961]/10 text-[#8a6b2e] border border-[#c9a961]/20">
+              <Briefcase className="w-2.5 h-2.5" />{project.fundingAgency}
+            </span>
+          )}
+        </div>
+
+        <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-[#2d6a4f] transition-colors">
           {project.title}
         </h3>
         {project.description && (
-          <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-3">{project.description}</p>
+          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">{project.description}</p>
         )}
 
-        <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-4">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 mb-3">
           {(project.startDate || project.endDate) && (
             <span className="flex items-center gap-1">
-              <CalendarDays className="w-3.5 h-3.5" />
+              <CalendarDays className="w-3 h-3" />
               {fmtDate(project.startDate)}
               {project.startDate && project.endDate && ' → '}
               {fmtDate(project.endDate)}
@@ -249,55 +331,216 @@ function ProjectCard({ project }: { project: Project }) {
           )}
           {project.studentCount > 0 && (
             <span className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3 h-3" />
               {project.studentCount} students
             </span>
           )}
-          {project.fundingAmount && (
-            <span className="flex items-center gap-1 text-[#c9a961] font-medium">
-              {project.fundingAmount}
+          {budget && (
+            <span className="flex items-center gap-1 text-[#c9a961] font-semibold">
+              {budget}
             </span>
           )}
         </div>
 
-        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-100">
+        <div className="mt-auto pt-3 border-t border-gray-50 flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 border border-gray-100">
             {project.staff.profileImage ? (
               <img src={project.staff.profileImage} alt={project.staff.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-[#2d6a4f]/10 flex items-center justify-center">
-                <span className="text-[#2d6a4f] font-bold text-xs">{getInitials(project.staff.name)}</span>
+                <span className="text-[#2d6a4f] font-bold text-[10px]">{getInitials(project.staff.name)}</span>
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <Link
-              href={`/faculty/${project.staff.id}`}
-              className="text-sm font-semibold text-gray-800 hover:text-[#2d6a4f] truncate block transition-colors"
-            >
+            <Link href={`/faculty/${project.staff.id}`}
+              className="text-xs font-semibold text-gray-800 hover:text-[#2d6a4f] truncate block transition-colors">
               {project.staff.name}
             </Link>
-            <p className="text-xs text-gray-400 truncate">{project.staff.department.name}</p>
+            <p className="text-[10px] text-gray-400 truncate">{project.staff.department.name}</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#2d6a4f] transition-colors shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#2d6a4f] transition-colors shrink-0" />
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Filter Sidebar ───────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS = [
+  { value: 'all',       label: 'All Statuses',  icon: null },
+  { value: 'SUBMITTED', label: 'Under Review',  icon: Clock      },
+  { value: 'ONGOING',   label: 'Ongoing',       icon: TrendingUp },
+  { value: 'COMPLETED', label: 'Completed',     icon: CheckCircle2 },
+  { value: 'PENDING',   label: 'Pending',       icon: AlertCircle },
+];
+
+const KIND_OPTIONS = [
+  { value: 'all',      label: 'All Types'  },
+  { value: 'RESEARCH', label: 'Research'   },
+  { value: 'INDUSTRY', label: 'Industry'   },
+];
+
+const SCOPE_OPTIONS = [
+  { value: 'all',           label: 'All Scopes'    },
+  { value: 'NATIONAL',      label: 'National'      },
+  { value: 'INTERNATIONAL', label: 'International' },
+];
+
+function FilterSidebar({
+  departments,
+  counts,
+  totalFiltered,
+}: {
+  departments: { id: string; name: string }[];
+  counts: Record<string, number>;
+  totalFiltered: number;
+}) {
+  const {
+    statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo,
+    setStatusFilter, setKindFilter, setScopeFilter, setDeptFilter, setDateFrom, setDateTo,
+    clearFilters,
+  } = useProjectsFilterStore();
+
+  const hasFilters = statusFilter !== 'all' || kindFilter !== 'all' || scopeFilter !== 'all'
+    || deptFilter !== 'all' || dateFrom !== '' || dateTo !== '';
+
+  const labelCls = 'block text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2';
+  const inputCls = 'w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition bg-white';
+
+  return (
+    <aside className="w-64 shrink-0">
+      <div className="sticky top-4 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-[#2d6a4f]" />
+            <span className="text-sm font-semibold text-gray-900">Filters</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">{totalFiltered} results</span>
+            {hasFilters && (
+              <button onClick={clearFilters} className="text-xs text-[#2d6a4f] font-semibold hover:underline">
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="px-4 py-4 space-y-5">
+          {/* Date Range */}
+          <div>
+            <p className={labelCls}>Start Date Range</p>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">From</label>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">To</label>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputCls} />
+              </div>
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600">
+                  <X className="w-3 h-3" /> Clear dates
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <p className={labelCls}>Status</p>
+            <div className="space-y-1">
+              {STATUS_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const active = statusFilter === opt.value;
+                const cnt = opt.value === 'all' ? undefined : (counts[opt.value] ?? 0);
+                return (
+                  <button key={opt.value} onClick={() => setStatusFilter(opt.value)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      active ? 'bg-[#2d6a4f] text-white' : 'text-gray-600 hover:bg-gray-50'
+                    }`}>
+                    <div className="flex items-center gap-2">
+                      {Icon && <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gray-400'}`} />}
+                      <span>{opt.label}</span>
+                    </div>
+                    {cnt !== undefined && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                      }`}>{cnt}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Project Type */}
+          <div>
+            <p className={labelCls}>Project Type</p>
+            <div className="flex flex-wrap gap-1.5">
+              {KIND_OPTIONS.map((opt) => (
+                <button key={opt.value} onClick={() => setKindFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                    kindFilter === opt.value
+                      ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30 hover:text-[#2d6a4f]'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scope */}
+          <div>
+            <p className={labelCls}>Scope</p>
+            <div className="flex flex-wrap gap-1.5">
+              {SCOPE_OPTIONS.map((opt) => (
+                <button key={opt.value} onClick={() => setScopeFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                    scopeFilter === opt.value
+                      ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30 hover:text-[#2d6a4f]'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Department */}
+          <div>
+            <p className={labelCls}>Department</p>
+            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className={inputCls}>
+              <option value="all">All Departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function PublicProjectsPage() {
-  const { data, isLoading } = useProjects();
+  const { data, isLoading, refetch } = useProjects();
   const { data: user } = useCurrentUser();
   const invalidateProjects = useInvalidateProjects();
 
   const projects    = data?.projects   ?? [];
   const departments = data?.departments ?? [];
 
-  // Persistent filter state — survives navigation back to this page
   const {
-    search, statusFilter, deptFilter,
-    setSearch, setStatusFilter, setDeptFilter, clearFilters,
+    search, statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo,
+    setSearch, clearFilters,
   } = useProjectsFilterStore();
 
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -306,7 +549,17 @@ export default function PublicProjectsPage() {
   const filtered = useMemo(() => {
     let list = projects;
     if (statusFilter !== 'all') list = list.filter((p) => p.status === statusFilter);
-    if (deptFilter !== 'all') list = list.filter((p) => p.staff.department.id === deptFilter);
+    if (kindFilter   !== 'all') list = list.filter((p) => p.projectKind === kindFilter);
+    if (scopeFilter  !== 'all') list = list.filter((p) => p.scope === scopeFilter);
+    if (deptFilter   !== 'all') list = list.filter((p) => p.staff.department.id === deptFilter);
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      list = list.filter((p) => p.startDate && new Date(p.startDate) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo + 'T23:59:59');
+      list = list.filter((p) => p.startDate && new Date(p.startDate) <= to);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((p) =>
@@ -317,191 +570,156 @@ export default function PublicProjectsPage() {
       );
     }
     return list;
-  }, [projects, statusFilter, deptFilter, search]);
+  }, [projects, statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo, search]);
 
   const counts = useMemo(() => ({
     all:       projects.length,
+    SUBMITTED: projects.filter((p) => p.status === 'SUBMITTED').length,
     ONGOING:   projects.filter((p) => p.status === 'ONGOING').length,
     COMPLETED: projects.filter((p) => p.status === 'COMPLETED').length,
     PENDING:   projects.filter((p) => p.status === 'PENDING').length,
   }), [projects]);
 
-  const hasFilters = statusFilter !== 'all' || deptFilter !== 'all' || search.trim() !== '';
+  const hasFilters = statusFilter !== 'all' || kindFilter !== 'all' || scopeFilter !== 'all'
+    || deptFilter !== 'all' || search.trim() !== '' || dateFrom !== '' || dateTo !== '';
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      {/* Hero */}
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <nav className="flex items-center gap-2 text-xs text-white/50 mb-6">
+        <div className="px-6 py-10">
+          <nav className="flex items-center gap-2 text-xs text-white/50 mb-5">
             <Link href="/uni-dashboard" className="hover:text-white transition-colors">Dashboard</Link>
             <span>/</span>
-            <span className="text-white/80">Research Projects</span>
+            <span className="text-white/80">Projects</span>
           </nav>
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center">
                   <FlaskConical className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight">Research Projects</h1>
+                <h1 className="text-3xl font-bold tracking-tight">University Projects</h1>
               </div>
               <p className="text-white/60 text-sm">
-                Explore verified research initiatives across all departments
+                All research & industry projects across the university
               </p>
               {submitSuccess && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200 bg-white/10 border border-white/20 rounded-lg px-3 py-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  {submitSuccess}
+                <div className="mt-3 flex items-center gap-2 text-sm text-emerald-200 bg-white/10 border border-white/20 rounded-xl px-3 py-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />{submitSuccess}
                 </div>
               )}
             </div>
-            {user?.role === 'FACULTY' && (
-              <button
-                onClick={() => { setSubmitSuccess(''); setShowSubmitModal(true); }}
-                className="flex items-center gap-2 bg-white text-[#2d6a4f] hover:bg-white/90 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                Submit Project Request
-              </button>
-            )}
-            {/* Quick stats */}
-            <div className="flex gap-3">
-              {[
-                { label: 'Total',     value: counts.all,       color: 'bg-white/15'      },
-                { label: 'Ongoing',   value: counts.ONGOING,   color: 'bg-emerald-500/30' },
-                { label: 'Completed', value: counts.COMPLETED, color: 'bg-white/10'       },
-              ].map((s) => (
-                <div key={s.label} className={`${s.color} backdrop-blur-sm rounded-xl px-4 py-3 text-center border border-white/10 min-w-16`}>
-                  <p className="text-xl font-bold text-white">{s.value}</p>
-                  <p className="text-xs text-white/60">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Filters bar */}
-      <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1 min-w-56">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search projects, researchers…"
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all"
-              />
-              {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Status filter */}
-            <div className="flex gap-1.5 p-1 bg-gray-100 rounded-xl">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setStatusFilter(opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    statusFilter === opt.value
-                      ? 'bg-white text-[#2d6a4f] shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {opt.label}
-                  {opt.value !== 'all' && (
-                    <span className="ml-1 text-gray-400">
-                      {counts[opt.value as keyof typeof counts] ?? 0}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Department filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              <select
-                value={deptFilter}
-                onChange={(e) => setDeptFilter(e.target.value)}
-                className="pl-8 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] appearance-none cursor-pointer min-w-40"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
+            <div className="flex flex-wrap items-end gap-4">
+              {/* Stats pills */}
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { label: 'Total',      value: counts.all,       color: 'bg-white/15'       },
+                  { label: 'Ongoing',    value: counts.ONGOING,   color: 'bg-emerald-500/30' },
+                  { label: 'Completed',  value: counts.COMPLETED, color: 'bg-white/10'        },
+                  { label: 'Under Review', value: counts.SUBMITTED, color: 'bg-blue-400/30'  },
+                ].map((s) => (
+                  <div key={s.label} className={`${s.color} backdrop-blur-sm rounded-xl px-3 py-2.5 text-center border border-white/10 min-w-14`}>
+                    <p className="text-lg font-bold text-white">{s.value}</p>
+                    <p className="text-[10px] text-white/60">{s.label}</p>
+                  </div>
                 ))}
-              </select>
+              </div>
+              {user?.role === 'FACULTY' && (
+                <button onClick={() => { setSubmitSuccess(''); setShowSubmitModal(true); }}
+                  className="flex items-center gap-2 bg-white text-[#2d6a4f] hover:bg-white/90 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shrink-0">
+                  <Plus className="w-4 h-4" /> Submit Project
+                </button>
+              )}
             </div>
-
-            {hasFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" /> Clear
-              </button>
-            )}
-
-            <span className="ml-auto text-xs text-gray-400 font-medium">
-              {filtered.length} project{filtered.length !== 1 ? 's' : ''}
-            </span>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
-                <div className="h-44 bg-gray-100" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 bg-gray-100 rounded-lg w-3/4" />
-                  <div className="h-3 bg-gray-100 rounded-lg w-full" />
-                  <div className="h-3 bg-gray-100 rounded-lg w-2/3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 bg-[#2d6a4f]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-[#2d6a4f]/40" />
-            </div>
-            <p className="text-gray-700 font-semibold text-lg">No projects found</p>
-            <p className="text-sm text-gray-400 mt-1">
-              {hasFilters ? 'Try adjusting your filters.' : 'No verified research projects have been published yet.'}
-            </p>
-            {hasFilters && (
-              <button onClick={clearFilters} className="mt-4 px-5 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-semibold hover:bg-[#235a40] transition-colors">
-                Clear filters
+      {/* ── Search bar (sticky under hero) ───────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
+        <div className="px-6 py-3 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects, researchers, departments…"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all" />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
+          <button onClick={() => refetch()} className="flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          {hasFilters && (
+            <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+              <X className="w-3.5 h-3.5" /> Clear all
+            </button>
+          )}
+          <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
+            {filtered.length} project{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Main content: left filter sidebar + grid ─────────────────────── */}
+      <div className="px-6 py-8 flex gap-6 items-start">
+
+        {/* Left filter sidebar */}
+        <FilterSidebar departments={departments} counts={counts} totalFiltered={filtered.length} />
+
+        {/* Projects grid */}
+        <div className="flex-1 min-w-0">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+                  <div className="h-40 bg-gray-100" />
+                  <div className="p-4 space-y-2.5">
+                    <div className="h-4 bg-gray-100 rounded-lg w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded-lg w-full" />
+                    <div className="h-3 bg-gray-100 rounded-lg w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="w-16 h-16 bg-[#2d6a4f]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-[#2d6a4f]/40" />
+              </div>
+              <p className="text-gray-700 font-semibold text-lg">No projects found</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {hasFilters ? 'Try adjusting or clearing your filters.' : 'No projects have been published yet.'}
+              </p>
+              {hasFilters && (
+                <button onClick={clearFilters} className="mt-4 px-5 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-semibold hover:bg-[#235a40] transition-colors">
+                  Clear filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filtered.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {showSubmitModal && (
         <SubmitProjectModal
           onClose={() => setShowSubmitModal(false)}
           onSuccess={() => {
-            setSubmitSuccess('Project request submitted! It will appear here once verified by admin.');
+            setSubmitSuccess('Project submitted to ORIC for review. It will appear here once approved.');
             invalidateProjects();
           }}
         />

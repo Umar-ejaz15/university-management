@@ -177,7 +177,7 @@ export default async function FacultyPage({ params }: PageProps) {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white" id="profile">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="px-6 py-10">
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs text-white/50 mb-6">
@@ -268,7 +268,7 @@ export default async function FacultyPage({ params }: PageProps) {
 
       {/* ── STICKY NAV ───────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-6">
           <div className="flex overflow-x-auto gap-1 py-1 scrollbar-hide">
             {navItems.map((item) => (
               <a
@@ -283,7 +283,7 @@ export default async function FacultyPage({ params }: PageProps) {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="px-6 py-8 space-y-6">
 
         {/* ── SIDEBAR + MAIN GRID ────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
