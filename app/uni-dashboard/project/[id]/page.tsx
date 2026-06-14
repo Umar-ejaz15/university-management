@@ -65,7 +65,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   if (!project) notFound();
 
   const budget = project.budgetAmount
-    ? `${project.currency ?? 'PKR'} ${parseFloat(project.budgetAmount).toLocaleString()}`
+    ? `${project.currency ?? 'PKR'} ${project.budgetAmount.toNumber().toLocaleString()}`
     : null;
 
   return (
