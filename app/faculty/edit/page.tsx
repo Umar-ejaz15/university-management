@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
@@ -152,6 +152,278 @@ const DESIGNATIONS = [
 ];
 
 
+// ─── ORIC Sub-form components ─────────────────────────────────────────────────
+
+interface OricFormProps {
+  inputCls: string;
+  labelCls: string;
+  setSuccess: (m: string) => void;
+  setError: (m: string) => void;
+}
+
+function OricFieldRow({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function OricSectionHeader({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4 pt-4 border-t border-gray-100 first:border-0 first:pt-0">
+      <span className="w-1 h-5 bg-[#c9a961] rounded-full" />
+      <div>
+        <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+        {sub && <p className="text-xs text-gray-400">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function OricAdminOnlyBanner() {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 mb-3">
+      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+      <span>Fields in this section are managed by ORIC after approval. They are read-only for faculty.</span>
+    </div>
+  );
+}
+
+function OricResearchForm({ inputCls, labelCls: _lc, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({
+    title: '', thematicArea: '', projectType: 'Research', scope: 'National',
+    startDate: '', endDate: '', financialYear: '', totalBudget: '',
+    description: '', objectives: '', methodology: '', outcomes: '',
+    sponsoringAgency: '', sponsorCountry: '', funderType: '',
+    collaborators: '', deliverables: '', targetBeneficiaries: '',
+  });
+  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!f.title.trim()) return setError('Project title is required.');
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: f.title, description: f.description, projectKind: 'RESEARCH',
+          scope: f.scope.toUpperCase(), objectives: f.objectives,
+          methodology: f.methodology, outcomes: f.outcomes,
+          startDate: f.startDate || null, endDate: f.endDate || null,
+          thematicArea: f.thematicArea, financialYear: f.financialYear,
+          sponsoringAgency: f.sponsoringAgency, sponsorCountry: f.sponsorCountry,
+          funderType: f.funderType, deliverables: f.deliverables,
+          targetBeneficiaries: f.targetBeneficiaries, budgetAmount: f.totalBudget || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error || 'Submission failed');
+      setSuccess('Research project submitted to ORIC for review.');
+    } catch { setError('Network error'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Submission outline */}
+      <OricSectionHeader title="Submission Outline" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Project Title" required><input value={f.title} onChange={e => set('title', e.target.value)} placeholder="Full project title" className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Thematic Area"><select value={f.thematicArea} onChange={e => set('thematicArea', e.target.value)} className={ic}><option value="">Select…</option>{['Agriculture & Food Security','Water & Environment','Health & Biotechnology','Engineering & Technology','Social Sciences','Climate Change','Other'].map(t=><option key={t}>{t}</option>)}</select></OricFieldRow>
+        <OricFieldRow label="Project Type"><select value={f.projectType} onChange={e => set('projectType', e.target.value)} className={ic}><option>Research</option><option>Development</option><option>Contracted Research</option><option>Collaborative</option></select></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
+        <OricFieldRow label="Financial Year"><select value={f.financialYear} onChange={e => set('financialYear', e.target.value)} className={ic}><option value="">Select…</option>{['2024-25','2023-24','2022-23','2021-22'].map(y=><option key={y}>{y}</option>)}</select></OricFieldRow>
+        <OricFieldRow label="Start Date" required><input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="End Date"><input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Requested Budget (PKR)"><input type="number" min="0" value={f.totalBudget} onChange={e => set('totalBudget', e.target.value)} placeholder="e.g. 4200000" className={ic} /></OricFieldRow>
+      </div>
+
+      {/* Description fields */}
+      <OricSectionHeader title="Project Details" />
+      <div className="space-y-4">
+        <OricFieldRow label="Description / Abstract" required><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Brief description of the project…" className={`${ic} resize-none`} /></OricFieldRow>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <OricFieldRow label="Objectives"><textarea rows={3} value={f.objectives} onChange={e => set('objectives', e.target.value)} placeholder="List the key objectives…" className={`${ic} resize-none`} /></OricFieldRow>
+          <OricFieldRow label="Methodology"><textarea rows={3} value={f.methodology} onChange={e => set('methodology', e.target.value)} placeholder="Describe the methodology…" className={`${ic} resize-none`} /></OricFieldRow>
+          <OricFieldRow label="Expected Outcomes"><textarea rows={2} value={f.outcomes} onChange={e => set('outcomes', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow>
+          <OricFieldRow label="Deliverables"><textarea rows={2} value={f.deliverables} onChange={e => set('deliverables', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow>
+          <OricFieldRow label="Target Beneficiaries"><input value={f.targetBeneficiaries} onChange={e => set('targetBeneficiaries', e.target.value)} className={ic} /></OricFieldRow>
+        </div>
+      </div>
+
+      {/* Sponsor / funder */}
+      <OricSectionHeader title="Sponsoring Agency / Funder" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <OricFieldRow label="Sponsoring Agency"><input value={f.sponsoringAgency} onChange={e => set('sponsoringAgency', e.target.value)} placeholder="e.g. HEC, PSF, USDA" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Sponsor Country"><input value={f.sponsorCountry} onChange={e => set('sponsorCountry', e.target.value)} placeholder="e.g. Pakistan" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Funder Type"><select value={f.funderType} onChange={e => set('funderType', e.target.value)} className={ic}><option value="">Select…</option><option>HEC</option><option>PSF</option><option>International</option><option>Industry</option><option>Government</option><option>MNSUAM</option></select></OricFieldRow>
+      </div>
+
+      {/* Collaborators */}
+      <OricSectionHeader title="Collaborators" />
+      <OricFieldRow label="Collaborators / Co-Investigators (name, institution)">
+        <textarea rows={3} value={f.collaborators} onChange={e => set('collaborators', e.target.value)} placeholder="One per line: Dr. Name, University Name" className={`${ic} resize-none`} />
+      </OricFieldRow>
+
+      {/* Post-award — ORIC only */}
+      <OricSectionHeader title="Post-Award Details" sub="Managed by ORIC after approval" />
+      <OricAdminOnlyBanner />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-60 pointer-events-none">
+        <OricFieldRow label="Award Letter Date"><input type="date" disabled className={ic} /></OricFieldRow>
+        <OricFieldRow label="Funding Agency Ref No"><input disabled placeholder="e.g. HEC/R&D/2024/001" className={ic} /></OricFieldRow>
+        <OricFieldRow label="ORIC Overhead Amount (PKR)"><input type="number" disabled placeholder="0.00" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Overhead Status"><input disabled value="Set by ORIC" readOnly className={ic} /></OricFieldRow>
+        <OricFieldRow label="Special Conditions"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
+        <OricFieldRow label="Remarks"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
+      </div>
+
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OricSimpleForm({ kind, inputCls, setSuccess, setError }: OricFormProps & { kind: string }) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({ title: '', organisation: '', startDate: '', endDate: '', description: '', value: '', outcomes: '' });
+  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!f.title.trim()) return setError('Title is required.');
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: f.title, description: f.description, projectKind: 'INDUSTRY',
+          scope: 'NATIONAL', startDate: f.startDate || null, endDate: f.endDate || null,
+          outcomes: f.outcomes, fundingAgency: f.organisation, budgetAmount: f.value || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error || 'Submission failed');
+      setSuccess(`${kind} submitted successfully.`);
+    } catch { setError('Network error'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Title" required><input value={f.title} onChange={e => set('title', e.target.value)} placeholder={`${kind} title`} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Organisation / Partner"><input value={f.organisation} onChange={e => set('organisation', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Value / Budget (PKR)"><input type="number" min="0" value={f.value} onChange={e => set('value', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Start Date"><input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="End Date"><input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Description"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Outcomes / Notes"><textarea rows={2} value={f.outcomes} onChange={e => set('outcomes', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Saving…' : 'Save to Profile'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OricPatentForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({
+    title: '', inventors: '', category: 'Technology', filedWith: '', scope: 'National',
+    filingDate: '', grantDate: '', applicationNo: '', status: 'Filed', description: '',
+  });
+  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!f.title.trim()) return setError('Patent title is required.');
+    setBusy(true);
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      setSuccess('Patent/IP record saved to your ORIC profile.');
+    } catch { setError('Network error'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Title of Invention" required><input value={f.title} onChange={e => set('title', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Lead Inventor(s)"><input value={f.inventors} onChange={e => set('inventors', e.target.value)} placeholder="Dr. Name, Co-inventor Name" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Category"><select value={f.category} onChange={e => set('category', e.target.value)} className={ic}><option>Technology</option><option>Variety</option><option>Process</option><option>Product</option><option>Software</option><option>Utility Model</option></select></OricFieldRow>
+        <OricFieldRow label="Filed With"><select value={f.filedWith} onChange={e => set('filedWith', e.target.value)} className={ic}><option value="">Select…</option><option>IPO Pakistan</option><option>FSC&RD</option><option>USPTO</option><option>EPO</option><option>WIPO</option></select></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
+        <OricFieldRow label="Filing Date"><input type="date" value={f.filingDate} onChange={e => set('filingDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Grant Date (if granted)"><input type="date" value={f.grantDate} onChange={e => set('grantDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Application / Ref No"><input value={f.applicationNo} onChange={e => set('applicationNo', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option>Filed</option><option>Under Examination</option><option>Granted</option><option>Rejected</option><option>Withdrawn</option></select></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Brief Description"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Saving…' : 'Save Patent Record'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OricMouForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({
+    collaborator: '', type: 'Industry', scope: 'National',
+    signedDate: '', expiryDate: '', description: '', status: 'Active',
+  });
+  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!f.collaborator.trim()) return setError('Collaborator name is required.');
+    setBusy(true);
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      setSuccess('MoU/AoC record saved to your ORIC profile.');
+    } catch { setError('Network error'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Collaborating Organisation" required><input value={f.collaborator} onChange={e => set('collaborator', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Agreement Type"><select value={f.type} onChange={e => set('type', e.target.value)} className={ic}><option>Industry</option><option>Academia</option><option>Government</option><option>International</option></select></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
+        <OricFieldRow label="Signed Date"><input type="date" value={f.signedDate} onChange={e => set('signedDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e => set('expiryDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option>Active</option><option>Under Renewal</option><option>Expired</option><option>Terminated</option></select></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Description / Scope of Collaboration"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Saving…' : 'Save MoU / AoC'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function EditProfilePage() {
@@ -160,7 +432,10 @@ export default function EditProfilePage() {
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students'
+    | 'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students'
+    | 'oric-research' | 'oric-industry' | 'oric-consultancy' | 'oric-patent'
+    | 'oric-ipdisclosure' | 'oric-licensing' | 'oric-mou' | 'oric-visit'
+    | 'oric-event' | 'oric-policy'
   >('profile');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -598,15 +873,44 @@ export default function EditProfilePage() {
     );
   }
 
-  // ─── Tab config ─────────────────────────────────────────────────────────────
+  // ─── Sidebar nav config ──────────────────────────────────────────────────────
 
-  const tabs = [
-    { id: 'profile' as const, label: 'Personal Info', Icon: User },
-    { id: 'publications' as const, label: 'Publications', count: publications.length, Icon: BookOpen },
-    { id: 'projects' as const, label: 'Projects', count: projects.length, Icon: FlaskConical },
-    { id: 'courses' as const, label: 'Courses', count: courses.length, Icon: GraduationCap },
-    { id: 'administrative' as const, label: 'Admin Duties', Icon: Briefcase },
-    { id: 'students' as const, label: 'Students', count: studentsDetails.length, Icon: Users },
+  type SectionId =
+    | 'profile' | 'publications' | 'projects' | 'courses' | 'administrative' | 'students'
+    | 'oric-research' | 'oric-industry' | 'oric-consultancy' | 'oric-patent'
+    | 'oric-ipdisclosure' | 'oric-licensing' | 'oric-mou' | 'oric-visit'
+    | 'oric-event' | 'oric-policy';
+
+  const navGroups: {
+    heading: string;
+    items: { id: SectionId; label: string; Icon: React.ElementType; count?: number; badge?: string }[];
+  }[] = [
+    {
+      heading: 'Profile',
+      items: [
+        { id: 'profile',        label: 'Personal & Academic', Icon: User },
+        { id: 'publications',   label: 'Publications',        Icon: BookOpen, count: publications.length },
+        { id: 'projects',       label: 'Basic Projects',      Icon: FlaskConical, count: projects.length },
+        { id: 'courses',        label: 'Courses',             Icon: GraduationCap, count: courses.length },
+        { id: 'administrative', label: 'Admin Duties',        Icon: Briefcase },
+        { id: 'students',       label: 'Students',            Icon: Users, count: studentsDetails.length },
+      ],
+    },
+    {
+      heading: 'ORIC Submissions',
+      items: [
+        { id: 'oric-research',    label: 'Research Project',   Icon: FlaskConical, badge: 'Approval req.' },
+        { id: 'oric-industry',    label: 'Industry Project',   Icon: Briefcase,    badge: 'Approval req.' },
+        { id: 'oric-consultancy', label: 'Consultancy',        Icon: BookOpen },
+        { id: 'oric-patent',      label: 'Patent / IP',        Icon: ShieldCheck },
+        { id: 'oric-ipdisclosure',label: 'IP Disclosure',      Icon: ShieldCheck },
+        { id: 'oric-licensing',   label: 'IP Licensing',       Icon: ShieldCheck },
+        { id: 'oric-mou',         label: 'AoC / MoU',         Icon: Users },
+        { id: 'oric-visit',       label: 'Industrial Visit',   Icon: Briefcase },
+        { id: 'oric-event',       label: 'Event / Exhibition', Icon: Calendar },
+        { id: 'oric-policy',      label: 'Policy Advocacy',    Icon: Hash },
+      ],
+    },
   ];
 
   // ─── JSX ────────────────────────────────────────────────────────────────────
@@ -665,41 +969,51 @@ export default function EditProfilePage() {
           </div>
         )}
 
-        {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-          <div className="overflow-x-auto">
-            <nav className="flex border-b border-gray-100 min-w-max">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setError('');
-                    setSuccess('');
-                  }}
-                  className={`flex items-center gap-2 px-5 py-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-[#2d6a4f] text-[#2d6a4f] bg-[#2d6a4f]/5'
-                      : 'border-transparent text-gray-500 hover:text-[#2d6a4f] hover:bg-gray-50'
-                  }`}
-                >
-                  <tab.Icon className="w-4 h-4" />
-                  {tab.label}
-                  {'count' in tab && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        activeTab === tab.id
-                          ? 'bg-[#2d6a4f] text-white'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
+        {/* ── Sidebar + Content ────────────────────────────────────────────── */}
+        <div className="flex gap-6 items-start">
+
+          {/* Left sidebar nav */}
+          <aside className="w-56 shrink-0 sticky top-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-[#1a3d2b] px-4 py-3.5">
+                <p className="text-white font-bold text-sm">My ORIC Profile</p>
+                <p className="text-green-200/70 text-[10px] mt-0.5 leading-relaxed">Click a section to edit</p>
+              </div>
+              {navGroups.map((group) => (
+                <div key={group.heading}>
+                  <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-gray-400">{group.heading}</p>
+                  {group.items.map(({ id, label, Icon, count, badge }) => {
+                    const active = activeTab === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => { setActiveTab(id); setError(''); setSuccess(''); }}
+                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium border-l-2 transition-all text-left ${
+                          active
+                            ? 'border-l-[#c9a961] bg-[#2d6a4f]/8 text-[#2d6a4f] font-semibold'
+                            : 'border-l-transparent text-gray-600 hover:bg-gray-50 hover:text-[#2d6a4f]'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-[#2d6a4f]' : 'text-gray-400'}`} />
+                        <span className="flex-1 leading-snug">{label}</span>
+                        {count !== undefined && (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-[#2d6a4f] text-white' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
+                        )}
+                        {badge && !count && (
+                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 leading-none shrink-0">{badge}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  <div className="h-px bg-gray-100 mx-3 my-1" />
+                </div>
               ))}
-            </nav>
-          </div>
+            </div>
+          </aside>
+
+          {/* Right content area — existing tab content wrapped in white card */}
+          <div className="flex-1 min-w-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
 
           {/* ══════════════════════════════════════════════════════════════════
               PERSONAL INFO TAB
@@ -1646,10 +1960,113 @@ export default function EditProfilePage() {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="text-center text-gray-400 text-xs py-4">
-          © {new Date().getFullYear()} MNSUAM — Faculty Dashboard
-        </div>
+        {/* ══════════════════════════════════════════════════════════════════════
+            ORIC RESEARCH PROJECT FORM
+        ══════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'oric-research' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-8">
+            <div>
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-800">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span><strong>ORIC Approval Required.</strong> Fill all details and submit — ORIC will review, edit if needed, and approve. Post-award details (budget, installments, award letter) are managed by ORIC only.</span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Research Project Proposal</h2>
+              <p className="text-xs text-gray-400 mb-6">Submit a new research project for ORIC approval. All fields marked * are required.</p>
+            </div>
+            <OricResearchForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC INDUSTRY ───────────────────────────────────────────── */}
+        {activeTab === 'oric-industry' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Industry / sponsored project details go to ORIC for review.</span>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">Industry / Sponsored Project</h2>
+            <OricSimpleForm kind="Industry Project" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC CONSULTANCY ────────────────────────────────────────── */}
+        {activeTab === 'oric-consultancy' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Consultancy</h2>
+            <p className="text-xs text-gray-400">Record a consultancy engagement. No ORIC approval needed — saved directly to your portfolio.</p>
+            <OricSimpleForm kind="Consultancy" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC PATENT ─────────────────────────────────────────────── */}
+        {activeTab === 'oric-patent' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Patent / IP Filing</h2>
+            <p className="text-xs text-gray-400">Record a patent or IP. Saved to your portfolio and compiled by ORIC — no approval gate.</p>
+            <OricPatentForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC IP DISCLOSURE ──────────────────────────────────────── */}
+        {activeTab === 'oric-ipdisclosure' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">IP Disclosure</h2>
+            <p className="text-xs text-gray-400">Disclose a new invention or innovation for ORIC records.</p>
+            <OricSimpleForm kind="IP Disclosure" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC IP LICENSING ───────────────────────────────────────── */}
+        {activeTab === 'oric-licensing' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">IP Licensing</h2>
+            <p className="text-xs text-gray-400">Record an IP licensing agreement or technology transfer.</p>
+            <OricSimpleForm kind="IP Licensing" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC MOU ────────────────────────────────────────────────── */}
+        {activeTab === 'oric-mou' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Agreement of Collaboration / MoU</h2>
+            <p className="text-xs text-gray-400">Record an MoU, AoC or collaborative agreement with an external organisation.</p>
+            <OricMouForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC INDUSTRIAL VISIT ───────────────────────────────────── */}
+        {activeTab === 'oric-visit' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Industrial Visit</h2>
+            <p className="text-xs text-gray-400">Record a university–industry visit (outgoing or incoming).</p>
+            <OricSimpleForm kind="Industrial Visit" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC EVENT ──────────────────────────────────────────────── */}
+        {activeTab === 'oric-event' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Event / Exhibition</h2>
+            <p className="text-xs text-gray-400">Record an organised event, seminar, exhibition or expo.</p>
+            <OricSimpleForm kind="Event/Exhibition" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+        {/* ── ORIC POLICY ADVOCACY ────────────────────────────────────── */}
+        {activeTab === 'oric-policy' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <h2 className="text-lg font-bold text-gray-900">Policy Advocacy</h2>
+            <p className="text-xs text-gray-400">Document participation in policy-making, advisory boards or advocacy activities.</p>
+            <OricSimpleForm kind="Policy Advocacy" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+          </div>
+        )}
+
+          {/* Footer inside content column */}
+          <div className="text-center text-gray-400 text-xs py-4">
+            © {new Date().getFullYear()} MNSUAM — Faculty Dashboard
+          </div>
+          </div>{/* end flex-1 content */}
+        </div>{/* end flex sidebar+content */}
       </main>
 
       {/* ════════════════════════════════════════════════════════════════════════

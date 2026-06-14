@@ -1,0 +1,12 @@
+# Approve native build scripts for these deps (pnpm 11+ requires explicit allow-list)
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - esbuild
+  - msgpackr-extract
+  - prisma
+  - sharp
+  - unrs-resolver
+
+# Don't run the dependency-verification install before every `pnpm <script>`.
+# That pre-run check was aborting `pnpm dev` with exit 1 on the ignored-builds warning.
+verifyDepsBeforeRun: false

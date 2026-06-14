@@ -16,9 +16,9 @@ import {
   PieChart as PieChartIcon,
   Building2,
   FlaskConical,
-  BarChart3,
   ChevronRight,
 } from 'lucide-react';
+import { STATUS_CHART_COLORS, STATUS_ORDER, STATUS_LABEL } from '@/lib/projectStatus';
 
 export default async function UniDashboard() {
   // Fetch aggregated data
@@ -34,7 +34,6 @@ export default async function UniDashboard() {
     ongoingProjects,
     publicationsByYear,
     projectsByStatus,
-    fundingGroups,
     departmentsRaw,
     staffCountByDept,
     pubCountByDept,
@@ -49,12 +48,6 @@ export default async function UniDashboard() {
     prisma.project.count({ where: { status: 'ONGOING' } }),
     prisma.publication.groupBy({ by: ['year'], _count: { id: true }, orderBy: { year: 'asc' } }),
     prisma.project.groupBy({ by: ['status'], _count: { id: true } }),
-    prisma.project.groupBy({
-      by: ['projectKind', 'status'],
-      where: { verificationStatus: 'VERIFIED' },
-      _count: { id: true },
-      _sum: { budgetAmount: true },
-    }),
     // Only fetch department names — no nested relations
     prisma.department.findMany({
       select: { id: true, name: true },
@@ -114,22 +107,6 @@ export default async function UniDashboard() {
   // Build per-department chart data
   const departments = departmentsRaw;
 
-  type KindSummary = { ongoing: number; completed: number; total: number; budget: number };
-  const makeKind = (): KindSummary => ({ ongoing: 0, completed: 0, total: 0, budget: 0 });
-  const funding: Record<'RESEARCH' | 'INDUSTRY', KindSummary> = {
-    RESEARCH: makeKind(),
-    INDUSTRY: makeKind(),
-  };
-  for (const g of fundingGroups) {
-    const bucket = funding[g.projectKind as 'RESEARCH' | 'INDUSTRY'];
-    if (!bucket) continue;
-    bucket.total += g._count.id;
-    if (g.status === 'ONGOING') bucket.ongoing += g._count.id;
-    if (g.status === 'COMPLETED') bucket.completed += g._count.id;
-    bucket.budget += Number(g._sum.budgetAmount ?? 0);
-  }
-  const fmtPKR = (n: number) =>
-    n >= 1_000_000 ? `PKR ${(n / 1_000_000).toFixed(2)}M` : `PKR ${n.toLocaleString()}`;
 
   type DeptRow = { id: string; name: string };
 
@@ -162,22 +139,15 @@ export default async function UniDashboard() {
     }),
   };
 
-  const submittedCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'SUBMITTED')?._count.id || 0;
-  const ongoingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'ONGOING')?._count.id || 0;
-  const completedCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'COMPLETED')?._count.id || 0;
-  const pendingCount = projectsByStatus.find((p: ProjectByStatus) => p.status === 'PENDING')?._count.id || 0;
+  const projectsStatusPieData = STATUS_ORDER.map((status) => ({
+    name: STATUS_LABEL[status],
+    value: projectsByStatus.find((p: ProjectByStatus) => p.status === status)?._count.id ?? 0,
+  }));
 
-  const projectsStatusPieData = [
-    { name: 'Submitted', value: submittedCount },
-    { name: 'Ongoing', value: ongoingCount },
-    { name: 'Completed', value: completedCount },
-    { name: 'Pending', value: pendingCount },
-  ];
-
-  type DeptDistribution = { name: string; value: number };
+  type DeptDistribution = { id: string; name: string; value: number };
 
   const departmentDistribution = departments
-    .map((d: DeptRow) => ({ name: safeDeptName(d), value: staffCountMap[d.id] ?? 0 }))
+    .map((d: DeptRow) => ({ id: d.id, name: safeDeptName(d), value: staffCountMap[d.id] ?? 0 }))
     .sort((a: DeptDistribution, b: DeptDistribution) => b.value - a.value);
 
   return (
@@ -287,91 +257,6 @@ export default async function UniDashboard() {
           </div>
         </section>
 
-        {/* Projects & Funding — Combined */}
-        <section className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="w-1 h-6 bg-[#2d6a4f] rounded-full block" />
-            <h2 className="text-xl font-bold text-gray-900">Projects &amp; Funding</h2>
-            <span className="text-sm text-gray-400 ml-auto">Budget data from approved projects</span>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 border-l-4 border-l-[#2d6a4f]">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-[#e8f5e9] p-2.5 rounded-xl">
-                <BarChart3 className="w-5 h-5 text-[#2d6a4f]" />
-              </div>
-              <h3 className="text-base font-bold text-gray-900">All Projects</h3>
-              <span className="ml-auto text-xs font-semibold text-[#2d6a4f] bg-[#e8f5e9] px-3 py-1 rounded-full">
-                {funding.RESEARCH.total + funding.INDUSTRY.total} approved
-              </span>
-            </div>
-
-            {/* Combined totals row */}
-            <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-100">
-              <div className="text-center">
-                <p className="text-3xl font-extrabold text-emerald-600 leading-none">{funding.RESEARCH.ongoing + funding.INDUSTRY.ongoing}</p>
-                <p className="text-xs text-gray-500 mt-1">Ongoing</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-extrabold text-gray-700 leading-none">{funding.RESEARCH.completed + funding.INDUSTRY.completed}</p>
-                <p className="text-xs text-gray-500 mt-1">Completed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-extrabold text-[#c9a961] leading-none">{fmtPKR(funding.RESEARCH.budget + funding.INDUSTRY.budget)}</p>
-                <p className="text-xs text-gray-500 mt-1">Total Budget</p>
-              </div>
-            </div>
-
-            {/* Research vs Industry breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-blue-50/60 rounded-xl p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <Briefcase className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-blue-700">Research</span>
-                  <span className="ml-auto text-xs font-bold text-blue-600">{funding.RESEARCH.total} total</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-lg font-extrabold text-emerald-600">{funding.RESEARCH.ongoing}</p>
-                    <p className="text-xs text-gray-500">Ongoing</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-extrabold text-gray-700">{funding.RESEARCH.completed}</p>
-                    <p className="text-xs text-gray-500">Done</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-extrabold text-gray-800">{fmtPKR(funding.RESEARCH.budget)}</p>
-                    <p className="text-xs text-gray-500">Budget</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-amber-50/60 rounded-xl p-4 border border-amber-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm font-semibold text-amber-700">Industry</span>
-                  <span className="ml-auto text-xs font-bold text-amber-600">{funding.INDUSTRY.total} total</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-lg font-extrabold text-emerald-600">{funding.INDUSTRY.ongoing}</p>
-                    <p className="text-xs text-gray-500">Ongoing</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-extrabold text-gray-700">{funding.INDUSTRY.completed}</p>
-                    <p className="text-xs text-gray-500">Done</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-extrabold text-gray-800">{fmtPKR(funding.INDUSTRY.budget)}</p>
-                    <p className="text-xs text-gray-500">Budget</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Research Analytics */}
         <section className="mb-10">
           <div className="flex items-center gap-3 mb-6">
@@ -409,7 +294,7 @@ export default async function UniDashboard() {
               </div>
               <p className="text-sm text-gray-400 mb-4">Full breakdown across all project lifecycle stages</p>
               <div className="flex items-center justify-center min-h-[280px]">
-                <PieChart data={projectsStatusPieData} colors={['#c9a961', '#2d6a4f', '#1976d2', '#e65100']} donut={true} height={300} />
+                <PieChart data={projectsStatusPieData} colors={STATUS_CHART_COLORS} donut={true} height={300} />
               </div>
             </div>
 
@@ -483,7 +368,7 @@ export default async function UniDashboard() {
                 <h4 className="text-lg font-bold text-gray-900 mb-4">Departments</h4>
                 <ul className="space-y-3 w-full">
                   {departmentDistribution.map((dept, idx) => (
-                    <li key={dept.name} className="flex items-center gap-3 text-sm">
+                    <li key={dept.id} className="flex items-center gap-3 text-sm">
                       <span
                         className="inline-block w-4 h-4 rounded-full flex-shrink-0"
                         style={{ backgroundColor: ['#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'][idx % 6] }}

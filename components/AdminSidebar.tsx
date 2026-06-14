@@ -8,11 +8,12 @@ import {
   Building2,
   GraduationCap,
   FlaskConical,
-  Wallet,
   LogOut,
   ChevronRight,
   Briefcase,
   UserCheck,
+  Shield,
+  CalendarDays,
 } from 'lucide-react';
 import { useLogout, useCurrentUser } from '@/lib/queries/auth';
 import { usePendingFaculty, useAdminStats } from '@/lib/queries/admin/stats';
@@ -29,7 +30,6 @@ interface NavItem {
 function getNavItems(
   pendingApplications: number,
   pendingCls: number,
-  pendingOric: number,
 ): NavItem[] {
   return [
     { label: 'Dashboard',       href: '/admin',                 icon: LayoutDashboard },
@@ -48,12 +48,8 @@ function getNavItems(
       icon: Briefcase,
       badge: pendingCls > 0 ? pendingCls : undefined,
     },
-    {
-      label: 'ORIC',
-      href: '/admin/oric',
-      icon: Wallet,
-      badge: pendingOric > 0 ? pendingOric : undefined,
-    },
+    { label: 'Verifications',   href: '/admin/verifications',  icon: Shield          },
+    { label: 'Events',          href: '/admin/events',          icon: CalendarDays    },
   ];
 }
 
@@ -76,10 +72,8 @@ export default function AdminSidebar() {
     name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   const pendingCls = stats?.pendingClsCount ?? 0;
-  // pendingVerifications already includes both pending profiles and pending projects
-  const pendingOric = stats?.pendingVerifications ?? 0;
 
-  const navItems = getNavItems(pendingFaculty.length, pendingCls, pendingOric);
+  const navItems = getNavItems(pendingFaculty.length, pendingCls);
 
   const isActive = (href: string) => {
     if (href === '/admin') return pathname === '/admin';

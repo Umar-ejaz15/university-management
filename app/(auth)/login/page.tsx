@@ -61,8 +61,12 @@ function LoginForm() {
         staff: null,
       });
 
+      const redirect = searchParams.get("redirect");
+
       if (data.user?.role === "ADMIN") {
         router.push("/admin");
+      } else if (data.user?.role === "ORIC") {
+        router.push(redirect?.startsWith("/oric-admin") ? redirect : "/oric-admin");
       } else if (data.user?.needsOnboarding) {
         router.push("/onboarding/teacher");
       } else {

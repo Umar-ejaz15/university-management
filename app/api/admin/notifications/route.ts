@@ -11,10 +11,11 @@ export async function GET() {
 
     const [notifications, unreadCount] = await Promise.all([
       prisma.notification.findMany({
+        where: { recipientRole: 'ADMIN' },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
-      prisma.notification.count({ where: { isRead: false } }),
+      prisma.notification.count({ where: { recipientRole: 'ADMIN', isRead: false } }),
     ]);
 
     return NextResponse.json({ notifications, unreadCount });
@@ -36,11 +37,14 @@ export async function PATCH(request: NextRequest) {
 
     if (ids && ids.length > 0) {
       await prisma.notification.updateMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, recipientRole: 'ADMIN' },
         data: { isRead: true },
       });
     } else {
-      await prisma.notification.updateMany({ data: { isRead: true } });
+      await prisma.notification.updateMany({
+        where: { recipientRole: 'ADMIN' },
+        data: { isRead: true },
+      });
     }
 
     return NextResponse.json({ success: true });

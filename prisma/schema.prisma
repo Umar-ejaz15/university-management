@@ -82,6 +82,14 @@ model Staff {
   projects             Project[]
   publications         Publication[]
   equipmentRequests    EquipmentRequest[]
+  consultancies        Consultancy[]
+  patents              Patent[]
+  ipDisclosures        IPDisclosure[]
+  ipLicensings         IPLicensing[]
+  mous                 Mou[]
+  industrialVisits     IndustrialVisit[]
+  events              Event[]
+  policyAdvocacies     PolicyAdvocacy[]
   department           Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 }
 
@@ -403,6 +411,7 @@ enum InstallmentStatus {
 
 enum UserRole {
   ADMIN
+  ORIC
   FACULTY
   STUDENT
 }
@@ -420,15 +429,237 @@ enum PublicationType {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  type      String
-  title     String
-  message   String
-  link      String?
-  metadata  Json?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  type          String
+  title         String
+  message       String
+  link          String?
+  metadata      Json?
+  isRead        Boolean  @default(false)
+  recipientRole String   @default("ADMIN")
+  createdAt     DateTime @default(now())
 
   @@index([isRead])
   @@index([createdAt])
+  @@index([recipientRole])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ORIC — Industry & Commercialization / IP / Linkages & Outreach
+// Faculty-submitted records compiled by ORIC. Unlike Project, these do not
+// require an ORIC approval gate (verificationStatus defaults to VERIFIED) but
+// the field is kept for optional admin review, matching the house pattern.
+// ────────────────────────────────────────────────────────────────────────────
+
+model Consultancy {
+  id                  String             @id @default(cuid())
+  title               String
+  clientName          String?
+  clientCountry       String?
+  clientAddress       String?            @db.Text
+  executionDate       DateTime?
+  serviceType         String?            // Feasibility Study | Testing & Analysis | Technical Advisory | ...
+  deliverables        String?            @db.Text
+  // Financial & timeline (ORIC manages)
+  contractValue       Decimal?           @db.Decimal(14, 2)
+  oricOverheadPercent Decimal?           @db.Decimal(5, 2)
+  oricOverheadAmount  Decimal?           @db.Decimal(14, 2)
+  startDate           DateTime?
+  endDate             DateTime?
+  status              String?            @default("Ongoing")
+  annexRef            String?
+  documentUrl         String?
+  remarks             String?            @db.Text
+  staffId             String
+  verificationStatus  VerificationStatus @default(VERIFIED)
+  rejectionReason     String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  staff               Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([status])
+}
+
+model Patent {
+  id                 String             @id @default(cuid())
+  title              String             // Title of invention
+  leadInventor       String?
+  designation        String?
+  department         String?
+  coInventors        String?            @db.Text
+  ipCategory         String?            // Product | Process | Technology | Software | Variety/Cultivar | Design
+  developmentStatus  String?            // Idea | Prototype | Validation | Production Ready | Commercialized
+  keyAspects         String?            @db.Text
+  commercialPartner  String?
+  financialSupport   String?
+  filedWith          String?            // IPO Pakistan | USPTO | FSC&RD | ...
+  scope              ProjectScope       @default(NATIONAL)
+  filingDate         DateTime?
+  applicationNumber  String?
+  patentStatus       String?            @default("Filed") // Filed | Under Examination | Published | Granted | Rejected
+  filingProofUrl     String?
+  annexRef           String?
+  // IPO tracking (ORIC fills)
+  ipoLastActionDate  DateTime?
+  ipoStatus          String?
+  ipoExaminer        String?
+  ipoComments        String?            @db.Text
+  staffId            String
+  verificationStatus VerificationStatus @default(VERIFIED)
+  rejectionReason    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  staff              Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([patentStatus])
+}
+
+model IPDisclosure {
+  id                  String             @id @default(cuid())
+  title               String
+  leadInventor        String?
+  designation         String?
+  department          String?
+  ipCategory          String?
+  developmentStatus   String?
+  scope               ProjectScope       @default(NATIONAL)
+  keyAspects          String?            @db.Text
+  commercialPartner   String?
+  financialSupport    String?
+  disclosureMadeWith  String?            @db.Text
+  previousDisclosure  String?            @db.Text
+  annexRef            String?
+  documentUrl         String?
+  staffId             String
+  verificationStatus  VerificationStatus @default(VERIFIED)
+  rejectionReason     String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  staff               Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+}
+
+model IPLicensing {
+  id                 String             @id @default(cuid())
+  title              String
+  leadInventor       String?
+  designationDept    String?
+  ipCategory         String?
+  developmentStatus  String?
+  scope              ProjectScope       @default(NATIONAL)
+  keyAspects         String?            @db.Text
+  fieldOfUse         String?
+  agreementDuration  String?
+  // Negotiation (ORIC manages)
+  negotiationStatus  String?            @default("Initial Contact")
+  licenseeName       String?
+  annexRef           String?
+  documentUrl        String?
+  staffId            String
+  verificationStatus VerificationStatus @default(VERIFIED)
+  rejectionReason    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  staff              Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+}
+
+model Mou {
+  id                   String             @id @default(cuid())
+  partyName            String             // Collaborator / party name
+  linkageType          String?            // Academic | Research
+  partyType            String?            // Academia | Industry | Government | NGO / CSO
+  establishmentDate    DateTime?
+  scope                ProjectScope       @default(NATIONAL)
+  country              String?
+  duration             String?
+  status               String?            @default("Active") // Active | Expired | Under Renewal | Terminated
+  focalPersonMnsuam    String?
+  focalPersonOther     String?
+  scopeOfCollaboration String?            @db.Text
+  activities           String?            @db.Text
+  futureInitiatives    String?            @db.Text
+  annexRef             String?
+  documentUrl          String?
+  staffId              String
+  verificationStatus   VerificationStatus @default(VERIFIED)
+  rejectionReason      String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  staff                Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([status])
+}
+
+model IndustrialVisit {
+  id                  String             @id @default(cuid())
+  visitorName         String
+  visitorOrg          String?            // Organization & designation
+  visitDate           DateTime?
+  agenda              String?            @db.Text
+  departmentVisited   String?
+  visitType           String?            // Industry | Community | Government
+  outcome             String?            @db.Text
+  proofUrl            String?
+  staffId             String
+  verificationStatus  VerificationStatus @default(VERIFIED)
+  rejectionReason     String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  staff               Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+}
+
+model Event {
+  id                     String             @id @default(cuid())
+  title                  String
+  eventDate              DateTime?
+  leadOrganizer          String?
+  category               String?            // Innovation Fair | Seminar | Workshop | Conference | IP Showcasing | ...
+  arrangedOrParticipated String?            // Arranged | Participated
+  scope                  ProjectScope       @default(NATIONAL)
+  participants           Int?
+  venue                  String?
+  subjectArea            String?
+  outcome                String?            @db.Text
+  collaborationDeveloped String?            @db.Text
+  sponsoringAgency       String?
+  grantValue             Decimal?           @db.Decimal(14, 2)
+  financialSupport       String?
+  webLinks               String?
+  annexRef               String?
+  reportUrl              String?
+  staffId                String?
+  verificationStatus     VerificationStatus @default(VERIFIED)
+  rejectionReason        String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  staff                  Staff?             @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([staffId])
+  @@index([category])
+}
+
+model PolicyAdvocacy {
+  id                 String             @id @default(cuid())
+  govtBody           String             // Govt. body / department presented to
+  areaAdvocated      String?            // Agriculture | Economic Development | Environment | ...
+  brief              String?            @db.Text
+  coalitionPartners  String?
+  advocacyTools      String?            @db.Text // Briefings, meetings, reports, workshops
+  annexRef           String?
+  staffId            String
+  verificationStatus VerificationStatus @default(VERIFIED)
+  rejectionReason    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  staff              Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
 }

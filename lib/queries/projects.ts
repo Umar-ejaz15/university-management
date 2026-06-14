@@ -29,6 +29,11 @@ export interface Project {
   budgetAmount: string | null;
   currency: string | null;
   collaborators: string | null;
+  funderType: string | null;
+  thematicArea: string | null;
+  financialYear: string | null;
+  sponsoringAgency: string | null;
+  projectType: string | null;
   staff: ProjectStaff;
 }
 

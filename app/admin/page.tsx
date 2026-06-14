@@ -15,13 +15,9 @@ import {
   Briefcase,
   Calendar,
   Sparkles,
-  AlertCircle,
   Shield,
-  Wallet,
-  TrendingUp,
   Globe,
-  Landmark,
-  BarChart3,
+  CalendarDays,
 } from 'lucide-react';
 import { useAdminStats, usePendingFaculty } from '@/lib/queries/admin/stats';
 
@@ -39,33 +35,6 @@ interface PendingFaculty {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getInitials(name: string) {
-  return name.split(' ').slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('');
-}
-
-function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
-}
-
-function fmtPKR(n: number, ccy = 'PKR') {
-  if (n >= 1_000_000) return `${ccy} ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${ccy} ${(n / 1_000).toFixed(0)}K`;
-  return `${ccy} ${n.toLocaleString()}`;
-}
 
 // ─── Quick Action Card ────────────────────────────────────────────────────────
 
@@ -106,55 +75,6 @@ function QuickActionCard({
         </div>
         <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#2d6a4f] group-hover:translate-x-0.5 transition-all mt-0.5 flex-shrink-0" />
       </div>
-    </button>
-  );
-}
-
-// ─── Project Kind Card ────────────────────────────────────────────────────────
-
-function ProjectKindCard({
-  kind, icon: Icon, color, colorBg, borderColor, ongoing, completed, total, budget,
-}: {
-  kind: string;
-  icon: React.ElementType;
-  color: string;
-  colorBg: string;
-  borderColor: string;
-  ongoing: number;
-  completed: number;
-  total: number;
-  budget: number;
-}) {
-  const router = useRouter();
-  return (
-    <button
-      onClick={() => router.push('/admin/oric')}
-      className={`bg-white rounded-2xl border ${borderColor} shadow-sm p-5 hover:shadow-md transition-all duration-200 text-left w-full group`}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-11 h-11 rounded-xl ${colorBg} flex items-center justify-center`}>
-          <Icon className={`w-5 h-5 ${color}`} />
-        </div>
-        <ArrowRight className={`w-4 h-4 text-gray-300 group-hover:${color} group-hover:translate-x-0.5 transition-all`} />
-      </div>
-      <p className={`text-xs font-semibold uppercase tracking-wider ${color} mb-1`}>{kind}</p>
-      <p className="text-2xl font-bold text-gray-900 mb-3">{total} Projects</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Ongoing</p>
-          <p className={`text-xl font-bold ${color} mt-0.5`}>{ongoing}</p>
-        </div>
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Completed</p>
-          <p className="text-xl font-bold text-gray-700 mt-0.5">{completed}</p>
-        </div>
-      </div>
-      {budget > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total Budget</p>
-          <p className="text-sm font-bold text-gray-900 mt-0.5">{fmtPKR(budget)}</p>
-        </div>
-      )}
     </button>
   );
 }
@@ -217,9 +137,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
-  const research = stats?.projectBreakdown?.RESEARCH ?? { ongoing: 0, completed: 0, total: 0, budget: 0 };
-  const industry = stats?.projectBreakdown?.INDUSTRY  ?? { ongoing: 0, completed: 0, total: 0, budget: 0 };
 
   return (
     <div className="min-h-screen">
@@ -297,52 +214,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* ── ORIC Projects Breakdown ──────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#c9a961]" />
-                ORIC Projects Overview
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">Research & industry project portfolio</p>
-            </div>
-            {(stats?.pendingProjectCount ?? 0) > 0 && (
-              <button
-                onClick={() => router.push('/admin/oric')}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold hover:bg-amber-200 transition-colors"
-              >
-                <AlertCircle className="w-3.5 h-3.5" />
-                {stats?.pendingProjectCount} awaiting approval
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ProjectKindCard
-              kind="Research Projects"
-              icon={TrendingUp}
-              color="text-[#2d6a4f]"
-              colorBg="bg-[#2d6a4f]/10"
-              borderColor="border-[#2d6a4f]/15"
-              ongoing={research.ongoing}
-              completed={research.completed}
-              total={research.total}
-              budget={research.budget}
-            />
-            <ProjectKindCard
-              kind="Industry Projects"
-              icon={Landmark}
-              color="text-[#c9a961]"
-              colorBg="bg-[#c9a961]/10"
-              borderColor="border-[#c9a961]/20"
-              ongoing={industry.ongoing}
-              completed={industry.completed}
-              total={industry.total}
-              budget={industry.budget}
-            />
-          </div>
-        </div>
-
         {/* ── Quick Actions ────────────────────────────────────────────── */}
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Quick Actions</h2>
@@ -400,12 +271,11 @@ export default function AdminDashboard() {
               badge={(stats?.pendingVerifications ?? 0) > 0 ? `${stats?.pendingVerifications} pending` : undefined}
             />
             <QuickActionCard
-              icon={<Wallet className="w-5 h-5 text-[#c9a961]" />}
-              iconBg="bg-[#c9a961]/10"
-              title="ORIC Projects"
-              description="Approve submissions, set budgets & installment schedules"
-              href="/admin/oric"
-              badge={(stats?.pendingProjectCount ?? 0) > 0 ? `${stats?.pendingProjectCount} to approve` : undefined}
+              icon={<CalendarDays className="w-5 h-5 text-rose-600" />}
+              iconBg="bg-rose-50"
+              title="Events"
+              description="Create and manage university-wide events, conferences, workshops, and fairs"
+              href="/admin/events"
             />
           </div>
         </div>

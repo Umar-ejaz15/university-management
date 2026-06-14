@@ -8,7 +8,7 @@ async function requireAdmin() {
   const token = cookieStore.get('auth-token')?.value;
   if (!token) return null;
   const payload = await verifyToken(token);
-  if (!payload || payload.role !== 'ADMIN') return null;
+  if (!payload || !['ADMIN','ORIC'].includes(payload.role)) return null;
   return payload;
 }
 

@@ -18,8 +18,10 @@ interface NavItem {
 // Public nav — shown to everyone
 const publicNavItems: NavItem[] = [
   { label: 'Dashboard',       href: '/uni-dashboard' },
-  { label: 'Faculties',       href: '/faculties',     match: '/faculties' },
-  { label: 'Faculty Members', href: '/staff',         match: '/staff' },
+  { label: 'Faculties',       href: '/faculties',              match: '/faculties'              },
+  { label: 'Faculty Members', href: '/staff',                  match: '/staff'                  },
+  { label: 'Projects',        href: '/uni-dashboard/project',  match: '/uni-dashboard/project'  },
+  { label: 'ORIC',            href: '/oric',                   match: '/oric'                   },
 ];
 
 const getAdditionalNavItems = (role: string): NavItem[] => {
@@ -27,6 +29,11 @@ const getAdditionalNavItems = (role: string): NavItem[] => {
     return [
       { label: 'Central Lab System', href: '/cls',   match: '/cls'   },
       { label: 'Admin Panel',        href: '/admin', match: '/admin' },
+    ];
+  }
+  if (role === 'ORIC') {
+    return [
+      { label: 'ORIC Admin Panel', href: '/oric-admin', match: '/oric-admin' },
     ];
   }
   if (role === 'FACULTY') {
@@ -177,6 +184,8 @@ export default function Header() {
                         <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-semibold rounded-full ${
                           user.role === 'ADMIN'
                             ? 'bg-[#2d6a4f]/10 text-[#2d6a4f]'
+                            : user.role === 'ORIC'
+                            ? 'bg-[#1a3d2b]/10 text-[#1a3d2b]'
                             : 'bg-[#c9a961]/15 text-[#8a6b2e]'
                         }`}>
                           {user.role}
@@ -203,6 +212,16 @@ export default function Header() {
                           >
                             <Settings className="w-4 h-4 text-gray-400" />
                             Admin Panel
+                          </Link>
+                        )}
+                        {user.role === 'ORIC' && (
+                          <Link
+                            href="/oric-admin"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <FlaskConical className="w-4 h-4 text-gray-400" />
+                            ORIC Admin Panel
                           </Link>
                         )}
                         <Link

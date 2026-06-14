@@ -46,7 +46,32 @@ export async function proxy(request: NextRequest) {
   }
 
   // =================================================================
-  // 2. HANDLE /faculty ROUTE (redirect to own profile)
+  // 2. ORIC ADMIN ROUTE PROTECTION
+  // =================================================================
+  if (pathname.startsWith('/oric-admin')) {
+    if (!token) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    try {
+      const user = await verifyToken(token);
+
+      if (!user || (user.role !== 'ORIC' && user.role !== 'ADMIN')) {
+        return NextResponse.redirect(new URL('/uni-dashboard', request.url));
+      }
+    } catch (_error) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return NextResponse.next();
+  }
+
+  // =================================================================
+  // 3. HANDLE /faculty ROUTE (redirect to own profile)
   // =================================================================
   if (pathname === '/faculty') {
     if (!token) {
@@ -108,9 +133,10 @@ export async function proxy(request: NextRequest) {
         const user = await verifyToken(token);
 
         if (user) {
-          // Admins go to admin panel, faculty to dashboard
           const redirectUrl = user.role === 'ADMIN'
             ? new URL('/admin', request.url)
+            : user.role === 'ORIC'
+            ? new URL('/oric-admin', request.url)
             : new URL('/uni-dashboard', request.url);
 
           return NextResponse.redirect(redirectUrl);

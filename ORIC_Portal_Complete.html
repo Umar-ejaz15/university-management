@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORIC MNSUAM — Office of Research, Innovation & Commercialization</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a3a5c;--navy-dark:#0f2540;--navy-light:#2a5a8c;
+  --gold:#c8931a;--gold-light:#f0c040;
+  --green:#1a7a3a;--red:#b22222;--blue:#1a5faa;--purple:#5b21b6;
+  --bg:#f4f6f9;--white:#fff;
+  --border:#dee2e6;--text:#2c3e50;--muted:#6c757d;
+  --sidebar-w:252px;--top-h:54px;
+}
+body{font-family:'Inter',sans-serif;font-size:13px;color:var(--text);background:var(--bg)}
+
+/* TOP BAR */
+.topbar{height:var(--top-h);background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:12px;position:fixed;top:0;left:0;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tb-logo{display:flex;align-items:center;gap:9px;width:var(--sidebar-w);flex-shrink:0}
+.logo-em{width:34px;height:34px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--navy-dark);letter-spacing:.3px}
+.logo-nm{color:#fff;font-size:13px;font-weight:700;line-height:1.15}
+.logo-sb{color:#9bb5d0;font-size:9.5px}
+.tb-title{color:#dde8f5;font-size:13px;font-weight:500;flex:1}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.period-sel{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:5px 8px;font-size:11px;font-family:inherit}
+.period-sel option{color:#000}
+.user-chip{display:flex;align-items:center;gap:7px;color:#dde8f5;font-size:11px;padding:5px 9px;border-radius:5px;border:1px solid rgba(255,255,255,.18);cursor:pointer}
+.role-badge{font-size:9px;padding:2px 6px;border-radius:9px;background:var(--gold);color:var(--navy-dark);font-weight:700}
+.role-switch{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:5px 7px;font-size:10px;font-family:inherit;cursor:pointer}
+.role-switch option{color:#000}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:#fff;border-right:1px solid var(--border);position:fixed;top:var(--top-h);bottom:0;overflow-y:auto;z-index:50}
+.sb-head{font-size:9px;font-weight:700;color:#9aa0a6;text-transform:uppercase;letter-spacing:1.1px;padding:11px 16px 4px}
+.snav{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;color:#445;font-size:12px;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all .12s;font-family:inherit}
+.snav svg{width:15px;height:15px;flex-shrink:0;opacity:.55}
+.snav:hover{background:#f0f4f8;color:var(--navy)}
+.snav.active{background:#e8f0fa;color:var(--navy);border-left-color:var(--navy);font-weight:600}
+.snav.active svg{opacity:1}
+.sb-div{height:1px;background:var(--border);margin:3px 0}
+.sb-count{margin-left:auto;font-size:9px;background:#eef2f6;color:var(--muted);border-radius:9px;padding:1px 7px;font-weight:600}
+.sb-count.alert{background:#fee2e2;color:#991b1b}
+
+/* role-scoped nav groups */
+.nav-grp{display:none}
+body.view-public .nav-grp.g-public{display:block}
+body.view-faculty .nav-grp.g-faculty{display:block}
+body.view-admin .nav-grp.g-admin{display:block}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);margin-top:var(--top-h);padding:22px 24px;min-height:calc(100vh - var(--top-h))}
+.page{display:none}
+.page.active{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* PAGE HEADER */
+.ph{background:#fff;border:1px solid var(--border);border-radius:8px;padding:15px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ph-l{display:flex;align-items:center;gap:12px}
+.ph-ic{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ph-t{font-size:15px;font-weight:700;color:var(--navy)}
+.ph-d{font-size:11px;color:var(--muted);margin-top:2px}
+.ph-a{display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:15px;overflow:hidden}
+.card-h{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fbfcfd;gap:8px;flex-wrap:wrap}
+.card-t{font-size:12px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:7px}
+.card-b{padding:16px 18px}
+
+/* FORM */
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:11px;font-weight:600;color:#3a4a5a;margin-bottom:4px}
+.fg label .req{color:#c0392b;margin-left:1px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 10px;border:1px solid #cdd2d8;border-radius:5px;font-size:12px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .12s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--navy-light);box-shadow:0 0 0 2px rgba(26,95,170,.1)}
+.fg textarea{resize:vertical;min-height:64px}
+.fg .hint{font-size:10px;color:var(--muted);margin-top:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.full{grid-column:1/-1}
+.radio-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:3px}
+.radio-row label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:400}
+
+/* SECTION DIVIDER */
+.sd{font-size:11px;font-weight:700;color:#fff;background:var(--navy);padding:7px 13px;border-radius:5px;margin:16px 0 12px;display:flex;align-items:center;gap:7px}
+.sd.sub{background:#e8eef4;color:var(--navy);border-left:3px solid var(--navy)}
+
+/* REPEATER TABLE */
+.rt-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
+.rt{width:100%;border-collapse:collapse;font-size:11px}
+.rt th{background:#eef3f8;color:var(--navy);font-weight:600;padding:7px 8px;border:1px solid var(--border);text-align:left;white-space:nowrap;font-size:10px}
+.rt td{padding:4px 5px;border:1px solid var(--border);vertical-align:top}
+.rt td input,.rt td select,.rt td textarea{width:100%;border:1px solid #dde;border-radius:3px;padding:5px 6px;font-size:11px;font-family:inherit;outline:none;min-width:80px}
+.rt td input:focus,.rt td select:focus{border-color:var(--navy-light)}
+.rt td textarea{min-height:42px;resize:vertical}
+.rt tr:nth-child(even) td{background:#fafbfc}
+.add-row{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:11px;color:var(--blue);cursor:pointer;background:none;border:1px dashed #b8c4d0;border-radius:5px;padding:6px 12px;font-family:inherit;font-weight:500}
+.add-row:hover{background:#f0f6ff;border-color:var(--blue)}
+.del-btn{width:24px;height:24px;border:1px solid #f0c0c0;border-radius:3px;background:#fff8f8;cursor:pointer;color:#b22;display:flex;align-items:center;justify-content:center;font-size:12px}
+.del-btn:hover{background:#ffe0e0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:5px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text);transition:all .12s}
+.btn:hover{background:#f0f4f8}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-primary:hover{background:var(--navy-dark)}
+.btn-success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-success:hover{filter:brightness(.92)}
+.btn-danger{background:#fff;color:var(--red);border-color:#e8b4b4}
+.btn-danger:hover{background:#fff0f0}
+.btn-gold{background:var(--gold);color:var(--navy-dark);border-color:var(--gold)}
+.btn-sm{padding:5px 9px;font-size:11px}
+.ff{display:flex;justify-content:space-between;align-items:center;padding-top:15px;border-top:1px solid var(--border);margin-top:16px;gap:8px;flex-wrap:wrap}
+
+/* ROLE NOTE */
+.rn{font-size:10px;padding:5px 11px;border-radius:5px;display:inline-flex;align-items:center;gap:5px;margin-bottom:12px;font-weight:600}
+.rn-admin{background:#dbeafe;color:#1e3a8a;border:1px solid #bfdbfe}
+.rn-faculty{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+.rn-both{background:#f0fdf4;color:#14532d;border:1px solid #bbf7d0}
+
+/* role-locked fields — faculty cannot edit ORIC-handled fields */
+.admin-only{position:relative}
+body.view-faculty .admin-only{opacity:.6}
+body.view-faculty .admin-only input,body.view-faculty .admin-only select,body.view-faculty .admin-only textarea,body.view-faculty .admin-only .upz{background:#f5f5f5;pointer-events:none}
+body.view-faculty .admin-lock-badge{display:inline-flex}
+.admin-lock-badge{display:none;font-size:9px;background:#dbeafe;color:#1e3a8a;border-radius:8px;padding:1px 6px;margin-left:6px;font-weight:600}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+.t-blue{background:#dbeafe;color:#1e40af}.t-green{background:#dcfce7;color:#15803d}
+.t-amber{background:#fef3c7;color:#92400e}.t-red{background:#fee2e2;color:#991b1b}
+.t-gray{background:#f1f5f9;color:#475569}.t-purple{background:#ede9fe;color:#5b21b6}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 15px;border-top:3px solid var(--navy)}
+.stat.green{border-top-color:var(--green)}.stat.gold{border-top-color:var(--gold)}
+.stat.red{border-top-color:#c0392b}.stat.purple{border-top-color:var(--purple)}.stat.blue{border-top-color:var(--blue)}
+.stat-n{font-size:25px;font-weight:800;color:var(--navy);line-height:1}
+.stat-l{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-s{font-size:10px;color:#aaa;margin-top:2px}
+
+/* DATA TABLE */
+.dt-wrap{overflow-x:auto}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{background:#eef3f8;color:var(--navy);font-weight:600;padding:8px 10px;border:1px solid var(--border);text-align:left;font-size:11px;white-space:nowrap}
+.dt td{padding:8px 10px;border:1px solid var(--border)}
+.dt tr:hover td{background:#f8fafc}
+
+/* ALERT */
+.alert{padding:9px 13px;border-radius:5px;font-size:12px;margin-bottom:13px;display:flex;align-items:flex-start;gap:8px}
+.alert-info{background:#dbeafe;color:#1e40af;border-left:3px solid #3b82f6}
+.alert-warn{background:#fef3c7;color:#92400e;border-left:3px solid #f59e0b}
+.alert-green{background:#dcfce7;color:#15803d;border-left:3px solid #22c55e}
+
+/* UPLOAD */
+.upz{border:2px dashed #cdd2d8;border-radius:5px;padding:10px;text-align:center;cursor:pointer;background:#fafbfc;font-size:11px;color:var(--muted)}
+.upz:hover{border-color:var(--navy-light);background:#f0f6ff}
+
+/* PROGRESS */
+.pbar{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-top:6px}
+.pfill{height:100%;border-radius:3px;background:var(--navy)}
+
+/* KPI scorecard */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.kpi-card{border:1px solid var(--border);border-radius:8px;padding:13px 15px}
+.kpi-card .kn{font-size:11px;color:var(--muted)}
+.kpi-card .kv{font-size:20px;font-weight:800;color:var(--navy);margin-top:3px}
+.kpi-card .kx{font-size:10px;color:#aaa}
+
+/* report module */
+.rep-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px;cursor:pointer;transition:all .12s}
+.rep-opt:hover{border-color:var(--navy-light);background:#f8fafc}
+.rep-opt .ic{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.rep-opt .tt{font-size:12px;font-weight:600;color:var(--navy)}
+.rep-opt .ds{font-size:11px;color:var(--muted)}
+.rep-opt .gen{margin-left:auto}
+
+/* ===== PUBLIC HERO ===== */
+.hero{background:linear-gradient(120deg,var(--navy-dark),var(--navy) 55%,var(--navy-light));border-radius:10px;padding:26px 28px;color:#fff;margin-bottom:18px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(240,192,64,.25),transparent 70%);border-radius:50%}
+.hero h1{font-size:21px;font-weight:800;letter-spacing:.2px}
+.hero p{font-size:12.5px;color:#cfe0f2;margin-top:6px;max-width:680px;line-height:1.5}
+.hero .tagrow{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.hero .hpill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600}
+
+/* ===== MODULE LINK CARDS (hub) ===== */
+.modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px}
+.modcard{background:#fff;border:1px solid var(--border);border-radius:9px;padding:16px;cursor:pointer;transition:all .14s;text-align:left;font-family:inherit;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--navy)}
+.modcard:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(26,58,92,.13);border-top-color:var(--gold)}
+.modcard .mic{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.modcard .mt{font-size:13px;font-weight:700;color:var(--navy)}
+.modcard .md{font-size:11px;color:var(--muted);line-height:1.45;flex:1}
+.modcard .mm{font-size:11px;font-weight:700;color:var(--blue);display:flex;align-items:center;gap:4px}
+.modcard .mnum{font-size:22px;font-weight:800;color:var(--navy)}
+
+/* ===== FILTER BAR ===== */
+.filterbar{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:10px;align-items:end}
+.filterbar .fg{margin:0}
+.filterbar .fg label{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#8a96a3}
+@media(max-width:1100px){.filterbar{grid-template-columns:1fr 1fr 1fr}}
+
+/* ===== PROFILE SHELL (inner sidebar) ===== */
+.profile-shell{display:grid;grid-template-columns:230px 1fr;gap:16px;align-items:start}
+.profile-nav{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;position:sticky;top:calc(var(--top-h) + 16px)}
+.profile-nav .pn-head{padding:13px 15px;background:var(--navy);color:#fff}
+.profile-nav .pn-head .pn-name{font-size:13px;font-weight:700}
+.profile-nav .pn-head .pn-sub{font-size:10.5px;color:#bcd2e8;margin-top:2px}
+.pnav{display:flex;align-items:center;gap:9px;padding:9px 15px;cursor:pointer;color:#445;font-size:12px;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;font-family:inherit;transition:all .12s}
+.pnav span.ix{width:18px;text-align:center}
+.pnav:hover{background:#f0f4f8;color:var(--navy)}
+.pnav.active{background:#e8f0fa;color:var(--navy);border-left-color:var(--gold);font-weight:600}
+.pnav .pn-stat{margin-left:auto;font-size:9px;border-radius:8px;padding:1px 7px;font-weight:700}
+.psec{display:none}
+.psec.active{display:block;animation:fade .2s}
+@media(max-width:900px){.profile-shell{grid-template-columns:1fr}.profile-nav{position:static}}
+
+/* status step header for profile sections */
+.sec-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f8fafc;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:7px;padding:11px 15px;margin-bottom:14px;flex-wrap:wrap}
+.sec-banner .sb-t{font-size:14px;font-weight:700;color:var(--navy)}
+.sec-banner .sb-d{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* review (read-only) rows in approval detail */
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.rv{padding:8px 0;border-bottom:1px dashed #e6eaee;display:flex;gap:10px;font-size:12px}
+.rv .rvl{color:var(--muted);min-width:150px;font-weight:600}
+.rv .rvv{color:var(--text);font-weight:500}
+.rv.full{grid-column:1/-1}
+.checklist{list-style:none}
+.checklist li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px dashed #eef1f4}
+.ck{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ck.ok{background:#dcfce7;color:#15803d}.ck.miss{background:#fee2e2;color:#991b1b}
+
+@media(max-width:1000px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body class="view-public">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="logo-em">ORIC</div>
+    <div><div class="logo-nm">MNSUAM</div><div class="logo-sb">Research, Innovation & Commercialization</div></div>
+  </div>
+  <div class="tb-title" id="tbTitle">Public Dashboard</div>
+  <div class="tb-right">
+    <select class="period-sel"><option>July 2024 – June 2025</option><option>July 2023 – June 2024</option><option>July 2022 – June 2023</option></select>
+    <select class="role-switch" id="roleSwitch" onchange="switchRole(this.value)" title="Switch view role">
+      <option value="public">View as: Public</option>
+      <option value="faculty">View as: Faculty / PI</option>
+      <option value="admin">View as: ORIC Admin</option>
+    </select>
+    <div class="user-chip"><span id="userName">Guest</span><span class="role-badge" id="roleBadge">PUBLIC</span></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <!-- PUBLIC NAV -->
+  <div class="nav-grp g-public">
+    <div class="sb-head">Public Portal</div>
+    <button class="snav" data-page="pub-dashboard" onclick="go('pub-dashboard')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 7h7v7H3zm0 10h7v3H3zm11-13h7v4h-7zm0 7h7v9h-7z"/></svg>Dashboard</button>
+    <button class="snav" data-page="pub-projects" onclick="go('pub-projects')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>Projects Directory<span class="sb-count">10</span></button>
+    <button class="snav" data-page="pub-ip" onclick="go('pub-ip')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m-5.2-7.3a3.4 3.4 0 001.9-.8 3.4 3.4 0 014.4 0 3.4 3.4 0 001.9.8 3.4 3.4 0 013.1 3.1 3.4 3.4 0 00.8 1.9 3.4 3.4 0 010 4.4 3.4 3.4 0 00-.8 1.9 3.4 3.4 0 01-3.1 3.1 3.4 3.4 0 00-1.9.8 3.4 3.4 0 01-4.4 0 3.4 3.4 0 00-1.9-.8 3.4 3.4 0 01-3.1-3.1 3.4 3.4 0 00-.8-1.9 3.4 3.4 0 010-4.4 3.4 3.4 0 00.8-1.9 3.4 3.4 0 013.1-3.1z"/></svg>Innovation & Patents<span class="sb-count">23</span></button>
+    <button class="snav" data-page="pub-linkages" onclick="go('pub-linkages')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.4-1.9M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.9M7 20H2v-2a3 3 0 015.4-1.9M7 20v-2c0-.7.1-1.3.4-1.9m0 0a5 5 0 019.3 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Linkages & Events<span class="sb-count">49</span></button>
+    <div class="sb-div"></div>
+    <div class="sb-head">Get Involved</div>
+    <button class="snav" data-page="profile" onclick="switchRole('faculty')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Faculty Login / Submit</button>
+  </div>
+
+  <!-- FACULTY NAV -->
+  <div class="nav-grp g-faculty">
+    <div class="sb-head">My ORIC</div>
+    <button class="snav" data-page="profile" onclick="go('profile')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>My Profile & Submissions</button>
+    <button class="snav" data-page="my-status" onclick="go('my-status')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Submission Status<span class="sb-count">5</span></button>
+    <div class="sb-div"></div>
+    <div class="sb-head">Browse</div>
+    <button class="snav" data-page="pub-projects" onclick="go('pub-projects')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>Projects Directory</button>
+  </div>
+
+  <!-- ADMIN NAV -->
+  <div class="nav-grp g-admin">
+    <div class="sb-head">Overview</div>
+    <button class="snav" data-page="admin-dashboard" onclick="go('admin-dashboard')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 7h7v7H3zm0 10h7v3H3zm11-13h7v4h-7zm0 7h7v9h-7z"/></svg>Dashboard</button>
+    <button class="snav" data-page="approvals" onclick="go('approvals')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Project Approvals<span class="sb-count alert">4</span></button>
+
+    <div class="sb-div"></div>
+    <div class="sb-head">Registers</div>
+    <button class="snav" data-page="rp-register" onclick="go('rp-register')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>Research Projects<span class="sb-count">10</span></button>
+    <button class="snav" data-page="industry-reg" onclick="go('industry-reg')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5M9 7h6M9 11h6M9 15h4"/></svg>Industry Projects<span class="sb-count">14</span></button>
+    <button class="snav" data-page="consultancy-reg" onclick="go('consultancy-reg')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6a1 1 0 01.7.3l5.4 5.4a1 1 0 01.3.7V19a2 2 0 01-2 2z"/></svg>Consultancies<span class="sb-count">7</span></button>
+
+    <div class="sb-div"></div>
+    <div class="sb-head">Intellectual Property</div>
+    <button class="snav" data-page="patents-reg" onclick="go('patents-reg')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m-5.2-7.3a3.4 3.4 0 001.9-.8 3.4 3.4 0 014.4 0 3.4 3.4 0 001.9.8 3.4 3.4 0 013.1 3.1 3.4 3.4 0 00.8 1.9 3.4 3.4 0 010 4.4 3.4 3.4 0 00-.8 1.9 3.4 3.4 0 01-3.1 3.1 3.4 3.4 0 00-1.9.8 3.4 3.4 0 01-4.4 0 3.4 3.4 0 00-1.9-.8 3.4 3.4 0 01-3.1-3.1 3.4 3.4 0 00-.8-1.9 3.4 3.4 0 010-4.4 3.4 3.4 0 00.8-1.9 3.4 3.4 0 013.1-3.1z"/></svg>Patents & IP<span class="sb-count">23</span></button>
+
+    <div class="sb-div"></div>
+    <div class="sb-head">Linkages & Outreach</div>
+    <button class="snav" data-page="linkages-reg" onclick="go('linkages-reg')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.4-1.9M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.9M7 20H2v-2a3 3 0 015.4-1.9M7 20v-2c0-.7.1-1.3.4-1.9m0 0a5 5 0 019.3 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>MoUs, Visits & Events</button>
+
+    <div class="sb-div"></div>
+    <div class="sb-head">Reporting</div>
+    <button class="snav" data-page="reports" onclick="go('reports')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6a1 1 0 01.7.3l5.4 5.4a1 1 0 01.3.7V19a2 2 0 01-2 2z"/></svg>HEC Scorecard & Reports</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ============================================================ -->
+<!-- ===================== PUBLIC DASHBOARD ===================== -->
+<!-- ============================================================ -->
+<div class="page active" id="page-pub-dashboard">
+  <div class="hero">
+    <h1>Office of Research, Innovation & Commercialization</h1>
+    <p>Muhammad Nawaz Shareef University of Agriculture, Multan. A consolidated public view of MNSUAM's research projects, patents, industry linkages and innovation outcomes — updated for the reporting period July 2024 – June 2025.</p>
+    <div class="tagrow">
+      <span class="hpill">🎓 6 Faculties</span>
+      <span class="hpill">🔬 42 Research Projects</span>
+      <span class="hpill">🏅 23 Patents & IP</span>
+      <span class="hpill">🤝 18 Active MoUs</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat blue"><div class="stat-n">42</div><div class="stat-l">Research Projects</div><div class="stat-s">24 ongoing · 12 completed</div></div>
+    <div class="stat"><div class="stat-n">14</div><div class="stat-l">Industry Projects</div><div class="stat-s">PKR 38.2M total value</div></div>
+    <div class="stat gold"><div class="stat-n">7</div><div class="stat-l">Consultancies</div><div class="stat-s">PKR 8.4M value</div></div>
+    <div class="stat green"><div class="stat-n">23</div><div class="stat-l">Patents & IP</div><div class="stat-s">5 granted · 18 filed</div></div>
+    <div class="stat purple"><div class="stat-n">18</div><div class="stat-l">Active MoUs</div><div class="stat-s">Industry + Academia</div></div>
+    <div class="stat red"><div class="stat-n">31</div><div class="stat-l">Events & Outreach</div><div class="stat-s">This reporting year</div></div>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="card-t">🧭 Explore ORIC</div><span class="tag t-gray">Click a card to open</span></div>
+    <div class="card-b">
+      <div class="modgrid">
+        <button class="modcard" onclick="go('pub-projects')"><div class="mic" style="background:#dbeafe;color:#1e40af">🔬</div><div class="mt">Research Projects Directory</div><div class="md">Browse all funded research with filters by type, funder, status and department.</div><div class="mm">Open directory →</div></button>
+        <button class="modcard" onclick="go('pub-ip')"><div class="mic" style="background:#dcfce7;color:#15803d">🏅</div><div class="mt">Innovation & Patents</div><div class="md">Filed and granted patents, IP disclosures and licensing activity at MNSUAM.</div><div class="mm">View IP portfolio →</div></button>
+        <button class="modcard" onclick="go('pub-linkages')"><div class="mic" style="background:#d1fae5;color:#065f46">🤝</div><div class="mt">Linkages & Events</div><div class="md">MoUs, industrial visits, exhibitions, seminars and policy advocacy.</div><div class="mm">See collaborations →</div></button>
+        <button class="modcard" onclick="switchRole('faculty')"><div class="mic" style="background:#fef3c7;color:#92400e">📝</div><div class="mt">Submit as Faculty</div><div class="md">Faculty and PIs can submit project proposals and ORIC data through their profile.</div><div class="mm">Go to my profile →</div></button>
+        <button class="modcard" onclick="go('reports')"><div class="mic" style="background:#ede9fe;color:#5b21b6">📈</div><div class="mt">HEC Scorecard</div><div class="md">MNSUAM's live HEC ORIC scorecard readiness and KPI breakdown.</div><div class="mm">View scorecard →</div></button>
+        <button class="modcard" onclick="go('pub-projects')"><div class="mic" style="background:#fee2e2;color:#991b1b">💰</div><div class="mt">Funding Snapshot</div><div class="md">Total external funding mobilised across grants, industry and consultancy.</div><div class="mnum">PKR 54.8M</div></button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:15px">
+    <div class="card">
+      <div class="card-h"><div class="card-t">📊 Funding by Faculty (PKR Million)</div></div>
+      <div class="card-b">
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Agriculture</span><span>22.4M</span></div><div class="pbar"><div class="pfill" style="width:90%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Agricultural Engineering</span><span>14.1M</span></div><div class="pbar"><div class="pfill" style="width:58%;background:var(--green)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Veterinary & Animal Sciences</span><span>9.7M</span></div><div class="pbar"><div class="pfill" style="width:40%;background:var(--gold)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Sciences</span><span>5.3M</span></div><div class="pbar"><div class="pfill" style="width:22%;background:var(--purple)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Social Sciences & Humanities</span><span>3.3M</span></div><div class="pbar"><div class="pfill" style="width:14%;background:var(--blue)"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">🏆 Top Funders</div></div>
+      <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt">
+        <thead><tr><th>Funder</th><th>Projects</th></tr></thead>
+        <tbody>
+          <tr><td>HEC (NRPU / GCF)</td><td>14</td></tr>
+          <tr><td>PSF</td><td>6</td></tr>
+          <tr><td>USDA / USAID</td><td>4</td></tr>
+          <tr><td>Punjab Agri. Dept.</td><td>5</td></tr>
+          <tr><td>Industry Sponsored</td><td>14</td></tr>
+        </tbody>
+      </table></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ================= PUBLIC PROJECTS DIRECTORY ================ -->
+<!-- ============================================================ -->
+<div class="page" id="page-pub-projects">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1a3a5c">🔬</div>
+      <div><div class="ph-t">Research & Funded Projects Directory</div><div class="ph-d">Public listing of approved projects · use the filters to narrow results</div></div></div>
+    <div class="ph-a"><button class="btn btn-sm" onclick="exportNote()">⬇ Export CSV</button></div>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="card-t">🔎 Filter Projects</div><button class="btn btn-sm" onclick="clearProjFilters()">Clear all</button></div>
+    <div class="card-b">
+      <div class="filterbar">
+        <div class="fg"><label>Search</label><input id="fSearch" oninput="filterProjects()" placeholder="Title, PI, file no…"></div>
+        <div class="fg"><label>Project Type</label><select id="fType" onchange="filterProjects()"><option value="">All</option><option>Research</option><option>Development</option><option>Industry</option><option>Consultancy</option><option>Contracted Research</option></select></div>
+        <div class="fg"><label>Funding Type</label><select id="fFund" onchange="filterProjects()"><option value="">All</option><option>HEC</option><option>PSF</option><option>International</option><option>Industry</option><option>Government</option><option>MNSUAM</option></select></div>
+        <div class="fg"><label>Status</label><select id="fStatus" onchange="filterProjects()"><option value="">All</option><option>Awarded</option><option>Ongoing</option><option>Completed</option></select></div>
+        <div class="fg"><label>Scope</label><select id="fScope" onchange="filterProjects()"><option value="">All</option><option>National</option><option>International</option></select></div>
+        <div class="fg"><label>Department</label><select id="fDept" onchange="filterProjects()"><option value="">All</option><option>Plant Breeding & Genetics</option><option>Agri Engineering</option><option>Soil Science</option><option>Entomology</option><option>Food Science</option><option>Veterinary</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="card-t">Projects <span class="tag t-gray" id="projCount">10 results</span></div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:980px" id="projTable">
+      <thead><tr><th>File No.</th><th>Title</th><th>PI / Department</th><th>Type</th><th>Funder</th><th>Scope</th><th>Budget (PKR)</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr data-type="Research" data-fund="HEC" data-status="Ongoing" data-scope="National" data-dept="Plant Breeding & Genetics"><td>RP-018/24</td><td>Drought-Resistant Wheat Lines</td><td>Dr. Hassan / Plant Breeding & Genetics</td><td>Research</td><td>HEC NRPU</td><td><span class="tag t-blue">Nat</span></td><td>4,200,000</td><td><span class="tag t-green">Ongoing</span></td></tr>
+        <tr data-type="Research" data-fund="PSF" data-status="Awarded" data-scope="National" data-dept="Agri Engineering"><td>RP-021/24</td><td>Precision Agriculture Sensors</td><td>Dr. Ayesha / Agri Engineering</td><td>Research</td><td>PSF</td><td><span class="tag t-blue">Nat</span></td><td>3,800,000</td><td><span class="tag t-amber">Awarded</span></td></tr>
+        <tr data-type="Research" data-fund="International" data-status="Completed" data-scope="International" data-dept="Soil Science"><td>RP-015/23</td><td>Soil Microbiome & Fertility</td><td>Dr. Imran / Soil Science</td><td>Research</td><td>USDA</td><td><span class="tag t-purple">Int</span></td><td>6,500,000</td><td><span class="tag t-gray">Completed</span></td></tr>
+        <tr data-type="Development" data-fund="Government" data-status="Ongoing" data-scope="National" data-dept="Entomology"><td>RP-024/24</td><td>Integrated Pest Management for Cotton</td><td>Dr. Naveed / Entomology</td><td>Development</td><td>Punjab Agri. Dept.</td><td><span class="tag t-blue">Nat</span></td><td>2,900,000</td><td><span class="tag t-green">Ongoing</span></td></tr>
+        <tr data-type="Industry" data-fund="Industry" data-status="Ongoing" data-scope="National" data-dept="Food Science"><td>IP-006/24</td><td>Shelf-Life Extension of Mango Pulp</td><td>Dr. Sana / Food Science</td><td>Industry</td><td>Shezan Intl.</td><td><span class="tag t-blue">Nat</span></td><td>5,100,000</td><td><span class="tag t-green">Ongoing</span></td></tr>
+        <tr data-type="Industry" data-fund="Industry" data-status="Awarded" data-scope="International" data-dept="Veterinary"><td>IP-009/24</td><td>Poultry Vaccine Cold-Chain Study</td><td>Dr. Bilal / Veterinary</td><td>Industry</td><td>Sadiq Feeds</td><td><span class="tag t-purple">Int</span></td><td>7,200,000</td><td><span class="tag t-amber">Awarded</span></td></tr>
+        <tr data-type="Consultancy" data-fund="Industry" data-status="Completed" data-scope="National" data-dept="Agri Engineering"><td>CN-003/24</td><td>Irrigation Efficiency Audit</td><td>Dr. Ayesha / Agri Engineering</td><td>Consultancy</td><td>FatimaFert.</td><td><span class="tag t-blue">Nat</span></td><td>1,400,000</td><td><span class="tag t-gray">Completed</span></td></tr>
+        <tr data-type="Research" data-fund="HEC" data-status="Ongoing" data-scope="National" data-dept="Plant Breeding & Genetics"><td>RP-027/24</td><td>Heat-Tolerant Maize Hybrids</td><td>Dr. Hassan / Plant Breeding & Genetics</td><td>Research</td><td>HEC GCF</td><td><span class="tag t-blue">Nat</span></td><td>4,950,000</td><td><span class="tag t-green">Ongoing</span></td></tr>
+        <tr data-type="Contracted Research" data-fund="International" data-status="Awarded" data-scope="International" data-dept="Soil Science"><td>RP-029/24</td><td>Carbon Sequestration in Arid Soils</td><td>Dr. Imran / Soil Science</td><td>Contracted Research</td><td>FAO</td><td><span class="tag t-purple">Int</span></td><td>9,300,000</td><td><span class="tag t-amber">Awarded</span></td></tr>
+        <tr data-type="Research" data-fund="MNSUAM" data-status="Completed" data-scope="National" data-dept="Food Science"><td>RP-011/23</td><td>Biofortified Rice Quality Profiling</td><td>Dr. Sana / Food Science</td><td>Research</td><td>MNSUAM Seed</td><td><span class="tag t-blue">Nat</span></td><td>1,200,000</td><td><span class="tag t-gray">Completed</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ================== PUBLIC IP / PATENTS ===================== -->
+<!-- ============================================================ -->
+<div class="page" id="page-pub-ip">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#dcfce7;color:#15803d">🏅</div>
+    <div><div class="ph-t">Innovation, Patents & IP Portfolio</div><div class="ph-d">Filed / granted patents, disclosures and licensing — public view</div></div></div></div>
+  <div class="stats">
+    <div class="stat green"><div class="stat-n">23</div><div class="stat-l">Total Patents</div><div class="stat-s">5 granted · 18 filed</div></div>
+    <div class="stat"><div class="stat-n">11</div><div class="stat-l">IP Disclosures</div></div>
+    <div class="stat gold"><div class="stat-n">4</div><div class="stat-l">Licensing Deals</div></div>
+    <div class="stat blue"><div class="stat-n">7</div><div class="stat-l">Commercialized</div></div>
+  </div>
+  <div class="card"><div class="card-h"><div class="card-t">Patents & IP Register (Public)</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:900px">
+      <thead><tr><th>SN</th><th>Title of Invention</th><th>Lead Inventor</th><th>Category</th><th>Filed With</th><th>Scope</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Soil Moisture Monitoring Device</td><td>Dr. Ayesha</td><td>Technology</td><td>IPO Pakistan</td><td><span class="tag t-blue">Nat</span></td><td><span class="tag t-green">Granted</span></td></tr>
+        <tr><td>2</td><td>Drought-Tolerant Wheat Variety MNS-1</td><td>Dr. Hassan</td><td>Variety</td><td>FSC&RD</td><td><span class="tag t-blue">Nat</span></td><td><span class="tag t-amber">Under Exam</span></td></tr>
+        <tr><td>3</td><td>Mango Pulp Preservation Process</td><td>Dr. Sana</td><td>Process</td><td>IPO Pakistan</td><td><span class="tag t-blue">Nat</span></td><td><span class="tag t-amber">Filed</span></td></tr>
+        <tr><td>4</td><td>Low-Cost Poultry Incubator</td><td>Dr. Bilal</td><td>Product</td><td>USPTO</td><td><span class="tag t-purple">Int</span></td><td><span class="tag t-green">Granted</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ================ PUBLIC LINKAGES & EVENTS ================== -->
+<!-- ============================================================ -->
+<div class="page" id="page-pub-linkages">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#d1fae5;color:#065f46">🤝</div>
+    <div><div class="ph-t">Linkages, Collaborations & Events</div><div class="ph-d">MoUs, industrial visits, exhibitions & policy advocacy — public view</div></div></div></div>
+  <div class="stats">
+    <div class="stat purple"><div class="stat-n">18</div><div class="stat-l">Active MoUs</div></div>
+    <div class="stat"><div class="stat-n">12</div><div class="stat-l">Industrial Visits</div></div>
+    <div class="stat gold"><div class="stat-n">31</div><div class="stat-l">Events & Exhibitions</div></div>
+    <div class="stat red"><div class="stat-n">9</div><div class="stat-l">Policy Advocacy</div></div>
+  </div>
+  <div class="card"><div class="card-h"><div class="card-t">Active MoUs & Agreements of Collaboration</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:820px">
+      <thead><tr><th>SN</th><th>Collaborator</th><th>Type</th><th>Scope</th><th>Since</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>University of Agriculture, Faisalabad</td><td>Academia</td><td><span class="tag t-blue">Nat</span></td><td>2022</td><td><span class="tag t-green">Active</span></td></tr>
+        <tr><td>2</td><td>Fatima Fertilizer Ltd.</td><td>Industry</td><td><span class="tag t-blue">Nat</span></td><td>2023</td><td><span class="tag t-green">Active</span></td></tr>
+        <tr><td>3</td><td>Wageningen University</td><td>Academia</td><td><span class="tag t-purple">Int</span></td><td>2021</td><td><span class="tag t-amber">Under Renewal</span></td></tr>
+        <tr><td>4</td><td>Punjab Agriculture Department</td><td>Government</td><td><span class="tag t-blue">Nat</span></td><td>2024</td><td><span class="tag t-green">Active</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- =============== FACULTY: SUBMISSION STATUS ================= -->
+<!-- ============================================================ -->
+<div class="page" id="page-my-status">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#fef9c3;color:#854d0e">📦</div>
+    <div><div class="ph-t">My Submissions — Status</div><div class="ph-d">Track the review status of everything you have submitted to ORIC</div></div></div>
+    <div class="ph-a"><button class="btn btn-primary btn-sm" onclick="go('profile')">+ New Submission</button></div></div>
+  <div class="alert alert-info">📌 Only <b>Research / Industry projects</b> require ORIC approval. Patents, MoUs, events and other records are saved to your profile and compiled by ORIC without an approval gate.</div>
+  <div class="card"><div class="card-h"><div class="card-t">My Submissions</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:820px">
+      <thead><tr><th>Ref.</th><th>Title</th><th>Type</th><th>Submitted</th><th>Approval Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>RP-031/25</td><td>Saline Water Tolerant Sorghum</td><td>Research Project</td><td>02 Jun 25</td><td><span class="tag t-amber">⏳ Pending ORIC Review</span></td><td><button class="btn btn-sm" onclick="goProfile('research')">View / Edit</button></td></tr>
+        <tr><td>RP-027/24</td><td>Heat-Tolerant Maize Hybrids</td><td>Research Project</td><td>10 Jan 25</td><td><span class="tag t-green">✔ Approved</span></td><td><button class="btn btn-sm" onclick="goProfile('research')">View</button></td></tr>
+        <tr><td>IP-012/25</td><td>Drip Irrigation Controller</td><td>Industry Project</td><td>20 May 25</td><td><span class="tag t-blue">↩ Sent Back — needs revision</span></td><td><button class="btn btn-sm" onclick="goProfile('industry')">Revise</button></td></tr>
+        <tr><td>PT-008/25</td><td>Bio-Pesticide Formulation</td><td>Patent</td><td>15 Apr 25</td><td><span class="tag t-gray">Recorded (no approval needed)</span></td><td><button class="btn btn-sm" onclick="goProfile('patent')">View</button></td></tr>
+        <tr><td>EV-021/25</td><td>Agri-Innovation Expo 2025</td><td>Event</td><td>30 Mar 25</td><td><span class="tag t-gray">Recorded (no approval needed)</span></td><td><button class="btn btn-sm" onclick="goProfile('event')">View</button></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ============== FACULTY: MY PROFILE (INNER NAV) ============= -->
+<!-- ============================================================ -->
+<div class="page" id="page-profile">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#fef9c3;color:#854d0e">📝</div>
+      <div><div class="ph-t">My Profile & ORIC Submissions</div><div class="ph-d">Complete each section, then submit. Fields marked 🔒 are filled by ORIC after approval.</div></div></div>
+    <div class="ph-a"><button class="btn btn-sm" onclick="go('my-status')">📦 My Status</button><button class="btn btn-primary btn-sm" onclick="submitProfile()">✔ Submit to ORIC</button></div>
+  </div>
+  <div class="rn rn-faculty">🟡 You are filling this as <b>Faculty / PI</b>. Submitted projects are routed to ORIC for review and approval.</div>
+
+  <div class="profile-shell">
+    <!-- INNER SIDEBAR -->
+    <div class="profile-nav">
+      <div class="pn-head"><div class="pn-name">Dr. Faisal Hassan</div><div class="pn-sub">Plant Breeding & Genetics · Faculty of Agriculture</div></div>
+      <button class="pnav active" data-sec="personal" onclick="goProfile('personal')"><span class="ix">👤</span>Personal & Academic</button>
+      <button class="pnav" data-sec="research" onclick="goProfile('research')"><span class="ix">🔬</span>Research Project<span class="pn-stat t-amber">Approval</span></button>
+      <button class="pnav" data-sec="industry" onclick="goProfile('industry')"><span class="ix">🏭</span>Industry Project<span class="pn-stat t-amber">Approval</span></button>
+      <button class="pnav" data-sec="consultancy" onclick="goProfile('consultancy')"><span class="ix">📄</span>Consultancy</button>
+      <button class="pnav" data-sec="patent" onclick="goProfile('patent')"><span class="ix">🏅</span>Patent</button>
+      <button class="pnav" data-sec="disclosure" onclick="goProfile('disclosure')"><span class="ix">💡</span>IP Disclosure</button>
+      <button class="pnav" data-sec="licensing" onclick="goProfile('licensing')"><span class="ix">🔑</span>IP Licensing</button>
+      <button class="pnav" data-sec="aoc" onclick="goProfile('aoc')"><span class="ix">🤝</span>AoC / MoU</button>
+      <button class="pnav" data-sec="visit" onclick="goProfile('visit')"><span class="ix">👥</span>Industrial Visit</button>
+      <button class="pnav" data-sec="event" onclick="goProfile('event')"><span class="ix">🎪</span>Event / Exhibition</button>
+      <button class="pnav" data-sec="policy" onclick="goProfile('policy')"><span class="ix">🏛️</span>Policy Advocacy</button>
+    </div>
+
+    <!-- INNER BODY -->
+    <div class="profile-body">
+
+      <!-- ===== PERSONAL ===== -->
+      <div class="psec active" id="psec-personal">
+        <div class="sec-banner"><div><div class="sb-t">Personal & Academic Information</div><div class="sb-d">Your profile details auto-fill the PI fields across all forms.</div></div></div>
+        <div class="card"><div class="card-h"><div class="card-t">Profile Details</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Full Name<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Designation<span class="req">*</span></label><input value="Associate Professor"></div>
+            <div class="fg"><label>Employee / PIN No.</label><input value="MNS-AGR-0412"></div>
+            <div class="fg"><label>Department<span class="req">*</span></label><input value="Plant Breeding & Genetics"></div>
+            <div class="fg"><label>Faculty<span class="req">*</span></label><select><option>Agriculture</option><option>Agricultural Engineering</option><option>Veterinary & Animal Sciences</option><option>Sciences</option><option>Social Sciences & Humanities</option></select></div>
+            <div class="fg"><label>Highest Qualification</label><input value="PhD Plant Genetics"></div>
+            <div class="fg"><label>Email<span class="req">*</span></label><input type="email" value="f.hassan@mnsuam.edu.pk"></div>
+            <div class="fg"><label>Contact No.</label><input value="+92 300 0000000"></div>
+            <div class="fg"><label>ORCID / Researcher ID</label><input value="0000-0002-4815-1623"></div>
+            <div class="fg full"><label>Research Interests / Specialization</label><textarea>Crop genetics, drought tolerance, marker-assisted selection.</textarea></div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- ===== RESEARCH PROJECT ===== -->
+      <div class="psec" id="psec-research">
+        <div class="sec-banner"><div><div class="sb-t">Research Project Submission</div><div class="sb-d">Full project data entry · routed to ORIC for approval. 🔒 sections are completed by ORIC.</div></div><span class="tag t-amber">Requires ORIC Approval</span></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">1. Submission Outline</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg full"><label>Project Title<span class="req">*</span></label><input value="Saline Water Tolerant Sorghum Lines for Southern Punjab"></div>
+            <div class="fg full"><label>Thematic Area<span class="req">*</span></label><input value="Climate-Smart Agriculture"></div>
+            <div class="fg"><label>Funding Call Title</label><input value="NRPU 2024 — Cycle 2"></div>
+            <div class="fg"><label>Date of Circulation</label><input type="date" value="2024-12-10"></div>
+            <div class="fg"><label>Host Organization</label><select><option selected>MNSUAM</option><option>Other</option></select></div>
+            <div class="fg"><label>Host Organization Name (if Other)</label><input></div>
+            <div class="fg"><label>Project Category</label><select><option selected>Research</option><option>Development</option></select></div>
+            <div class="fg"><label>Project Type</label><select><option selected>Individual</option><option>Joint</option><option>Contracted Research</option></select></div>
+            <div class="fg"><label>Funder Type</label><select><option>MNSUAM funded</option><option>Contracted-Industrial</option><option>Contracted-Government</option><option selected>Other funded</option></select></div>
+            <div class="fg"><label>Funder Location</label><select><option selected>National</option><option>International</option></select></div>
+            <div class="fg"><label>Funder Country</label><input value="Pakistan"></div>
+            <div class="fg"><label>Submission Deadline</label><input type="date" value="2025-05-31"></div>
+            <div class="fg"><label>Shifted to MNSUAM (Date)</label><input type="date" value="2025-06-02"></div>
+            <div class="fg"><label>Shift Document</label><div class="upz">📎 shift_letter_RP-031.pdf</div></div>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">2. Co-PI Information</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-copi">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Organization</th><th>Contact</th><th>Type</th><th>Support Letter Date</th><th>Upload</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Dr. Imran Sajid"></td><td><input value="Assistant Professor"></td><td><input value="MNSUAM — Soil Science"></td><td><input value="+92 301 2345678"></td><td><select><option selected>Internal Co-PI</option><option>External Co-PI</option></select></td><td><input type="date" value="2025-04-18"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Dr. Naveed Akhtar"></td><td><input value="Associate Professor"></td><td><input value="MNSUAM — Entomology"></td><td><input value="+92 302 9876543"></td><td><select><option selected>Internal Co-PI</option><option>External Co-PI</option></select></td><td><input type="date" value="2025-04-20"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>3</td><td><input value="Dr. Sarah Mahmood"></td><td><input value="Senior Scientist"></td><td><input value="Ayub Agri. Research Institute"></td><td><input value="+92 41 9200000"></td><td><select><option>Internal Co-PI</option><option selected>External Co-PI</option></select></td><td><input type="date" value="2025-04-22"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div>
+          <button class="add-row" onclick="addCopiRow()">+ Add Co-PI</button>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">3. Team Scientists</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-team">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Organization</th><th>Contact</th><th>Role</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Ms. Hira Tariq"></td><td><input value="Research Officer"></td><td><input value="MNSUAM — PBG"></td><td><input value="+92 333 1112223"></td><td><input value="Field trials & data collection"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Mr. Usman Ghani"></td><td><input value="Lab Technician"></td><td><input value="MNSUAM — PBG"></td><td><input value="+92 345 4445556"></td><td><input value="Molecular marker analysis"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div>
+          <button class="add-row" onclick="addTeamRow()">+ Add Team Scientist</button>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">4–7. Collaborators</div></div><div class="card-b">
+          <div class="sd sub">4. Component Information</div>
+          <div class="g4">
+            <div class="fg"><label>Name</label><input value="Salinity Tolerance Screening Component"></div>
+            <div class="fg"><label>Project Designation</label><input value="Lead Component"></div>
+            <div class="fg"><label>Organization</label><input value="MNSUAM — PBG"></div>
+            <div class="fg"><label>Approved Budget (PKR)</label><input type="number" value="1800000"></div>
+          </div>
+          <div class="sd sub">5. Local Academic Collaborator</div>
+          <div class="rt-wrap"><table class="rt" id="t-lac">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Organization</th><th>Location</th><th>Upload</th><th></th></tr></thead>
+            <tbody><tr><td>1</td><td><input value="Dr. Asma Khalid"></td><td><input value="Professor"></td><td><input value="University of Agriculture, Faisalabad"></td><td><input value="Faisalabad"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr></tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-lac',6)">+ Add Local Collaborator</button>
+          <div class="sd sub">6. Overseas Academic Collaborator</div>
+          <div class="rt-wrap"><table class="rt" id="t-oac">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Organization</th><th>Country</th><th>Contact</th><th>MoU</th><th>Upload</th><th></th></tr></thead>
+            <tbody><tr><td>1</td><td><input value="Prof. John Mertens"></td><td><input value="Senior Researcher"></td><td><input value="Wageningen University"></td><td><input value="Netherlands"></td><td><input value="j.mertens@wur.nl"></td><td><input value="Yes"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr></tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-oac',8)">+ Add Overseas Collaborator</button>
+          <div class="sd sub">7. Industrial Collaborator</div>
+          <div class="rt-wrap"><table class="rt" id="t-ic">
+            <thead><tr><th>#</th><th>Organization</th><th>Contact Person</th><th>Country</th><th>Nature of Collaboration</th><th>MoU</th><th>Upload</th><th></th></tr></thead>
+            <tbody><tr><td>1</td><td><input value="Fatima Fertilizer Ltd."></td><td><input value="Mr. Asad Raza (GM R&D)"></td><td><input value="Pakistan"></td><td><input value="Field demonstration & input supply"></td><td><input value="Yes"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr></tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-ic',7)">+ Add Industrial Collaborator</button>
+        </div></div>
+
+        <div class="card admin-only"><div class="card-h"><div class="card-t">8. Post Award Details<span class="admin-lock-badge">🔒 ORIC</span></div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Award Letter Date</label><input type="date" value="2025-06-25"></div>
+            <div class="fg"><label>Funding Agency Ref. No.</label><input value="HEC/NRPU/2024/14827"></div>
+            <div class="fg"><label>Award Letter Upload</label><div class="upz">📎 award_letter_RP-031.pdf</div></div>
+            <div class="fg"><label>Project Start Date</label><input type="date" value="2025-07-01"></div>
+            <div class="fg"><label>Project End Date</label><input type="date" value="2027-06-30"></div>
+            <div class="fg"><label>Total Approved Budget (PKR)</label><input type="number" value="4800000"></div>
+            <div class="fg"><label>ORIC Overhead Amount (PKR)</label><input type="number" value="480000"></div>
+            <div class="fg"><label>Overhead Status</label><select><option selected>Approved</option><option>Pending</option><option>Not Claimed</option></select></div>
+            <div class="fg full"><label>Special Conditions / Instructions from Funder</label><textarea>Quarterly progress reports mandatory. 10% overhead retained by university. Equipment to remain MNSUAM property post-completion.</textarea></div>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">9. Research Staff</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-rs">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Contact</th><th>Appointment Date</th><th>End Date</th><th>Upload</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Mr. Bilal Hussain"></td><td><input value="Research Associate"></td><td><input value="+92 321 7778889"></td><td><input type="date" value="2025-07-15"></td><td><input type="date" value="2027-06-30"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Ms. Komal Riaz"></td><td><input value="Research Assistant"></td><td><input value="+92 300 6665554"></td><td><input type="date" value="2025-08-01"></td><td><input type="date" value="2027-06-30"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-rs',7)">+ Add Research Staff</button>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">10. Budget Breakup</div></div><div class="card-b">
+          <div class="fg"><label>Budget Document</label><div class="upz">📎 Upload budget breakup file</div></div>
+          <div class="rt-wrap"><table class="rt" id="t-budget">
+            <thead><tr><th>#</th><th>Budget Head</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Year 4</th><th>Year 5</th><th>Total</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table></div><button class="add-row" onclick="addBudgetRow()">+ Add Budget Head</button>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">11. Project Objectives & Work Plan</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg full"><label>Project Objectives<span class="req">*</span></label><textarea>1) Screen 200 sorghum accessions for salt tolerance at germination and seedling stages. 2) Develop and field-validate three salt-tolerant candidate lines. 3) Establish agronomic protocols for saline-affected districts of Southern Punjab.</textarea></div>
+            <div class="fg full"><label>Methodology / Work Plan</label><textarea>Hydroponic and pot screening (Year 1) → marker-assisted selection of tolerant lines (Year 1–2) → multi-location field trials at Multan, Muzaffargarh & Rahim Yar Khan (Year 2) → farmer field days and protocol dissemination.</textarea></div>
+            <div class="fg full"><label>Expected Outcomes & Deliverables<span class="req">*</span></label><textarea>3 candidate salt-tolerant lines, 2 HEC-recognized publications, 1 farmer field-day, and an open dataset on sorghum yield under salinity.</textarea></div>
+            <div class="fg"><label>Target Beneficiaries</label><input value="Smallholder farmers in saline-affected Southern Punjab"></div>
+            <div class="fg"><label>Reporting Frequency</label><select><option>Annual</option><option>BiAnnual</option><option selected>Quarterly</option></select></div>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">12. Honorarium Details</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-hon">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Role</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Year 4</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Dr. Faisal Hassan"></td><td><input value="Associate Professor"></td><td><input value="Principal Investigator"></td><td><input type="number" value="120000"></td><td><input type="number" value="120000"></td><td><input type="number" value="0"></td><td><input type="number" value="0"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Dr. Imran Sajid"></td><td><input value="Assistant Professor"></td><td><input value="Co-PI"></td><td><input type="number" value="80000"></td><td><input type="number" value="80000"></td><td><input type="number" value="0"></td><td><input type="number" value="0"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-hon',8)">+ Add Honorarium</button>
+        </div></div>
+
+        <div class="card"><div class="card-h"><div class="card-t">13. Publications</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-pub">
+            <thead><tr><th>#</th><th>Title</th><th>Submitted</th><th>Published</th><th>Journal</th><th>DOI</th><th>Upload</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Screening of sorghum germplasm for salinity tolerance"></td><td><input type="date" value="2025-09-10"></td><td><input type="date" value="2026-01-22"></td><td><input value="Pakistan Journal of Botany"></td><td><input value="10.30848/PJB2026-1(12)"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Marker-assisted selection for Na+ exclusion in sorghum"></td><td><input type="date" value="2026-03-05"></td><td><input type="date" value=""></td><td><input value="Field Crops Research"></td><td><input value="(under review)"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-pub',8)">+ Add Publication</button>
+        </div></div>
+
+        <div class="alert alert-warn">🔒 Sections handled by ORIC after approval: Post-Award Details, University Overhead, Installments, Financial/Physical Reviews, Reporting Status, and Post-Completion (commercialization). You will see them as read-only here until ORIC fills them.</div>
+
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button>
+          <div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit Project for Approval</button></div></div>
+      </div>
+
+      <!-- ===== INDUSTRY PROJECT ===== -->
+      <div class="psec" id="psec-industry">
+        <div class="sec-banner"><div><div class="sb-t">Industry Project</div><div class="sb-d">Industry-sponsored research executed through ORIC · routed for approval.</div></div><span class="tag t-amber">Requires ORIC Approval</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">A. Project Identification</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Project File No.</label><input value="IP-018/2024-25"></div>
+            <div class="fg"><label>Financial Year</label><select><option selected>2024-25</option><option>2023-24</option></select></div>
+            <div class="fg"><label>National / International</label><select><option selected>National</option><option>International</option></select></div>
+            <div class="fg"><label>Starting Date</label><input type="date" value="2025-03-01"></div>
+            <div class="fg"><label>Completion Date</label><input type="date" value="2026-08-31"></div>
+            <div class="fg"><label>Duration (Months)</label><input type="number" value="18"></div>
+            <div class="fg full"><label>Project Title<span class="req">*</span></label><input value="Contract Trials: Salt-Tolerant Sorghum Seed Multiplication & Field Validation"></div>
+          </div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">B. Principal Investigator & Team</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Name of PI<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Designation</label><input value="Associate Professor"></div>
+            <div class="fg"><label>Department</label><input value="Plant Breeding & Genetics"></div>
+            <div class="fg"><label>Email</label><input type="email" value="f.hassan@mnsuam.edu.pk"></div>
+            <div class="fg"><label>Contact No.</label><input value="+92 300 0000000"></div>
+          </div>
+          <div class="sd sub">Co-PI(s) & Team</div>
+          <div class="rt-wrap"><table class="rt" id="t-ind-copi">
+            <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Dept.</th><th>Role</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Dr. Naveed Akhtar"></td><td><input value="Associate Professor"></td><td><input value="Entomology"></td><td><input value="Co-PI — pest screening"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="Ms. Hira Tariq"></td><td><input value="Research Officer"></td><td><input value="PBG"></td><td><input value="Trial coordination"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div><button class="add-row" onclick="addGeneric('t-ind-copi',5)">+ Add Member</button>
+        </div></div>
+        <div class="card admin-only"><div class="card-h"><div class="card-t">C. Sponsor & Financials<span class="admin-lock-badge">🔒 ORIC</span></div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg"><label>Sponsoring Agency Name</label><input value="Fatima Fertilizer Company Ltd."></div>
+            <div class="fg"><label>Country of Sponsor</label><input value="Pakistan"></div>
+            <div class="fg"><label>Total Project Budget (PKR)</label><input type="number" value="3600000"></div>
+            <div class="fg"><label>ORIC Overhead (PKR)</label><input type="number" value="360000"></div>
+          </div>
+          <div class="alert alert-info" style="margin-top:10px">Installments are generated by ORIC during approval based on budget & frequency.</div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">D. Deliverables & Documents</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg full"><label>Project Expected Deliverables and Outcomes<span class="req">*</span></label><textarea>5 tons of breeder seed of two salt-tolerant lines; on-farm validation across 12 demonstration plots; a commercial seed-multiplication protocol handed over to the partner.</textarea></div>
+            <div class="fg"><label>Project Document</label><div class="upz">📎 fatima_fertilizer_MoU_signed.pdf</div></div>
+            <div class="fg"><label>Remarks</label><textarea style="min-height:42px">First installment received; field plots prepared at company demo farm.</textarea></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit for Approval</button></div></div>
+      </div>
+
+      <!-- ===== CONSULTANCY ===== -->
+      <div class="psec" id="psec-consultancy">
+        <div class="sec-banner"><div><div class="sb-t">Consultancy Contract</div><div class="sb-d">Executed through ORIC with Industry, Commerce or Government.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">Consultancy Contract Form</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg"><label>Date of Execution<span class="req">*</span></label><input type="date" value="2025-02-12"></div>
+            <div class="fg full"><label>Title of Project / Consultancy<span class="req">*</span></label><input value="Soil Salinity Mapping & Crop Suitability Advisory — Muzaffargarh District"></div>
+          </div>
+          <div class="sd sub">Company / Client Details</div>
+          <div class="g3">
+            <div class="fg"><label>Company / Client Name<span class="req">*</span></label><input value="Punjab Agriculture Department"></div>
+            <div class="fg"><label>Country</label><input value="Pakistan"></div>
+            <div class="fg"><label>Company Address</label><input value="Agriculture House, Lahore"></div>
+          </div>
+          <div class="sd sub admin-only">Financial & Timeline <span class="admin-lock-badge">🔒 ORIC</span></div>
+          <div class="g3 admin-only">
+            <div class="fg"><label>Contract Value (PKR)</label><input type="number" value="900000"></div>
+            <div class="fg"><label>ORIC Overhead %</label><input type="number" step="0.5" value="10"></div>
+            <div class="fg"><label>ORIC Overhead Amount (PKR)</label><input type="number" value="90000"></div>
+            <div class="fg"><label>Project Start Date</label><input type="date" value="2025-02-15"></div>
+            <div class="fg"><label>Project End Date</label><input type="date" value="2025-08-15"></div>
+          </div>
+          <div class="sd sub">Service Details</div>
+          <div class="g2">
+            <div class="fg"><label>Type of Consultancy Services<span class="req">*</span></label><select><option>Feasibility Study</option><option>Prototype Development</option><option selected>Testing & Analysis</option><option>Technical Advisory</option><option>Training</option><option>R&D</option><option>Policy Advice</option><option>Other</option></select></div>
+            <div class="fg"><label>Key Deliverables<span class="req">*</span></label><textarea>GIS salinity map of 40,000 ha; soil sample analysis report; crop-suitability advisory and farmer recommendation sheets.</textarea></div>
+            <div class="fg"><label>Upload Contract Copy</label><div class="upz">📎 consultancy_contract_CN-005.pdf</div></div>
+            <div class="fg"><label>Remarks / Current Status</label><textarea>Field sampling complete; final advisory report under preparation.</textarea></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== PATENT ===== -->
+      <div class="psec" id="psec-patent">
+        <div class="sec-banner"><div><div class="sb-t">Patent — Filed / Granted</div><div class="sb-d">With IPO tracking. Section D (IPO updates) is maintained by ORIC.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">A. Inventor Information</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Name of Lead Inventor<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Designation</label><input value="Associate Professor"></div>
+            <div class="fg"><label>Department<span class="req">*</span></label><input value="Plant Breeding & Genetics"></div>
+          </div>
+          <div class="fg"><label>Co-Inventors (Name, Designation, Department)</label><textarea>Dr. Imran Sajid (Assistant Professor, Soil Science); Mr. Bilal Hussain (Research Associate, PBG)</textarea></div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">B. Invention Details</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg full"><label>Title of Invention<span class="req">*</span></label><input value="Salt-Tolerant Sorghum Line MNS-Sorghum-2 with Enhanced Na+ Exclusion"></div>
+            <div class="fg"><label>Category of IP<span class="req">*</span></label><select><option>Product</option><option>Process</option><option>Technology</option><option>Software</option><option selected>Variety / Cultivar</option><option>Design</option></select></div>
+            <div class="fg"><label>Development Status<span class="req">*</span></label><select><option>Idea</option><option>Prototype</option><option selected>Validation</option><option>Production Ready</option><option>Commercialized</option></select></div>
+            <div class="fg full"><label>Key Scientific Aspects<span class="req">*</span></label><textarea>Novel sorghum line exhibiting 35% higher grain yield under 12 dS/m salinity through a sodium-exclusion trait validated by marker-assisted selection across three field locations.</textarea></div>
+          </div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">C. Filing Details</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Patent Filed With<span class="req">*</span></label><input value="Federal Seed Certification & Registration Dept. (FSC&RD)"></div>
+            <div class="fg"><label>Scope</label><div class="radio-row"><label><input type="radio" name="pn" checked> National</label><label><input type="radio" name="pn"> International</label></div></div>
+            <div class="fg"><label>Date of Filing<span class="req">*</span></label><input type="date" value="2026-02-18"></div>
+            <div class="fg"><label>Application Number</label><input value="FSCRD/VAR/2026/0091"></div>
+            <div class="fg"><label>Current Status<span class="req">*</span></label><select><option>Filed</option><option selected>Under Examination</option><option>Published</option><option>Granted</option><option>Rejected</option></select></div>
+            <div class="fg"><label>Filing Proof</label><div class="upz">📎 fscrd_filing_receipt.pdf</div></div>
+          </div>
+        </div></div>
+        <div class="card admin-only"><div class="card-h"><div class="card-t">D. IPO Tracking<span class="admin-lock-badge">🔒 ORIC</span></div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Last Action Date by IPO</label><input type="date" value="2026-04-30"></div>
+            <div class="fg"><label>Status at IPO (Latest)</label><input value="DUS test in progress"></div>
+            <div class="fg"><label>Examiner Concerned</label><input value="Mr. Tahir Mehmood (FSC&RD)"></div>
+            <div class="fg full"><label>IPO Comments / Observations</label><textarea>Distinctness-Uniformity-Stability trials underway; second-season data requested.</textarea></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== IP DISCLOSURE ===== -->
+      <div class="psec" id="psec-disclosure">
+        <div class="sec-banner"><div><div class="sb-t">IP Disclosure</div><div class="sb-d">Made with Patent Department / Patent Attorneys.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">IP Disclosure Form</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Lead Inventor Name<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Designation</label><input value="Associate Professor"></div>
+            <div class="fg"><label>Department<span class="req">*</span></label><input value="Plant Breeding & Genetics"></div>
+            <div class="fg full"><label>Title of Invention<span class="req">*</span></label><input value="Marker Panel for Rapid Screening of Salinity Tolerance in Sorghum"></div>
+            <div class="fg"><label>Category of IP<span class="req">*</span></label><select><option>Product</option><option selected>Process</option><option>Technology</option><option>Software</option><option>Variety</option><option>Design</option></select></div>
+            <div class="fg"><label>Development Status</label><select><option>Idea</option><option selected>Prototype</option><option>Validation</option><option>Production Ready</option></select></div>
+            <div class="fg"><label>Scope</label><div class="radio-row"><label><input type="radio" name="dn" checked> National</label><label><input type="radio" name="dn"> International</label></div></div>
+            <div class="fg full"><label>Key Scientific Aspects<span class="req">*</span></label><textarea>A low-cost SSR/SNP marker panel enabling salinity-tolerance screening of sorghum seedlings within 72 hours, reducing field screening cost by ~60%.</textarea></div>
+            <div class="fg full"><label>Disclosure Made With (Name, Dept/Attorney, Date)<span class="req">*</span></label><textarea>Disclosed to MNSUAM Patent Cell — Mr. Adnan Saeed (IP Officer) on 15 January 2026.</textarea></div>
+            <div class="fg"><label>Upload Disclosure Form</label><div class="upz">📎 ip_disclosure_signed.pdf</div></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== LICENSING ===== -->
+      <div class="psec" id="psec-licensing">
+        <div class="sec-banner"><div><div class="sb-t">IP Licensing Negotiation</div><div class="sb-d">You provide technical details; ORIC manages the negotiation.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">IP Licensing Form</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Lead Inventor Name<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Designation & Department</label><input value="Associate Professor, Plant Breeding & Genetics"></div>
+            <div class="fg full"><label>Title of Invention<span class="req">*</span></label><input value="Salt-Tolerant Sorghum Line MNS-Sorghum-2"></div>
+            <div class="fg"><label>Category of IP<span class="req">*</span></label><select><option>Product</option><option>Process</option><option>Technology</option><option>Software</option><option selected>Variety</option><option>Design</option></select></div>
+            <div class="fg"><label>Development Status</label><select><option>Prototype</option><option selected>Validation</option><option>Production Ready</option><option>Commercialized</option></select></div>
+            <div class="fg admin-only"><label>Status of Negotiation<span class="admin-lock-badge">🔒 ORIC</span></label><select><option>Initial Contact</option><option selected>Under Discussion</option><option>Term Sheet Issued</option><option>Agreement Signed</option><option>Stalled</option><option>Declined</option></select></div>
+            <div class="fg full"><label>Key Scientific Aspects</label><textarea>Exclusive multiplication and marketing rights for a validated salt-tolerant sorghum line in Southern Punjab seed market.</textarea></div>
+            <div class="fg"><label>Field of Use</label><input value="Commercial seed multiplication & distribution"></div>
+            <div class="fg"><label>Upload Supporting Document</label><div class="upz">📎 draft_term_sheet.pdf</div></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== AoC / MoU ===== -->
+      <div class="psec" id="psec-aoc">
+        <div class="sec-banner"><div><div class="sb-t">Agreement of Collaboration / MoU</div><div class="sb-d">All agreements of collaboration & MoUs.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">A. Agreement Details</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Type of Linkage<span class="req">*</span></label><div class="radio-row"><label><input type="radio" name="at"> Academic</label><label><input type="radio" name="at" checked> Research</label></div></div>
+            <div class="fg"><label>Type of Party<span class="req">*</span></label><select><option>Academia</option><option selected>Industry</option><option>Government</option><option>NGO / CSO</option></select></div>
+            <div class="fg"><label>Establishment Date<span class="req">*</span></label><input type="date" value="2024-11-05"></div>
+            <div class="fg"><label>Scope</label><div class="radio-row"><label><input type="radio" name="an" checked> National</label><label><input type="radio" name="an"> International</label></div></div>
+            <div class="fg"><label>Country</label><input value="Pakistan"></div>
+            <div class="fg"><label>Duration</label><input value="3 Years (2024-2027)"></div>
+            <div class="fg full"><label>Name of Collaborator / Party<span class="req">*</span></label><input value="Fatima Fertilizer Company Ltd."></div>
+          </div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">B. Focal Persons & Scope</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg"><label>Focal Person — MNSUAM<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Focal Person — Other Party</label><input value="Mr. Asad Raza (GM, R&D)"></div>
+            <div class="fg full"><label>Scope of Collaboration<span class="req">*</span></label><textarea>Joint field trials, demonstration farms, student internships and co-development of salt-tolerant crop varieties.</textarea></div>
+            <div class="fg full"><label>Activities Carried Out (This Year)</label><textarea>Established 12 demonstration plots; 6 students completed internships; 2 joint field days held.</textarea></div>
+            <div class="fg"><label>Upload MoU / AoC Document</label><div class="upz">📎 fatima_mou_2024.pdf</div></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== INDUSTRIAL VISIT ===== -->
+      <div class="psec" id="psec-visit">
+        <div class="sec-banner"><div><div class="sb-t">Industrial Visit</div><div class="sb-d">Visits by industry / community representatives.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">Visit Records</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-visits">
+            <thead><tr><th>SN</th><th>Name of Visitor</th><th>Org & Designation</th><th>Date</th><th>Agenda</th><th>Dept. Visited</th><th>Type</th><th>Outcome</th><th>Proof</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><input value="Mr. Asad Raza & team"></td><td><input value="GM R&D, Fatima Fertilizer"></td><td><input type="date" value="2025-02-20"></td><td><textarea>Review of demonstration plots and salt-tolerant line performance.</textarea></td><td><input value="PBG / Field Area"></td><td><select><option selected>Industry</option><option>Community</option><option>Government</option></select></td><td><textarea>Agreed to expand trials to 2 more districts in next season.</textarea></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+              <tr><td>2</td><td><input value="District Agriculture Officer"></td><td><input value="DAO, Muzaffargarh"></td><td><input type="date" value="2025-04-10"></td><td><textarea>Briefing on salinity mapping advisory outcomes.</textarea></td><td><input value="Soil Science"></td><td><select><option>Industry</option><option>Community</option><option selected>Government</option></select></td><td><textarea>Requested farmer training workshop.</textarea></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td></tr>
+            </tbody>
+          </table></div><button class="add-row" onclick="addVisitRow()">+ Add Visit Record</button>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><button class="btn btn-primary" onclick="submitProfile()">✔ Save Records</button></div>
+      </div>
+
+      <!-- ===== EVENT ===== -->
+      <div class="psec" id="psec-event">
+        <div class="sec-banner"><div><div class="sb-t">Event, Exhibition or Seminar</div><div class="sb-d">Innovation fairs, industry linkage events, IP showcasing.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">A. Event Details</div></div><div class="card-b">
+          <div class="g3">
+            <div class="fg"><label>Date of Event<span class="req">*</span></label><input type="date" value="2025-03-18"></div>
+            <div class="fg"><label>Event Title<span class="req">*</span></label><input value="Agri-Innovation Expo 2025 — Climate-Smart Crops"></div>
+            <div class="fg"><label>Lead Organizer<span class="req">*</span></label><input value="Dr. Faisal Hassan"></div>
+            <div class="fg"><label>Category<span class="req">*</span></label><select><option>Science Exhibition</option><option>Product Showcase</option><option selected>Innovation Fair</option><option>Industry Linkages Fair</option><option>Seminar</option><option>Workshop</option><option>Conference</option><option>IP Showcasing</option><option>Other</option></select></div>
+            <div class="fg"><label>Arranged / Participated</label><div class="radio-row"><label><input type="radio" name="ea" checked> Arranged</label><label><input type="radio" name="ea"> Participated</label></div></div>
+            <div class="fg"><label>Scope</label><div class="radio-row"><label><input type="radio" name="en" checked> National</label><label><input type="radio" name="en"> International</label></div></div>
+            <div class="fg"><label>Number of Participants</label><input type="number" value="420"></div>
+            <div class="fg"><label>Forum / Venue</label><input value="MNSUAM Main Auditorium, Multan"></div>
+            <div class="fg"><label>Field / Subject Area</label><input value="Climate-Smart Agriculture"></div>
+          </div>
+        </div></div>
+        <div class="card"><div class="card-h"><div class="card-t">B. Outcomes & Documentation</div></div><div class="card-b">
+          <div class="g2">
+            <div class="fg full"><label>Outcome (Case Study / Policy Advice / etc.)<span class="req">*</span></label><textarea>Showcased 3 salt-tolerant lines to 40 farmers and 8 industry partners; generated 2 new MoU leads and media coverage in regional press.</textarea></div>
+            <div class="fg"><label>Sponsoring Agency Name</label><input value="Fatima Fertilizer Company Ltd."></div>
+            <div class="fg"><label>Grant Value / Contribution (PKR)</label><input type="number" value="500000"></div>
+            <div class="fg"><label>Web / Social Media Links</label><input type="url" value="https://mnsuam.edu.pk/agri-expo-2025"></div>
+            <div class="fg"><label>Upload Event Report / Brochure</label><div class="upz">📎 agri_expo_2025_report.pdf</div></div>
+          </div>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><div style="display:flex;gap:8px"><button class="btn">Save Draft</button><button class="btn btn-primary" onclick="submitProfile()">✔ Submit</button></div></div>
+      </div>
+
+      <!-- ===== POLICY ===== -->
+      <div class="psec" id="psec-policy">
+        <div class="sec-banner"><div><div class="sb-t">Policy Advocacy / Case Studies</div><div class="sb-d">Presented to Government Departments.</div></div><span class="tag t-gray">Recorded</span></div>
+        <div class="card"><div class="card-h"><div class="card-t">Policy Advocacy Records</div></div><div class="card-b">
+          <div class="rt-wrap"><table class="rt" id="t-policy">
+            <thead><tr><th>SN</th><th>Govt. Body</th><th>PI / Designation & Dept.</th><th>Area Advocated</th><th>Brief</th><th>Coalition Partners</th><th>Advocacy Tools</th><th></th></tr></thead>
+            <tbody><tr>
+              <td>1</td>
+              <td><input value="Punjab Agriculture Department"></td>
+              <td><input value="Dr. Faisal Hassan, Assoc. Prof., PBG"></td>
+              <td><select><option selected>Agriculture</option><option>Economic Development</option><option>Social Progress</option><option>Environment</option><option>Health</option><option>Education</option><option>Other</option></select></td>
+              <td><textarea>Advocated inclusion of salt-tolerant sorghum in the provincial seed subsidy programme for saline-affected districts.</textarea></td>
+              <td><input value="UAF, Fatima Fertilizer"></td>
+              <td><textarea>Policy brief submitted, 2 stakeholder meetings, 1 field demonstration for officials.</textarea></td>
+              <td><button class="del-btn" onclick="rmRow(this)">✕</button></td>
+            </tr></tbody>
+          </table></div><button class="add-row" onclick="addPolicyRow()">+ Add Policy Advocacy Record</button>
+        </div></div>
+        <div class="ff"><button class="btn" onclick="goProfile('personal')">← Back</button><button class="btn btn-primary" onclick="submitProfile()">✔ Save Records</button></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ===================== ADMIN DASHBOARD ====================== -->
+<!-- ============================================================ -->
+<div class="page" id="page-admin-dashboard">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1a3a5c">📊</div>
+      <div><div class="ph-t">ORIC Admin Dashboard — MNSUAM</div><div class="ph-d">Consolidated view · Reporting Period: July 2024 – June 2025</div></div></div>
+    <div class="ph-a"><button class="btn btn-sm" onclick="go('approvals')">✅ Review Approvals</button><button class="btn btn-gold btn-sm" onclick="go('reports')">⚡ One-Click Report</button></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat red"><div class="stat-n">4</div><div class="stat-l">Pending Approvals</div><div class="stat-s">Awaiting ORIC review</div></div>
+    <div class="stat blue"><div class="stat-n">42</div><div class="stat-l">Research Projects</div><div class="stat-s">24 ongoing · 12 completed</div></div>
+    <div class="stat"><div class="stat-n">14</div><div class="stat-l">Industry Projects</div><div class="stat-s">PKR 38.2M total</div></div>
+    <div class="stat green"><div class="stat-n">23</div><div class="stat-l">Patents</div><div class="stat-s">5 granted · 18 filed</div></div>
+    <div class="stat purple"><div class="stat-n">18</div><div class="stat-l">Active MoUs</div></div>
+    <div class="stat gold"><div class="stat-n">7</div><div class="stat-l">Consultancies</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="card-t">📈 HEC ORIC Scorecard — Live Readiness</div><span class="tag t-amber">72% Complete</span></div>
+    <div class="card-b">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kn">Research Output (25 pts)</div><div class="kv">18.5</div><div class="pbar"><div class="pfill" style="width:74%"></div></div></div>
+        <div class="kpi-card"><div class="kn">Innovation & IP (20 pts)</div><div class="kv">14.0</div><div class="pbar"><div class="pfill" style="width:70%;background:var(--green)"></div></div></div>
+        <div class="kpi-card"><div class="kn">Industry Linkages (20 pts)</div><div class="kv">13.0</div><div class="pbar"><div class="pfill" style="width:65%;background:var(--gold)"></div></div></div>
+        <div class="kpi-card"><div class="kn">HR Development (15 pts)</div><div class="kv">10.5</div><div class="pbar"><div class="pfill" style="width:70%;background:var(--purple)"></div></div></div>
+        <div class="kpi-card"><div class="kn">Funding & Grants (10 pts)</div><div class="kv">6.0</div><div class="pbar"><div class="pfill" style="width:60%;background:var(--blue)"></div></div></div>
+        <div class="kpi-card" style="border-color:var(--navy);background:#f0f6ff"><div class="kn">TOTAL SCORE</div><div class="kv" style="color:var(--gold)">68.4 / 100</div><div class="kx">Tier B — Good</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="card-t">⏳ Pending Approval Queue</div><button class="btn btn-sm" onclick="go('approvals')">Open Approvals →</button></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt">
+      <thead><tr><th>Ref.</th><th>Title</th><th>PI</th><th>Type</th><th>Submitted</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>RP-031/25</td><td>Saline Water Tolerant Sorghum</td><td>Dr. Hassan</td><td>Research</td><td>02 Jun 25</td><td><button class="btn btn-sm btn-primary" onclick="openReview('RP-031/25')">👁 View</button></td></tr>
+        <tr><td>IP-012/25</td><td>Drip Irrigation Controller</td><td>Dr. Ayesha</td><td>Industry</td><td>20 May 25</td><td><button class="btn btn-sm btn-primary" onclick="openReview('IP-012/25')">👁 View</button></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ===================== PROJECT APPROVALS ==================== -->
+<!-- ============================================================ -->
+<div class="page" id="page-approvals">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#fee2e2;color:#991b1b">✅</div>
+      <div><div class="ph-t">Project Approvals</div><div class="ph-d">ORIC approves <b>projects only</b> · review all PI-submitted details before approving</div></div></div>
+    <div class="ph-a"><select class="btn btn-sm" style="padding:5px 9px"><option>All Pending</option><option>Research</option><option>Industry</option></select></div>
+  </div>
+  <div class="alert alert-info">📌 Other records (patents, MoUs, events, consultancies, policy) are recorded directly without an approval gate. Only research and industry projects require ORIC approval.</div>
+  <div class="card"><div class="card-h"><div class="card-t">Awaiting Review</div><span class="tag t-amber">4 pending</span></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:980px">
+      <thead><tr><th>Ref.</th><th>Title</th><th>PI / Department</th><th>Type</th><th>Funder</th><th>Budget (PKR)</th><th>Submitted</th><th>Completeness</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>RP-031/25</td><td>Saline Water Tolerant Sorghum</td><td>Dr. Hassan / PBG</td><td>Research</td><td>HEC NRPU</td><td>4,800,000</td><td>02 Jun 25</td><td><span class="tag t-green">All required filled</span></td><td><button class="btn btn-sm btn-primary" onclick="openReview('RP-031/25')">👁 View & Approve</button></td></tr>
+        <tr><td>IP-012/25</td><td>Drip Irrigation Controller</td><td>Dr. Ayesha / Agri Engg</td><td>Industry</td><td>Jaffer Agro</td><td>6,000,000</td><td>20 May 25</td><td><span class="tag t-amber">2 fields missing</span></td><td><button class="btn btn-sm btn-primary" onclick="openReview('IP-012/25')">👁 View & Approve</button></td></tr>
+        <tr><td>RP-033/25</td><td>Aflatoxin Detection in Maize</td><td>Dr. Sana / Food Sci</td><td>Research</td><td>PSF</td><td>3,200,000</td><td>05 Jun 25</td><td><span class="tag t-green">All required filled</span></td><td><button class="btn btn-sm btn-primary" onclick="openReview('RP-033/25')">👁 View & Approve</button></td></tr>
+        <tr><td>IP-014/25</td><td>Smart Poultry Feeder</td><td>Dr. Bilal / Vet</td><td>Industry</td><td>Sadiq Feeds</td><td>5,500,000</td><td>08 Jun 25</td><td><span class="tag t-green">All required filled</span></td><td><button class="btn btn-sm btn-primary" onclick="openReview('IP-014/25')">👁 View & Approve</button></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ================= APPROVAL DETAIL / REVIEW ================= -->
+<!-- ============================================================ -->
+<div class="page" id="page-review">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1a3a5c">👁</div>
+      <div><div class="ph-t">Review Project — <span id="rvRef">RP-031/25</span></div><div class="ph-d">All details submitted by the PI · ORIC may edit before approving</div></div></div>
+    <div class="ph-a">
+      <button class="btn btn-sm" onclick="go('approvals')">← Back to Queue</button>
+      <button class="btn btn-sm" id="editToggle" onclick="toggleAdminEdit()">✏ Enable ORIC Edit</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:15px;align-items:start">
+    <!-- LEFT: submitted detail (read-only) -->
+    <div>
+      <div class="card"><div class="card-h"><div class="card-t">📋 Submission Outline (by PI)</div><span class="tag t-amber">Pending Review</span></div>
+        <div class="card-b">
+          <div class="review-grid">
+            <div class="rv full"><span class="rvl">Project Title</span><span class="rvv" id="rvTitle">Saline Water Tolerant Sorghum Lines for Southern Punjab</span></div>
+            <div class="rv"><span class="rvl">Thematic Area</span><span class="rvv">Climate-Smart Agriculture</span></div>
+            <div class="rv"><span class="rvl">Project Type</span><span class="rvv" id="rvType">Research — Individual</span></div>
+            <div class="rv"><span class="rvl">Funder</span><span class="rvv">HEC NRPU (National)</span></div>
+            <div class="rv"><span class="rvl">Funding Call</span><span class="rvv">NRPU 2024 — Cycle 2</span></div>
+            <div class="rv"><span class="rvl">Host Organization</span><span class="rvv">MNSUAM</span></div>
+            <div class="rv"><span class="rvl">Submission Deadline</span><span class="rvv">31 May 2025</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-h"><div class="card-t">👤 Principal Investigator & Team</div></div>
+        <div class="card-b">
+          <div class="review-grid">
+            <div class="rv"><span class="rvl">PI</span><span class="rvv">Dr. Faisal Hassan</span></div>
+            <div class="rv"><span class="rvl">Designation</span><span class="rvv">Associate Professor</span></div>
+            <div class="rv"><span class="rvl">Department</span><span class="rvv">Plant Breeding & Genetics</span></div>
+            <div class="rv"><span class="rvl">Email</span><span class="rvv">f.hassan@mnsuam.edu.pk</span></div>
+            <div class="rv full"><span class="rvl">Co-PIs</span><span class="rvv">Dr. Imran (Soil Science), Dr. Naveed (Entomology)</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-h"><div class="card-t">🎯 Objectives & Deliverables</div></div>
+        <div class="card-b">
+          <div class="rv full"><span class="rvl">Objectives</span><span class="rvv">Develop and field-validate three salt-tolerant sorghum lines suitable for saline-affected districts; establish agronomic protocols.</span></div>
+          <div class="rv full"><span class="rvl">Expected Outcomes</span><span class="rvv">3 candidate lines, 2 publications, 1 farmer field-day, dataset on yield under salinity.</span></div>
+          <div class="rv"><span class="rvl">Reporting Frequency</span><span class="rvv">Quarterly</span></div>
+          <div class="rv"><span class="rvl">Requested Budget</span><span class="rvv">PKR 4,800,000</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: completeness checklist + decision -->
+    <div>
+      <div class="card"><div class="card-h"><div class="card-t">✔ Completeness Check</div></div>
+        <div class="card-b">
+          <ul class="checklist">
+            <li><span class="ck ok">✓</span> Project title & thematic area</li>
+            <li><span class="ck ok">✓</span> PI & department details</li>
+            <li><span class="ck ok">✓</span> Co-PI information</li>
+            <li><span class="ck ok">✓</span> Objectives & deliverables</li>
+            <li><span class="ck ok">✓</span> Budget breakup attached</li>
+            <li><span class="ck ok">✓</span> Reporting frequency set</li>
+            <li><span class="ck miss">!</span> Award letter (ORIC to attach)</li>
+          </ul>
+          <div class="alert alert-green" style="margin-top:12px">All PI-required fields are complete. ORIC fields below remain to be filled.</div>
+        </div>
+      </div>
+      <div class="card"><div class="card-h"><div class="card-t">Decision</div></div>
+        <div class="card-b">
+          <div class="fg"><label>Reviewer Remarks</label><textarea placeholder="Notes for the PI / file…"></textarea></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-success" onclick="approveProject()">✔ Approve Project</button>
+            <button class="btn" onclick="alert('Sent back to PI for revision (demo).')">↩ Send Back for Revision</button>
+            <button class="btn btn-danger" onclick="alert('Project rejected (demo).')">✕ Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORIC EDITABLE: Post-award + installments (disabled until edit enabled) -->
+  <div class="card admin-edit-card" id="oricEditCard">
+    <div class="card-h"><div class="card-t">🔧 ORIC Post-Award & Funding Setup</div><span class="tag t-blue" id="editState">Read-only — enable edit to modify</span></div>
+    <div class="card-b">
+      <div class="g3">
+        <div class="fg"><label>Award Letter Date</label><input type="date" disabled></div>
+        <div class="fg"><label>Funding Agency Ref. No.</label><input disabled></div>
+        <div class="fg"><label>Award Letter</label><div class="upz">📎 Upload</div></div>
+        <div class="fg"><label>Project Start Date</label><input type="date" id="instStart" value="2025-07-01" disabled></div>
+        <div class="fg"><label>Project End Date</label><input type="date" id="instEnd" value="2027-06-30" disabled></div>
+        <div class="fg"><label>Duration (Months)</label><input type="number" id="instDuration" value="24" disabled></div>
+        <div class="fg"><label>Total Approved Budget (PKR)<span class="req">*</span></label><input type="number" id="instBudget" value="4800000" disabled></div>
+        <div class="fg"><label>ORIC Overhead %</label><input type="number" id="instOverhead" value="10" step="0.5" disabled></div>
+        <div class="fg"><label>ORIC Overhead (PKR)</label><input type="number" id="instOverheadAmt" value="480000" disabled></div>
+      </div>
+
+      <div class="sd"><span>💰 Funding Installment Schedule</span></div>
+      <div class="alert alert-info">Choose a release frequency and click <b>Auto-Generate</b>. The system splits the (net) budget across the project duration into dated installments. You can fine-tune amounts and dates afterward.</div>
+      <div class="g4" style="align-items:end">
+        <div class="fg"><label>Release Frequency</label>
+          <select id="instFreq" disabled>
+            <option value="1">Monthly (1 month)</option>
+            <option value="3" selected>Quarterly (3 months)</option>
+            <option value="6">Semi-Annual (6 months)</option>
+            <option value="12">Annual (12 months)</option>
+          </select>
+        </div>
+        <div class="fg"><label>Split From</label>
+          <select id="instBase" disabled>
+            <option value="net">Net of ORIC overhead</option>
+            <option value="gross">Gross (total budget)</option>
+          </select>
+        </div>
+        <div class="fg"><label>&nbsp;</label><button class="btn btn-primary" id="genBtn" onclick="generateInstallments()" disabled style="width:100%">⚡ Auto-Generate</button></div>
+        <div class="fg"><label>&nbsp;</label><button class="btn" id="addInstBtn" onclick="addInstallmentRow()" disabled style="width:100%">+ Add Row</button></div>
+      </div>
+      <div class="rt-wrap"><table class="rt" id="t-installments">
+        <thead><tr><th>#</th><th>Installment</th><th>Period</th><th>Due Date</th><th>Amount (PKR)</th><th>Status</th><th>Reference / Cheque</th><th></th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr><th colspan="4" style="text-align:right">Total</th><th id="instTotal">—</th><th colspan="3"></th></tr></tfoot>
+      </table></div>
+
+      <div class="ff"><span style="font-size:11px;color:var(--muted)">ORIC edits are saved with the approval record.</span>
+        <button class="btn btn-primary" onclick="alert('ORIC funding setup saved (demo).')">💾 Save ORIC Setup</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ================= ADMIN: RESEARCH REGISTER ================ -->
+<!-- ============================================================ -->
+<div class="page" id="page-rp-register">
+  <div class="ph">
+    <div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1a3a5c">📑</div>
+      <div><div class="ph-t">Research Projects Register</div><div class="ph-d">Approved / Ongoing / Completed — consolidated tracking</div></div></div>
+    <div class="ph-a"><button class="btn btn-sm" onclick="go('approvals')">✅ Approvals</button></div>
+  </div>
+  <div class="card"><div class="card-h"><div class="card-t">All Research Projects</div>
+    <div style="display:flex;gap:7px"><select class="btn btn-sm" style="padding:5px 9px"><option>All Status</option><option>Awarded</option><option>Ongoing</option><option>Completed</option></select><button class="btn btn-sm" onclick="exportNote()">⬇ Export</button></div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:1100px">
+      <thead><tr><th>Sr.</th><th>File No.</th><th>Title</th><th>PI & Dept.</th><th>Funder</th><th>Start</th><th>End</th><th>Budget (PKR)</th><th>ORIC Overhead</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>RP-018/24</td><td>Drought-Resistant Wheat Lines</td><td>Dr. Hassan / PBG</td><td>HEC NRPU</td><td>Jan 24</td><td>Dec 26</td><td>4,200,000</td><td>420,000</td><td><span class="tag t-green">Ongoing</span></td><td><button class="btn btn-sm" onclick="openReview('RP-018/24')">View</button></td></tr>
+        <tr><td>2</td><td>RP-021/24</td><td>Precision Agriculture Sensors</td><td>Dr. Ayesha / Agri Engg</td><td>PSF</td><td>Mar 24</td><td>Feb 27</td><td>3,800,000</td><td>380,000</td><td><span class="tag t-amber">Awarded</span></td><td><button class="btn btn-sm" onclick="openReview('RP-021/24')">View</button></td></tr>
+        <tr><td>3</td><td>RP-015/23</td><td>Soil Microbiome & Fertility</td><td>Dr. Imran / Soil Sci</td><td>USDA</td><td>Jul 23</td><td>Jun 25</td><td>6,500,000</td><td>650,000</td><td><span class="tag t-gray">Completed</span></td><td><button class="btn btn-sm" onclick="openReview('RP-015/23')">View</button></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============== ADMIN: INDUSTRY / CONSULTANCY / PATENTS / LINKAGES REGISTERS ============== -->
+<div class="page" id="page-industry-reg">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1a3a5c">🏭</div>
+    <div><div class="ph-t">Industry Projects Register</div><div class="ph-d">Industry-sponsored research executed through ORIC</div></div></div>
+    <div class="ph-a"><button class="btn btn-sm" onclick="exportNote()">⬇ Export</button></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Industry Projects</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:900px">
+      <thead><tr><th>Sr.</th><th>File No.</th><th>Title</th><th>PI</th><th>Sponsor</th><th>Budget (PKR)</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>IP-006/24</td><td>Shelf-Life Extension of Mango Pulp</td><td>Dr. Sana</td><td>Shezan Intl.</td><td>5,100,000</td><td><span class="tag t-green">Ongoing</span></td><td><button class="btn btn-sm" onclick="openReview('IP-006/24')">View</button></td></tr>
+        <tr><td>2</td><td>IP-009/24</td><td>Poultry Vaccine Cold-Chain Study</td><td>Dr. Bilal</td><td>Sadiq Feeds</td><td>7,200,000</td><td><span class="tag t-amber">Awarded</span></td><td><button class="btn btn-sm" onclick="openReview('IP-009/24')">View</button></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-consultancy-reg">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#fef9c3;color:#854d0e">📄</div>
+    <div><div class="ph-t">Consultancies Register</div><div class="ph-d">Executed through ORIC with Industry, Commerce or Government</div></div></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Consultancy Contracts</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:820px">
+      <thead><tr><th>SN</th><th>Title</th><th>PI</th><th>Client</th><th>Value (PKR)</th><th>ORIC Overhead</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Irrigation Efficiency Audit</td><td>Dr. Ayesha</td><td>Fatima Fertilizer</td><td>1,400,000</td><td>140,000</td><td><span class="tag t-gray">Completed</span></td></tr>
+        <tr><td>2</td><td>Soil Salinity Mapping</td><td>Dr. Imran</td><td>Punjab Agri. Dept.</td><td>900,000</td><td>90,000</td><td><span class="tag t-green">Ongoing</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-patents-reg">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#dcfce7;color:#15803d">🏅</div>
+    <div><div class="ph-t">Patents & IP Register</div><div class="ph-d">Patents, disclosures and licensing with IPO tracking</div></div></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Patents & IP</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:900px">
+      <thead><tr><th>SN</th><th>Title</th><th>Lead Inventor</th><th>Category</th><th>Filed With</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Soil Moisture Monitoring Device</td><td>Dr. Ayesha</td><td>Technology</td><td>IPO Pakistan</td><td><span class="tag t-green">Granted</span></td></tr>
+        <tr><td>2</td><td>Drought-Tolerant Wheat Variety MNS-1</td><td>Dr. Hassan</td><td>Variety</td><td>FSC&RD</td><td><span class="tag t-amber">Under Exam</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-linkages-reg">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#d1fae5;color:#065f46">🤝</div>
+    <div><div class="ph-t">MoUs, Visits, Events & Policy</div><div class="ph-d">Linkages and outreach register</div></div></div></div>
+  <div class="stats">
+    <div class="stat purple"><div class="stat-n">18</div><div class="stat-l">Active MoUs</div></div>
+    <div class="stat"><div class="stat-n">12</div><div class="stat-l">Industrial Visits</div></div>
+    <div class="stat gold"><div class="stat-n">31</div><div class="stat-l">Events</div></div>
+    <div class="stat red"><div class="stat-n">9</div><div class="stat-l">Policy Advocacy</div></div>
+  </div>
+  <div class="card"><div class="card-h"><div class="card-t">Recent Linkages & Outreach</div></div>
+    <div class="card-b" style="padding:0"><div class="dt-wrap"><table class="dt" style="min-width:820px">
+      <thead><tr><th>SN</th><th>Item</th><th>Type</th><th>Lead</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>MoU — University of Agriculture, Faisalabad</td><td><span class="tag t-purple">MoU</span></td><td>Dr. Hassan</td><td>2022</td><td><span class="tag t-green">Active</span></td></tr>
+        <tr><td>2</td><td>Agri-Innovation Expo 2025</td><td><span class="tag t-amber">Event</span></td><td>Dr. Sana</td><td>Mar 25</td><td><span class="tag t-green">Completed</span></td></tr>
+        <tr><td>3</td><td>Industrial Visit — Fatima Fertilizer</td><td><span class="tag t-blue">Visit</span></td><td>Dr. Ayesha</td><td>Feb 25</td><td><span class="tag t-green">Logged</span></td></tr>
+      </tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ========================= REPORTS ========================= -->
+<!-- ============================================================ -->
+<div class="page" id="page-reports">
+  <div class="ph"><div class="ph-l"><div class="ph-ic" style="background:#dbeafe;color:#1e40af">📈</div>
+    <div><div class="ph-t">HEC Scorecard & Reports</div><div class="ph-d">One-click report generation for all authorities</div></div></div>
+    <div class="ph-a"><button class="btn btn-gold btn-sm">⚡ Generate All</button></div></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-l" style="margin:0 0 6px">HEC Scorecard</div><div class="stat-n" style="font-size:18px">72%</div><div class="pbar"><div class="pfill" style="width:72%"></div></div></div>
+    <div class="stat green"><div class="stat-l" style="margin:0 0 6px">Annual Report</div><div class="stat-n" style="font-size:18px">85%</div><div class="pbar"><div class="pfill" style="width:85%;background:var(--green)"></div></div></div>
+    <div class="stat gold"><div class="stat-l" style="margin:0 0 6px">F&PC Agenda</div><div class="stat-n" style="font-size:18px">60%</div><div class="pbar"><div class="pfill" style="width:60%;background:var(--gold)"></div></div></div>
+    <div class="stat blue"><div class="stat-l" style="margin:0 0 6px">Dept. Summary</div><div class="stat-n" style="font-size:18px">90%</div><div class="pbar"><div class="pfill" style="width:90%;background:var(--blue)"></div></div></div>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="card-t">⚡ One-Click Reports</div></div><div class="card-b">
+    <div class="rep-opt"><div class="ic" style="background:#dbeafe;color:#1e40af">📊</div><div><div class="tt">HEC ORIC Scorecard Report</div><div class="ds">Complete scorecard with all 6 KPI categories & evidence annexes</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+    <div class="rep-opt"><div class="ic" style="background:#dcfce7;color:#15803d">📑</div><div><div class="tt">Annual Progress Report</div><div class="ds">Full year research, IP, linkages & outreach summary</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+    <div class="rep-opt"><div class="ic" style="background:#fef3c7;color:#92400e">📋</div><div><div class="tt">F&PC Agenda Summary</div><div class="ds">Financial & project committee data — budgets, overheads, grants</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+    <div class="rep-opt"><div class="ic" style="background:#ede9fe;color:#5b21b6">🏢</div><div><div class="tt">Department-wise Research Summary</div><div class="ds">Disaggregated data by faculty & department</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+    <div class="rep-opt"><div class="ic" style="background:#fee2e2;color:#991b1b">🏅</div><div><div class="tt">Patents & IP Status Report</div><div class="ds">All patents, disclosures, licensing with IPO tracking</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+    <div class="rep-opt"><div class="ic" style="background:#dbeafe;color:#1a3a5c">💰</div><div><div class="tt">Financial Utilization Report</div><div class="ds">Budget releases, ORIC overhead collection, consultancy revenue</div></div><div class="gen"><button class="btn btn-primary btn-sm">⬇ Generate</button></div></div>
+  </div></div>
+
+  <div class="card"><div class="card-h"><div class="card-t">Export Options</div></div><div class="card-b">
+    <div class="g3">
+      <div class="fg"><label>Report Period</label><select><option>July 2024 – June 2025</option><option>July 2023 – June 2024</option><option>Custom Range</option></select></div>
+      <div class="fg"><label>Export Format</label><select><option>Word (.docx)</option><option>Excel (.xlsx)</option><option>PDF</option><option>HEC Portal Format (XML)</option></select></div>
+      <div class="fg"><label>&nbsp;</label><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1">⬇ Export</button><button class="btn">📤 Submit to HEC</button></div></div>
+    </div>
+  </div></div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+const titles={
+  'pub-dashboard':'Public Dashboard','pub-projects':'Projects Directory','pub-ip':'Innovation & Patents','pub-linkages':'Linkages & Events',
+  'my-status':'My Submissions','profile':'My Profile & Submissions',
+  'admin-dashboard':'Dashboard','approvals':'Project Approvals','review':'Review Project',
+  'rp-register':'Research Projects Register','industry-reg':'Industry Projects','consultancy-reg':'Consultancies',
+  'patents-reg':'Patents & IP','linkages-reg':'MoUs, Visits & Events','reports':'HEC Scorecard & Reports'
+};
+const roleDefault={public:'pub-dashboard',faculty:'profile',admin:'admin-dashboard'};
+
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.snav').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id); if(pg)pg.classList.add('active');
+  document.querySelectorAll('.snav[data-page="'+id+'"]').forEach(n=>n.classList.add('active'));
+  document.getElementById('tbTitle').textContent=titles[id]||'';
+  window.scrollTo(0,0);
+}
+function switchRole(role){
+  document.body.className='view-'+role;
+  document.getElementById('roleSwitch').value=role;
+  const names={public:'Guest',faculty:'Dr. Faisal Hassan',admin:'Dr. Admin'};
+  const badges={public:'PUBLIC',faculty:'FACULTY',admin:'ADMIN'};
+  document.getElementById('userName').textContent=names[role];
+  document.getElementById('roleBadge').textContent=badges[role];
+  go(roleDefault[role]);
+}
+
+/* ---------- profile inner nav ---------- */
+function goProfile(sec){
+  switchRole('faculty');                       // ensure faculty context
+  go('profile');
+  document.querySelectorAll('.psec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.pnav').forEach(n=>n.classList.remove('active'));
+  const s=document.getElementById('psec-'+sec); if(s)s.classList.add('active');
+  const n=document.querySelector('.pnav[data-sec="'+sec+'"]'); if(n)n.classList.add('active');
+}
+function submitProfile(){alert('Submitted to ORIC. Projects enter the approval queue; other records are saved to your profile. (demo)');}
+
+/* ---------- approvals ---------- */
+function openReview(ref){
+  switchRole('admin');
+  go('review');
+  document.getElementById('rvRef').textContent=ref;
+}
+function approveProject(){alert('Project approved. It now appears in the Research/Industry register with the ORIC funding setup. (demo)');go('approvals');}
+
+let adminEditOn=false;
+function toggleAdminEdit(){
+  adminEditOn=!adminEditOn;
+  document.querySelectorAll('#oricEditCard input,#oricEditCard select,#oricEditCard button.btn-primary,#oricEditCard #genBtn,#oricEditCard #addInstBtn').forEach(el=>{
+    if(el.id==='genBtn'||el.id==='addInstBtn'||el.classList.contains('btn-primary')) el.disabled=!adminEditOn;
+    else el.disabled=!adminEditOn;
+  });
+  document.querySelectorAll('#t-installments input,#t-installments select').forEach(el=>el.disabled=!adminEditOn);
+  document.getElementById('editToggle').textContent=adminEditOn?'🔒 Lock ORIC Edit':'✏ Enable ORIC Edit';
+  document.getElementById('editState').textContent=adminEditOn?'Editing enabled':'Read-only — enable edit to modify';
+  document.getElementById('editState').className='tag '+(adminEditOn?'t-green':'t-blue');
+}
+
+/* ---------- installment generator ---------- */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmt(n){return Math.round(n).toLocaleString('en-US');}
+function addMonths(dateStr,m){
+  const d=new Date(dateStr); d.setMonth(d.getMonth()+m); return d;
+}
+function dlabel(d){return MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function isoDate(d){return d.toISOString().slice(0,10);}
+function freqLabel(f){return ({'1':'Monthly','3':'Quarterly','6':'Semi-Annual','12':'Annual'})[f]||'';}
+
+function generateInstallments(){
+  const budget=+document.getElementById('instBudget').value||0;
+  const overheadPct=+document.getElementById('instOverhead').value||0;
+  const base=document.getElementById('instBase').value;
+  const freq=+document.getElementById('instFreq').value;
+  const startStr=document.getElementById('instStart').value;
+  let duration=+document.getElementById('instDuration').value||0;
+  if(!startStr){alert('Set a project start date first.');return;}
+  // derive duration from end date if not provided
+  if(!duration){
+    const endStr=document.getElementById('instEnd').value;
+    if(endStr){const s=new Date(startStr),e=new Date(endStr);duration=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth());}
+  }
+  if(duration<=0){alert('Set a valid duration or end date.');return;}
+
+  const overheadAmt=Math.round(budget*overheadPct/100);
+  document.getElementById('instOverheadAmt').value=overheadAmt;
+  const splitTotal = base==='net' ? (budget-overheadAmt) : budget;
+
+  const periods=Math.max(1,Math.ceil(duration/freq));
+  const per=Math.floor(splitTotal/periods);
+  const tb=document.querySelector('#t-installments tbody');
+  tb.innerHTML='';
+  let allocated=0;
+  for(let i=0;i<periods;i++){
+    const amt = i===periods-1 ? (splitTotal-allocated) : per;
+    allocated+=per;
+    const pStart=addMonths(startStr,i*freq);
+    const pEnd=addMonths(startStr,Math.min((i+1)*freq,duration));
+    const due=new Date(pEnd); // release at end of period
+    const periodTxt=dlabel(pStart)+' – '+dlabel(addMonths(startStr,Math.min((i+1)*freq,duration)-1));
+    const tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td>'+(i+1)+'</td>'+
+      '<td><input value="'+ordinal(i+1)+' Installment ('+freqLabel(freq+'')+')"></td>'+
+      '<td><input value="'+periodTxt+'"></td>'+
+      '<td><input type="date" value="'+isoDate(due)+'"></td>'+
+      '<td><input type="number" class="inst-amt" value="'+amt+'" oninput="sumInstallments()"></td>'+
+      '<td><select><option>Scheduled</option><option>Received</option><option>Delayed</option></select></td>'+
+      '<td><input placeholder="Cheque / Ref."></td>'+
+      '<td><button class="del-btn" onclick="rmInstallment(this)">✕</button></td>';
+    tb.appendChild(tr);
+  }
+  sumInstallments();
+}
+function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+function addInstallmentRow(){
+  const tb=document.querySelector('#t-installments tbody');
+  const i=tb.children.length;
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+(i+1)+'</td><td><input value="'+ordinal(i+1)+' Installment"></td><td><input></td><td><input type="date"></td><td><input type="number" class="inst-amt" value="0" oninput="sumInstallments()"></td><td><select><option>Scheduled</option><option>Received</option><option>Delayed</option></select></td><td><input placeholder="Cheque / Ref."></td><td><button class="del-btn" onclick="rmInstallment(this)">✕</button></td>';
+  tb.appendChild(tr);sumInstallments();
+}
+function rmInstallment(btn){const tb=btn.closest('tbody');btn.closest('tr').remove();[...tb.children].forEach((tr,i)=>tr.firstElementChild.textContent=i+1);sumInstallments();}
+function sumInstallments(){
+  let t=0;document.querySelectorAll('#t-installments .inst-amt').forEach(i=>t+=(+i.value||0));
+  document.getElementById('instTotal').textContent='PKR '+fmt(t);
+}
+
+/* ---------- public project filters ---------- */
+function filterProjects(){
+  const q=document.getElementById('fSearch').value.toLowerCase();
+  const type=document.getElementById('fType').value, fund=document.getElementById('fFund').value,
+        status=document.getElementById('fStatus').value, scope=document.getElementById('fScope').value,
+        dept=document.getElementById('fDept').value;
+  let shown=0;
+  document.querySelectorAll('#projTable tbody tr').forEach(tr=>{
+    const txt=tr.textContent.toLowerCase();
+    const fundTxt=(tr.dataset.fund||'')+' '+txt;
+    const ok=(!q||txt.includes(q))
+      &&(!type||tr.dataset.type===type)
+      &&(!fund||fundTxt.includes(fund.toLowerCase()))
+      &&(!status||tr.dataset.status===status)
+      &&(!scope||tr.dataset.scope===scope)
+      &&(!dept||tr.dataset.dept===dept);
+    tr.style.display=ok?'':'none'; if(ok)shown++;
+  });
+  document.getElementById('projCount').textContent=shown+' result'+(shown===1?'':'s');
+}
+function clearProjFilters(){['fSearch','fType','fFund','fStatus','fScope','fDept'].forEach(id=>document.getElementById(id).value='');filterProjects();}
+function exportNote(){alert('Export generated (demo).');}
+
+/* ---------- shared table helpers ---------- */
+function rmRow(btn){const tr=btn.closest('tr');if(tr){const tb=tr.parentNode;tr.remove();renumber(tb);}}
+function renumber(tb){[...tb.querySelectorAll('tr')].forEach((tr,i)=>{const c=tr.querySelector('td');if(c&&!c.querySelector('input,select,textarea'))c.textContent=i+1;});}
+function addGeneric(tableId,cols){
+  const tb=document.querySelector('#'+tableId+' tbody');
+  const tr=document.createElement('tr');
+  let html='<td>'+(tb.children.length+1)+'</td>';
+  for(let i=1;i<cols;i++)html+='<td><input></td>';
+  html+='<td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';
+  tr.innerHTML=html;tb.appendChild(tr);
+}
+function addCopiRow(){const tb=document.querySelector('#t-copi tbody');const tr=document.createElement('tr');tr.innerHTML='<td>'+(tb.children.length+1)+'</td><td><input></td><td><input></td><td><input></td><td><input></td><td><select><option>Internal Co-PI</option><option>External Co-PI</option></select></td><td><input type="date"></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';tb.appendChild(tr);}
+function addTeamRow(){const tb=document.querySelector('#t-team tbody');const tr=document.createElement('tr');tr.innerHTML='<td>'+(tb.children.length+1)+'</td><td><input></td><td><input></td><td><input></td><td><input></td><td><input></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';tb.appendChild(tr);}
+function addBudgetRow(){const heads='<option></option><option>Lab Equipment</option><option>Chemical/Glassware/Consumable</option><option>Field Visits</option><option>Sample Analysis</option><option>Computer/Printer</option><option>Studentship</option><option>Research Assistant</option><option>Research Associate</option><option>Office Furniture</option><option>Stationery</option><option>Contingency/Unforeseen</option><option>Honorarium PI</option><option>Honorarium Co-PI</option><option>University Overhead</option><option>Journal Publication Fee</option><option>Local Travel</option><option>Audit/Account Fee</option>';const tb=document.querySelector('#t-budget tbody');const tr=document.createElement('tr');tr.innerHTML='<td>'+(tb.children.length+1)+'</td><td><select>'+heads+'</select></td><td><input type="number"></td><td><input type="number"></td><td><input type="number"></td><td><input type="number"></td><td><input type="number"></td><td><input type="number"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';tb.appendChild(tr);}
+function addVisitRow(){const tb=document.querySelector('#t-visits tbody');const tr=document.createElement('tr');tr.innerHTML='<td>'+(tb.children.length+1)+'</td><td><input></td><td><input></td><td><input type="date"></td><td><textarea></textarea></td><td><input></td><td><select><option>Industry</option><option>Community</option><option>Government</option></select></td><td><textarea></textarea></td><td><input type="file"></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';tb.appendChild(tr);}
+function addPolicyRow(){const tb=document.querySelector('#t-policy tbody');const tr=document.createElement('tr');tr.innerHTML='<td>'+(tb.children.length+1)+'</td><td><input placeholder="Govt. body"></td><td><input></td><td><select><option>Agriculture</option><option>Economic Development</option><option>Social Progress</option><option>Environment</option><option>Health</option><option>Education</option><option>Other</option></select></td><td><textarea></textarea></td><td><input></td><td><textarea placeholder="Briefings, meetings, reports"></textarea></td><td><button class="del-btn" onclick="rmRow(this)">✕</button></td>';tb.appendChild(tr);}
+
+/* ---------- init ---------- */
+(function(){
+  // pre-fill budget breakup with dummy data
+  const budgetDummy=[
+    {head:'Lab Equipment',y:[1500000,0,0,0,0]},
+    {head:'Chemical/Glassware/Consumable',y:[400000,350000,0,0,0]},
+    {head:'Field Visits',y:[200000,250000,0,0,0]},
+    {head:'Research Associate',y:[420000,420000,0,0,0]},
+    {head:'Honorarium PI',y:[120000,120000,0,0,0]},
+    {head:'University Overhead',y:[240000,240000,0,0,0]}
+  ];
+  budgetDummy.forEach(b=>{
+    addBudgetRow();
+    const tr=document.querySelector('#t-budget tbody').lastElementChild;
+    const cells=tr.querySelectorAll('td');
+    cells[1].querySelector('select').value=b.head;
+    let tot=0;
+    b.y.forEach((v,i)=>{cells[2+i].querySelector('input').value=v||'';tot+=v;});
+    cells[7].querySelector('input').value=tot;
+  });
+  switchRole('public');
+})();
+</script>
+</body>
+</html>

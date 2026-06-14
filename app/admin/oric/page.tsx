@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Wallet,
   Loader2,
@@ -15,16 +14,19 @@ import {
   CalendarDays,
   User,
   RefreshCw,
-  CheckCircle,
   Clock,
-  Shield,
-  ShieldCheck,
-  FlaskConical,
+  Globe,
+  Users,
+  Mail,
+  Phone,
+  Landmark,
+  TrendingUp,
+  X,
+  Eye,
   ChevronDown,
   ChevronUp,
-  X,
+  Zap,
 } from 'lucide-react';
-import { useAdminVerifications } from '@/lib/queries/admin/verifications';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Installment {
@@ -91,34 +93,11 @@ interface AdminProject {
   reports: ProjectReportItem[];
 }
 
-type Tab = 'profiles' | 'pending' | 'approved' | 'ongoing' | 'completed' | 'all';
+type Tab = 'pending' | 'approved' | 'ongoing' | 'completed' | 'all';
 
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const fmtMoney = (n: number, ccy = 'PKR') => `${ccy} ${n.toLocaleString()}`;
-
-// ── Verif Types ────────────────────────────────────────────────────────────
-type VerifStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
-interface StaffRef { id: string; name: string; email: string; department: { name: string } }
-interface PendingProfile {
-  id: string; name: string; email: string; designation: string;
-  bio: string | null; specialization: string | null; qualifications: string | null;
-  experienceYears: string | null; profileImage: string | null;
-  profileVerificationStatus: VerifStatus; profileRejectionReason: string | null;
-  updatedAt: string; department: { name: string };
-}
-interface PendingProject {
-  id: string; title: string; description: string | null; status: string;
-  imageUrl: string | null; verificationStatus: VerifStatus; rejectionReason: string | null;
-  updatedAt: string; staff: StaffRef;
-}
-interface TeacherPending {
-  id: string; name: string; email: string; department: string;
-  profileImage: string | null;
-  profile: PendingProfile | null;
-  projects: PendingProject[];
-  total: number;
-}
 
 // ── Reject Modal ───────────────────────────────────────────────────────────
 function RejectModal({ title, onClose, onConfirm, processing }: {
@@ -131,7 +110,7 @@ function RejectModal({ title, onClose, onConfirm, processing }: {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white">Reject</h3>
+            <h3 className="text-base font-bold text-white">Reject Project</h3>
             <p className="text-xs text-white/70 mt-0.5 line-clamp-1">{title}</p>
           </div>
           <button onClick={onClose} className="text-white/70 hover:text-white"><X className="w-5 h-5" /></button>
@@ -166,556 +145,433 @@ function RejectModal({ title, onClose, onConfirm, processing }: {
   );
 }
 
-function InlineActions({ label, onVerify, onReject, processing }: {
-  label: string; onVerify: () => void; onReject: (r: string) => void; processing: boolean;
-}) {
-  const [showModal, setShowModal] = useState(false);
-  return (
-    <>
-      <div className="flex items-center gap-2 mt-2">
-        <button onClick={onVerify} disabled={processing}
-          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-          <CheckCircle className="w-3.5 h-3.5" /> Approve
-        </button>
-        <button onClick={() => setShowModal(true)} disabled={processing}
-          className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors">
-          <XCircle className="w-3.5 h-3.5" /> Reject
-        </button>
-        {processing && <span className="text-xs text-gray-400 animate-pulse">Processing…</span>}
-      </div>
-      {showModal && (
-        <RejectModal title={label} onClose={() => setShowModal(false)}
-          onConfirm={(r) => { setShowModal(false); onReject(r); }} processing={processing} />
-      )}
-    </>
-  );
-}
-
-function VerifChip({ status }: { status: VerifStatus }) {
-  if (status === 'VERIFIED') return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
-      <ShieldCheck className="w-3 h-3" /> Verified
-    </span>
-  );
-  if (status === 'REJECTED') return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-semibold">
-      <XCircle className="w-3 h-3" /> Rejected
-    </span>
-  );
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
-      <Clock className="w-3 h-3" /> Pending
-    </span>
-  );
-}
-
-// ── Teacher Verification Card ──────────────────────────────────────────────
-function TeacherVerifCard({ teacher, act, isProc }: {
-  teacher: TeacherPending;
-  act: (type: string, id: string, action: 'VERIFIED' | 'REJECTED', reason?: string) => Promise<void>;
-  isProc: (type: string, id: string) => boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const initials = teacher.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <button onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50/60 transition-colors text-left">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 border-gray-100">
-          {teacher.profileImage ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-[#2d6a4f]/10 flex items-center justify-center">
-              <span className="text-[#2d6a4f] font-bold text-sm">{initials}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-900 truncate">{teacher.name}</p>
-          <p className="text-xs text-gray-500 truncate">{teacher.email} · {teacher.department}</p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {teacher.profile && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
-                <User className="w-3 h-3" />1 Profile
-              </span>
-            )}
-            {teacher.projects.length > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#2d6a4f]/10 text-[#2d6a4f]">
-                <FlaskConical className="w-3 h-3" />{teacher.projects.length} Project{teacher.projects.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-sm font-bold flex items-center justify-center">
-            {teacher.total}
-          </span>
-          {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-        </div>
-      </button>
-
-      {open && (
-        <div className="border-t border-gray-100 divide-y divide-gray-50">
-          {teacher.profile && (
-            <div className="bg-purple-50/20">
-              <div className="flex items-center gap-2 px-6 py-3 bg-purple-100/40 border-b border-purple-100">
-                <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-bold text-purple-800 text-sm uppercase tracking-wide">Profile</span>
-                <VerifChip status={teacher.profile.profileVerificationStatus} />
-                <span className="ml-auto text-xs text-gray-400">
-                  Updated {new Date(teacher.profile.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </span>
-              </div>
-              <div className="px-6 py-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-1">
-                  {teacher.profile.designation && (
-                    <div className="bg-white rounded-xl p-3 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Designation</p>
-                      <p className="text-gray-800 font-medium">{teacher.profile.designation}</p>
-                    </div>
-                  )}
-                  {teacher.profile.experienceYears && (
-                    <div className="bg-white rounded-xl p-3 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Experience</p>
-                      <p className="text-gray-800 font-medium">{teacher.profile.experienceYears}</p>
-                    </div>
-                  )}
-                  {teacher.profile.specialization && (
-                    <div className="bg-white rounded-xl p-3 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Specialization</p>
-                      <p className="text-gray-700 line-clamp-2">{teacher.profile.specialization}</p>
-                    </div>
-                  )}
-                  {teacher.profile.qualifications && (
-                    <div className="bg-white rounded-xl p-3 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Qualifications</p>
-                      <p className="text-gray-700">{teacher.profile.qualifications}</p>
-                    </div>
-                  )}
-                  {teacher.profile.bio && (
-                    <div className="bg-white rounded-xl p-3 border border-gray-100 sm:col-span-2">
-                      <p className="text-xs text-gray-400 mb-0.5">Bio</p>
-                      <p className="text-gray-700 line-clamp-3">{teacher.profile.bio}</p>
-                    </div>
-                  )}
-                </div>
-                <InlineActions
-                  label={`${teacher.name}'s profile`}
-                  onVerify={() => act('profile', teacher.profile!.id, 'VERIFIED')}
-                  onReject={(r) => act('profile', teacher.profile!.id, 'REJECTED', r)}
-                  processing={isProc('profile', teacher.profile.id)}
-                />
-              </div>
-            </div>
-          )}
-
-          {teacher.projects.length > 0 && (
-            <div className="bg-[#2d6a4f]/5">
-              <div className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f]/10 border-b border-[#2d6a4f]/10">
-                <div className="w-6 h-6 rounded-md bg-[#2d6a4f] flex items-center justify-center">
-                  <FlaskConical className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-bold text-[#1a3d2b] text-sm uppercase tracking-wide">Projects</span>
-                <span className="ml-1 px-2 py-0.5 bg-[#2d6a4f]/20 text-[#2d6a4f] rounded-full text-xs font-bold">{teacher.projects.length}</span>
-              </div>
-              {teacher.projects.map((proj) => (
-                <div key={proj.id} className="px-6 py-4 border-b border-[#2d6a4f]/5 last:border-0">
-                  <div className="flex items-start gap-3">
-                    {proj.imageUrl && (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={proj.imageUrl} alt={proj.title} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-100" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900 text-sm">{proj.title}</span>
-                        <VerifChip status={proj.verificationStatus} />
-                      </div>
-                      {proj.description && (
-                        <p className="text-xs text-gray-500 line-clamp-2 mb-1">{proj.description}</p>
-                      )}
-                      <InlineActions
-                        label={proj.title}
-                        onVerify={() => act('project', proj.id, 'VERIFIED')}
-                        onReject={(r) => act('project', proj.id, 'REJECTED', r)}
-                        processing={isProc('project', proj.id)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Page ─────────────────────────────────────────────────────────────────────
-export default function OricPage() {
-  const queryClient = useQueryClient();
-
-  // Project state
-  const [projects, setProjects] = useState<AdminProject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>('profiles');
-  const [banner, setBanner] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-
-  // Verifications state
-  const { data: verifData, isLoading: verifLoading, refetch: refetchVerif } = useAdminVerifications();
-  const [verifProcessing, setVerifProcessing] = useState<string | null>(null);
-  const [verifSearch, setVerifSearch] = useState('');
-
-  const loadProjects = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/projects');
-      const data = await res.json();
-      if (res.ok) setProjects(data.projects ?? []);
-      else setBanner({ type: 'err', msg: data.error || 'Failed to load projects' });
-    } catch {
-      setBanner({ type: 'err', msg: 'Network error loading projects' });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
-
-  const flash = (type: 'ok' | 'err', msg: string) => {
-    setBanner({ type, msg });
-    setTimeout(() => setBanner(null), 4000);
-  };
-
-  // Verif actions
-  const verifAct = async (type: string, id: string, action: 'VERIFIED' | 'REJECTED', reason?: string) => {
-    setVerifProcessing(`${type}:${id}`);
-    try {
-      const res = await fetch(`/api/admin/verifications/${type}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason }),
-      });
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ['admin', 'verifications'] });
-        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-        flash('ok', action === 'VERIFIED' ? 'Approved successfully.' : 'Rejected.');
-      } else {
-        const d = await res.json();
-        flash('err', d.error || 'Failed');
-      }
-    } catch {
-      flash('err', 'Network error');
-    } finally {
-      setVerifProcessing(null);
-    }
-  };
-  const isVerifProc = (type: string, id: string) => verifProcessing === `${type}:${id}`;
-
-  // Build teacher groups for profiles tab
-  const teachers = useMemo<TeacherPending[]>(() => {
-    if (!verifData) return [];
-    const map = new Map<string, TeacherPending>();
-    const ensure = (id: string, name: string, email: string, dept: string, img: string | null) => {
-      if (!map.has(id)) map.set(id, { id, name, email, department: dept, profileImage: img, profile: null, projects: [], total: 0 });
-      return map.get(id)!;
-    };
-    verifData.pendingProfiles.forEach((p) => {
-      const t = ensure(p.id, p.name, p.email, p.department.name, p.profileImage);
-      t.profile = p;
-    });
-    verifData.pendingProjects.forEach((proj) => {
-      const t = ensure(proj.staff.id, proj.staff.name, proj.staff.email, proj.staff.department.name, null);
-      t.projects.push(proj);
-    });
-    return Array.from(map.values())
-      .map((t) => ({ ...t, total: (t.profile ? 1 : 0) + t.projects.length }))
-      .sort((a, b) => b.total - a.total);
-  }, [verifData]);
-
-  const filteredTeachers = useMemo(() => {
-    if (!verifSearch.trim()) return teachers;
-    const q = verifSearch.toLowerCase();
-    return teachers.filter((t) => t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q) || t.department.toLowerCase().includes(q));
-  }, [teachers, verifSearch]);
-
-  // Project tab counts
-  const counts = useMemo(() => ({
-    profiles: (verifData?.totalPending ?? 0),
-    pending: projects.filter((p) => p.verificationStatus === 'PENDING').length,
-    approved: projects.filter((p) => p.verificationStatus === 'VERIFIED').length,
-    ongoing: projects.filter((p) => p.status === 'ONGOING' && p.verificationStatus === 'VERIFIED').length,
-    completed: projects.filter((p) => p.status === 'COMPLETED').length,
-    all: projects.length,
-  }), [projects, verifData]);
-
-  const filtered = useMemo(() => {
-    switch (tab) {
-      case 'pending': return projects.filter((p) => p.verificationStatus === 'PENDING');
-      case 'approved': return projects.filter((p) => p.verificationStatus === 'VERIFIED');
-      case 'ongoing': return projects.filter((p) => p.status === 'ONGOING' && p.verificationStatus === 'VERIFIED');
-      case 'completed': return projects.filter((p) => p.status === 'COMPLETED');
-      default: return projects;
-    }
-  }, [projects, tab]);
-
-  const tabs: { key: Tab; label: string; color?: string }[] = [
-    { key: 'profiles', label: 'Verifications', color: 'amber' },
-    { key: 'pending', label: 'Pending Approval', color: 'amber' },
-    { key: 'approved', label: 'Approved', color: 'green' },
-    { key: 'ongoing', label: 'Ongoing' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'all', label: 'All' },
-  ];
-
-  return (
-    <div className="min-h-screen">
-      <main className="px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-[#c9a961]/15 flex items-center justify-center">
-            <Wallet className="w-6 h-6 text-[#c9a961]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">ORIC</h1>
-            <p className="text-sm text-gray-500">Office of Research, Innovation &amp; Commercialization — verify profiles, approve projects, manage budgets</p>
-          </div>
-          <button
-            onClick={() => { loadProjects(); refetchVerif(); }}
-            className="ml-auto inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
-        </div>
-
-        {banner && (
-          <div className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-4 border ${banner.type === 'ok' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'}`}>
-            {banner.type === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            {banner.msg}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                tab === t.key ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {t.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                tab === t.key
-                  ? 'bg-white/20 text-white'
-                  : counts[t.key] > 0 && (t.key === 'profiles' || t.key === 'pending')
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-gray-100 text-gray-500'
-              }`}>
-                {counts[t.key]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── Profiles / Verifications Tab ── */}
-        {tab === 'profiles' && (
-          <div className="space-y-4">
-            {verifLoading ? (
-              <div className="flex items-center justify-center py-20 text-gray-400">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : teachers.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20 text-center px-4">
-                <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="w-8 h-8 text-emerald-500" />
-                </div>
-                <p className="text-gray-800 font-semibold text-lg">All verified!</p>
-                <p className="text-sm text-gray-400 mt-1">No pending profile or project submissions.</p>
-              </div>
-            ) : (
-              <>
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-purple-700">{verifData?.counts.profiles ?? 0}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Pending Profiles</p>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center shrink-0">
-                      <FlaskConical className="w-5 h-5 text-[#2d6a4f]" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-[#2d6a4f]">{verifData?.counts.projects ?? 0}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Pending Projects</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Search */}
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text" value={verifSearch} onChange={(e) => setVerifSearch(e.target.value)}
-                      placeholder="Search by teacher name or department…"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all"
-                    />
-                  </div>
-                  {verifSearch && (
-                    <button onClick={() => setVerifSearch('')} className="text-xs text-gray-400 hover:text-gray-600">
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                  <span className="text-sm text-gray-400">{filteredTeachers.length} teacher{filteredTeachers.length !== 1 ? 's' : ''}</span>
-                </div>
-
-                {/* Teacher cards */}
-                {filteredTeachers.map((teacher) => (
-                  <TeacherVerifCard key={teacher.id} teacher={teacher} act={verifAct} isProc={isVerifProc} />
-                ))}
-                {filteredTeachers.length === 0 && (
-                  <div className="text-center py-12 text-gray-400 text-sm">No teachers match &ldquo;{verifSearch}&rdquo;</div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── Project Tabs ── */}
-        {tab !== 'profiles' && (
-          <>
-            {loading ? (
-              <div className="flex items-center justify-center py-20 text-gray-400">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-20 text-gray-400 bg-white rounded-2xl border border-gray-100">
-                No projects in this view.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filtered.map((p) => (
-                  <ProjectRow key={p.id} project={p} onChanged={loadProjects} flash={flash} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </main>
-    </div>
-  );
-}
-
-// ── Project row ────────────────────────────────────────────────────────────
-function ProjectRow({
-  project,
-  onChanged,
-  flash,
-}: {
+// ── Project Detail Modal — full editable view ─────────────────────────────
+function ProjectDetailModal({ project, onClose, onApprove, onReject, busy, onSaved }: {
   project: AdminProject;
-  onChanged: () => void;
-  flash: (t: 'ok' | 'err', m: string) => void;
+  onClose: () => void;
+  onApprove?: () => void;
+  onReject?: (r: string) => void;
+  busy?: boolean;
+  onSaved?: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
-  const [reason, setReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // Editable fields
-  const [budget, setBudget] = useState(project.budgetAmount ?? '');
-  const [currency, setCurrency] = useState(project.currency ?? 'PKR');
-  const [agency, setAgency] = useState(project.fundingAgency ?? '');
-  const [status, setStatus] = useState(project.status);
-  const [title, setTitle] = useState(project.title);
-  const [description, setDescription] = useState(project.description ?? '');
-  // ORIC post-award fields
-  const [overhead, setOverhead] = useState(project.oricOverheadAmount ?? '');
-  const [overheadStatus, setOverheadStatus] = useState(project.overheadStatus ?? 'Approved');
-  const [awardLetterDate, setAwardLetterDate] = useState(project.awardLetterDate ? project.awardLetterDate.split('T')[0] : '');
-  const [agencyRefNo, setAgencyRefNo] = useState(project.fundingAgencyRefNo ?? '');
-  const [specialConditions, setSpecialConditions] = useState(project.specialConditions ?? '');
-  // Report tracking
-  const [reports, setReports] = useState<ProjectReportItem[]>(project.reports ?? []);
-  const [newReport, setNewReport] = useState({ reportType: 'Progress', dueDate: '', status: 'Due' });
-  // File / status tracking
-  const [reportsStatus, setReportsStatus] = useState(project.reportsStatus ?? 'No Report Due');
-  const [fileStatus, setFileStatus] = useState(project.fileStatus ?? 'File Received');
-  const [remarks, setRemarks] = useState(project.remarks ?? '');
+  const [draft, setDraft] = useState({
+    title:               project.title ?? '',
+    description:         project.description ?? '',
+    objectives:          project.objectives ?? '',
+    methodology:         project.methodology ?? '',
+    outcomes:            project.outcomes ?? '',
+    deliverables:        project.deliverables ?? '',
+    targetBeneficiaries: project.targetBeneficiaries ?? '',
+    thematicArea:        project.thematicArea ?? '',
+    projectCategory:     project.projectCategory ?? '',
+    projectType:         project.projectType ?? '',
+    funderType:          project.funderType ?? '',
+    funderLocation:      project.funderLocation ?? '',
+    financialYear:       project.financialYear ?? '',
+    startDate:           project.startDate ? project.startDate.slice(0, 10) : '',
+    endDate:             project.endDate   ? project.endDate.slice(0, 10)   : '',
+    budgetAmount:        project.budgetAmount ?? '',
+    currency:            project.currency ?? 'PKR',
+    fundingAgency:       project.fundingAgency ?? '',
+    fundingAgencyRefNo:  project.fundingAgencyRefNo ?? '',
+    awardLetterDate:     project.awardLetterDate ? project.awardLetterDate.slice(0, 10) : '',
+    oricOverheadAmount:  project.oricOverheadAmount ?? '',
+    overheadStatus:      project.overheadStatus ?? '',
+    specialConditions:   project.specialConditions ?? '',
+    sponsoringAgency:    project.sponsoringAgency ?? '',
+    sponsorCountry:      project.sponsorCountry ?? '',
+    counterpartName:     project.counterpartName ?? '',
+    projectFileNo:       project.projectFileNo ?? '',
+    remarks:             project.remarks ?? '',
+  });
 
-  // New installment state
-  const [instAmount, setInstAmount] = useState('');
-  const [instDue, setInstDue] = useState('');
-  const [instNote, setInstNote] = useState('');
+  const set = (k: keyof typeof draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setDraft(d => ({ ...d, [k]: e.target.value }));
 
-  const verify = async (action: 'VERIFIED' | 'REJECTED') => {
-    if (action === 'REJECTED' && reason.trim().length < 5) {
-      flash('err', 'Please give a rejection reason (min 5 chars).');
-      return;
-    }
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/verifications/project/${project.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason: reason.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) return flash('err', data.error || 'Action failed');
-      flash('ok', action === 'VERIFIED' ? 'Project approved — now Ongoing.' : 'Project rejected.');
-      setRejecting(false);
-      setReason('');
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveProject = async () => {
-    setBusy(true);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMsg(null);
     try {
       const res = await fetch(`/api/admin/projects/${project.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim() || undefined,
-          description: description.trim() || null,
-          budgetAmount: budget === '' ? null : budget,
-          currency,
-          fundingAgency: agency,
-          status,
-          oricOverheadAmount: overhead === '' ? null : overhead,
-          overheadStatus,
-          awardLetterDate: awardLetterDate || null,
-          fundingAgencyRefNo: agencyRefNo.trim() || null,
-          specialConditions: specialConditions.trim() || null,
-          reportsStatus,
-          fileStatus,
-          remarks: remarks.trim() || null,
+          ...draft,
+          budgetAmount:       draft.budgetAmount       ? parseFloat(draft.budgetAmount as string)       : null,
+          oricOverheadAmount: draft.oricOverheadAmount ? parseFloat(draft.oricOverheadAmount as string) : null,
+          startDate:          draft.startDate || null,
+          endDate:            draft.endDate   || null,
+          awardLetterDate:    draft.awardLetterDate || null,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) return flash('err', data.error || 'Save failed');
-      flash('ok', 'Project updated.');
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Save failed'); }
+      setSaveMsg({ type: 'ok', text: 'Changes saved successfully.' });
+      setEditMode(false);
+      onSaved?.();
+    } catch (err) {
+      setSaveMsg({ type: 'err', text: err instanceof Error ? err.message : 'Save failed' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const TF = ({ label, k, type = 'text' }: { label: string; k: keyof typeof draft; type?: string }) => (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+      {editMode
+        ? <input type={type} value={draft[k] as string} onChange={set(k)}
+            className="w-full px-3 py-2 border border-[#1a3d2b]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3d2b]/20 focus:border-[#1a3d2b] bg-white" />
+        : <p className={`text-sm leading-relaxed ${draft[k] ? 'text-gray-800' : 'text-gray-300 italic'}`}>{(draft[k] as string) || 'Not filled'}</p>
+      }
+    </div>
+  );
+
+  const TA = ({ label, k, rows = 3 }: { label: string; k: keyof typeof draft; rows?: number }) => (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+      {editMode
+        ? <textarea rows={rows} value={draft[k] as string} onChange={set(k)}
+            className="w-full px-3 py-2 border border-[#1a3d2b]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3d2b]/20 focus:border-[#1a3d2b] bg-white resize-y" />
+        : <p className={`text-sm leading-relaxed whitespace-pre-wrap ${draft[k] ? 'text-gray-800' : 'text-gray-300 italic'}`}>{(draft[k] as string) || 'Not filled'}</p>
+      }
+    </div>
+  );
+
+  const checks = [
+    { label: 'Title',         filled: !!draft.title },
+    { label: 'Description',   filled: !!draft.description },
+    { label: 'Objectives',    filled: !!draft.objectives },
+    { label: 'Methodology',   filled: !!draft.methodology },
+    { label: 'Start Date',    filled: !!draft.startDate },
+    { label: 'End Date',      filled: !!draft.endDate },
+    { label: 'Thematic Area', filled: !!draft.thematicArea },
+    { label: 'Budget',        filled: !!draft.budgetAmount },
+    { label: 'Co-PIs',        filled: project.coPIs.length > 0 },
+    { label: 'Team Members',  filled: project.teamMembers.length > 0 },
+  ];
+  const filledCount = checks.filter(c => c.filled).length;
+
+  return (
+    <>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#1a3d2b] to-[#2d6a4f] px-6 py-5 flex items-start justify-between shrink-0">
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-white/90 ${
+                project.verificationStatus === 'PENDING'  ? 'text-amber-700 border-amber-200' :
+                project.verificationStatus === 'VERIFIED' ? 'text-emerald-700 border-emerald-200' :
+                'text-red-700 border-red-200'
+              }`}>{project.verificationStatus}</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-white/90 text-teal-700 border-teal-200">
+                {project.projectKind === 'INDUSTRY' ? 'Industry' : 'Research'}
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-white/90 ${
+                project.scope === 'INTERNATIONAL' ? 'text-purple-700 border-purple-200' : 'text-sky-700 border-sky-200'
+              }`}>{project.scope === 'NATIONAL' ? 'National' : 'International'}</span>
+              {editMode && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-900">EDITING</span>}
+            </div>
+            <h2 className="text-lg font-bold text-white leading-snug">{project.title}</h2>
+            <p className="text-sm text-white/60 mt-1">{project.staff.name} · {project.staff.designation} · {project.staff.department?.name ?? '—'}</p>
+            <p className="text-xs text-white/40 mt-0.5">{project.staff.email}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { setEditMode(e => !e); setSaveMsg(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                editMode ? 'bg-amber-400 text-amber-900 hover:bg-amber-300' : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              {editMode ? '🔒 Lock' : '✏️ Edit'}
+            </button>
+            <button onClick={onClose} className="text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+          </div>
+        </div>
+
+        {/* Save message bar */}
+        {saveMsg && (
+          <div className={`px-6 py-2.5 text-sm font-medium flex items-center gap-2 ${
+            saveMsg.type === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+          }`}>
+            {saveMsg.type === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {saveMsg.text}
+          </div>
+        )}
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
+
+          {/* Completeness */}
+          <div className={`border rounded-xl p-4 ${filledCount === checks.length ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800">Form Completeness</h3>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${filledCount === checks.length ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {filledCount}/{checks.length} filled
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {checks.map(c => (
+                <div key={c.label} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium ${c.filled ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                  {c.filled ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <AlertCircle className="w-3 h-3 shrink-0" />}
+                  {c.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Project Information ── */}
+          <section className="space-y-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Project Information</h3>
+            <TF label="Title" k="title" />
+            <TA label="Description" k="description" rows={3} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TF label="Start Date" k="startDate" type="date" />
+              <TF label="End Date" k="endDate" type="date" />
+            </div>
+          </section>
+
+          {/* ── Research Content ── */}
+          <section className="space-y-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Research Content</h3>
+            <TA label="Objectives" k="objectives" rows={3} />
+            <TA label="Methodology" k="methodology" rows={3} />
+            <TA label="Expected Outcomes" k="outcomes" rows={2} />
+            <TA label="Deliverables" k="deliverables" rows={2} />
+            <TA label="Target Beneficiaries" k="targetBeneficiaries" rows={2} />
+          </section>
+
+          {/* ── Classification ── */}
+          <section className="space-y-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Classification</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <TF label="Thematic Area" k="thematicArea" />
+              <TF label="Project Category" k="projectCategory" />
+              <TF label="Project Type" k="projectType" />
+              <TF label="Funder Type" k="funderType" />
+              <TF label="Funder Location" k="funderLocation" />
+              <TF label="Financial Year" k="financialYear" />
+            </div>
+          </section>
+
+          {/* ── Funding & Budget ── */}
+          <section className="space-y-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Funding & Budget</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <TF label="Budget Amount" k="budgetAmount" type="number" />
+              <TF label="Currency" k="currency" />
+              <TF label="Funding Agency" k="fundingAgency" />
+              <TF label="Funding Agency Ref No." k="fundingAgencyRefNo" />
+              <TF label="Award Letter Date" k="awardLetterDate" type="date" />
+            </div>
+          </section>
+
+          {/* ── ORIC Management ── */}
+          <section className="space-y-4 bg-[#1a3d2b]/[0.03] rounded-xl p-4 border border-[#1a3d2b]/10">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] pb-1.5 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#c9a961] shrink-0" />
+              ORIC Management Fields
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <TF label="ORIC Overhead Amount" k="oricOverheadAmount" type="number" />
+              <TF label="Overhead Status" k="overheadStatus" />
+              <TF label="Project File No." k="projectFileNo" />
+            </div>
+            <TA label="Special Conditions" k="specialConditions" rows={2} />
+            <TA label="Remarks" k="remarks" rows={2} />
+          </section>
+
+          {/* ── Sponsor / Industry Partner ── */}
+          <section className="space-y-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Sponsor / Industry Partner</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <TF label="Sponsoring Agency" k="sponsoringAgency" />
+              <TF label="Sponsor Country" k="sponsorCountry" />
+              <TF label="Counterpart Name" k="counterpartName" />
+            </div>
+          </section>
+
+          {/* ── Co-PIs ── */}
+          <section className="space-y-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">
+              Co-Principal Investigators ({project.coPIs.length})
+            </h3>
+            {project.coPIs.length === 0
+              ? <p className="text-sm text-gray-300 italic">No Co-PIs added.</p>
+              : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {project.coPIs.map(copi => (
+                    <div key={copi.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-1">
+                      <p className="font-semibold text-gray-900 text-sm">{copi.name}</p>
+                      {copi.designation && <p className="text-xs text-gray-500">{copi.designation}</p>}
+                      {copi.organization && <p className="text-xs text-gray-400 flex items-center gap-1"><Building2 className="w-3 h-3" />{copi.organization}</p>}
+                      {copi.email && <p className="text-xs text-[#2d6a4f] flex items-center gap-1"><Mail className="w-3 h-3" />{copi.email}</p>}
+                      {copi.contact && <p className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{copi.contact}</p>}
+                      {copi.type && <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f]">{copi.type}</span>}
+                    </div>
+                  ))}
+                </div>
+            }
+          </section>
+
+          {/* ── Team Members ── */}
+          <section className="space-y-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">
+              Team Members ({project.teamMembers.length})
+            </h3>
+            {project.teamMembers.length === 0
+              ? <p className="text-sm text-gray-300 italic">No team members added.</p>
+              : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {project.teamMembers.map(m => (
+                    <div key={m.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-start gap-2">
+                      <div className="w-7 h-7 rounded-full bg-[#2d6a4f]/10 flex items-center justify-center shrink-0">
+                        <Users className="w-3.5 h-3.5 text-[#2d6a4f]/50" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 text-xs">{m.name}</p>
+                        {m.designation && <p className="text-[10px] text-gray-500">{m.designation}</p>}
+                        {m.department && <p className="text-[10px] text-gray-400">{m.department}</p>}
+                        {m.role && <span className="mt-1 inline-block px-1.5 py-0.5 text-[9px] font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-200">{m.role}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+            }
+          </section>
+
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between gap-3 shrink-0 bg-gray-50">
+          <button onClick={onClose} className="px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium transition-colors">
+            Close
+          </button>
+          <div className="flex items-center gap-2">
+            {editMode && (
+              <button
+                onClick={handleSave} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#1a3d2b] hover:bg-[#142d20] disabled:opacity-50 rounded-xl transition-colors"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Save Changes
+              </button>
+            )}
+            {project.verificationStatus === 'PENDING' && onApprove && onReject && (
+              <>
+                <button
+                  onClick={() => setShowRejectModal(true)} disabled={busy}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-50 rounded-xl transition-colors"
+                >
+                  <XCircle className="w-4 h-4" /> Reject
+                </button>
+                <button
+                  onClick={onApprove} disabled={busy}
+                  className="flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors"
+                >
+                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  Approve Project
+                </button>
+              </>
+            )}
+            {project.verificationStatus !== 'PENDING' && !editMode && (
+              <span className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                project.verificationStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {project.verificationStatus === 'VERIFIED' ? '✓ Approved' : '✗ Rejected'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {showRejectModal && (
+      <RejectModal
+        title={project.title}
+        onClose={() => setShowRejectModal(false)}
+        onConfirm={(r) => { setShowRejectModal(false); onReject && onReject(r); }}
+        processing={busy ?? false}
+      />
+    )}
+    </>
+  );
+}
+
+// ── Smart Installment Generator ────────────────────────────────────────────
+type InstallmentSchedule = 'MANUAL' | 'ANNUAL' | 'BIANNUAL' | 'QUARTERLY' | 'MONTHLY';
+
+function InstallmentScheduler({ project, onChanged, flash, busy, setBusy }: {
+  project: AdminProject;
+  onChanged: () => void;
+  flash: (t: 'ok' | 'err', m: string) => void;
+  busy: boolean;
+  setBusy: (b: boolean) => void;
+}) {
+  const [scheduleType, setScheduleType] = useState<InstallmentSchedule>('MANUAL');
+  const [instAmount, setInstAmount] = useState('');
+  const [instDue, setInstDue] = useState('');
+  const [instNote, setInstNote] = useState('');
+
+  const budgetNum = project.budgetAmount ? parseFloat(project.budgetAmount) : 0;
+  const startDate = project.startDate;
+  const endDate = project.endDate;
+
+  // Auto-generate installments based on schedule type
+  const generateInstallments = async () => {
+    if (!startDate || !endDate) {
+      flash('err', 'Project must have start and end dates to auto-generate installments.');
+      return;
+    }
+    if (!budgetNum) {
+      flash('err', 'Project must have a budget amount to auto-generate installments.');
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+
+    let intervalMonths = 0;
+    let label = '';
+    switch (scheduleType) {
+      case 'ANNUAL':    intervalMonths = 12; label = 'Annual';    break;
+      case 'BIANNUAL':  intervalMonths = 6;  label = 'Bi-Annual'; break;
+      case 'QUARTERLY': intervalMonths = 3;  label = 'Quarterly'; break;
+      case 'MONTHLY':   intervalMonths = 1;  label = 'Monthly';   break;
+      default: return;
+    }
+
+    const count = Math.max(1, Math.round(monthsDiff / intervalMonths));
+    const amountEach = Math.round(budgetNum / count);
+
+    setBusy(true);
+    try {
+      for (let i = 0; i < count; i++) {
+        const dueDate = new Date(start);
+        dueDate.setMonth(dueDate.getMonth() + intervalMonths * (i + 1));
+        await fetch(`/api/admin/projects/${project.id}/installments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: String(amountEach),
+            dueDate: dueDate.toISOString().split('T')[0],
+            note: `${label} installment ${i + 1} of ${count}`,
+          }),
+        });
+      }
+      flash('ok', `${count} installments generated (${label}).`);
       onChanged();
     } finally {
       setBusy(false);
     }
   };
 
-  const addInstallment = async () => {
+  const addManualInstallment = async () => {
     if (!instAmount || Number(instAmount) <= 0) return flash('err', 'Enter a valid installment amount.');
     setBusy(true);
     try {
@@ -762,8 +618,213 @@ function ProjectRow({
     }
   };
 
+  const released = project.installments.filter((i) => i.status === 'RELEASED').reduce((s, i) => s + Number(i.amount), 0);
+  const scheduled = project.installments.reduce((s, i) => s + Number(i.amount), 0);
+  const pct = scheduled > 0 ? Math.round((released / scheduled) * 100) : 0;
+
+  const SCHEDULE_OPTIONS: { value: InstallmentSchedule; label: string; desc: string }[] = [
+    { value: 'MANUAL',    label: 'Manual',    desc: 'Add one by one' },
+    { value: 'ANNUAL',    label: 'Annual',    desc: 'Once per year' },
+    { value: 'BIANNUAL',  label: 'Bi-Annual', desc: 'Every 6 months' },
+    { value: 'QUARTERLY', label: 'Quarterly', desc: 'Every 3 months' },
+    { value: 'MONTHLY',   label: 'Monthly',   desc: 'Every month' },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Installment Schedule</h4>
+        {project.installments.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="font-semibold text-[#c9a961]">{fmtMoney(released, project.currency ?? 'PKR')}</span>
+            <span>released of</span>
+            <span className="font-semibold">{fmtMoney(scheduled, project.currency ?? 'PKR')}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${pct === 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{pct}%</span>
+          </div>
+        )}
+      </div>
+
+      {/* Schedule type picker */}
+      <div className="mb-4">
+        <p className="text-xs text-gray-400 mb-2">Schedule type (auto-generate based on budget & dates)</p>
+        <div className="flex flex-wrap gap-2">
+          {SCHEDULE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setScheduleType(opt.value)}
+              className={`flex flex-col items-start px-3 py-2 rounded-lg border text-xs font-semibold transition-all ${
+                scheduleType === opt.value
+                  ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30'
+              }`}
+            >
+              <span>{opt.label}</span>
+              <span className={`font-normal text-[10px] ${scheduleType === opt.value ? 'text-white/70' : 'text-gray-400'}`}>{opt.desc}</span>
+            </button>
+          ))}
+        </div>
+        {scheduleType !== 'MANUAL' && (
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            {budgetNum > 0 && startDate && endDate && (() => {
+              const start = new Date(startDate);
+              const end = new Date(endDate);
+              const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+              const iMap: Record<string, number> = { ANNUAL: 12, BIANNUAL: 6, QUARTERLY: 3, MONTHLY: 1 };
+              const count = Math.max(1, Math.round(monthsDiff / iMap[scheduleType]));
+              const amtEach = Math.round(budgetNum / count);
+              return (
+                <div className="flex items-center gap-2 text-xs bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-blue-700">
+                  <Zap className="w-3.5 h-3.5" />
+                  Will create <strong>{count}</strong> installments of <strong>{fmtMoney(amtEach, project.currency ?? 'PKR')}</strong> each
+                </div>
+              );
+            })()}
+            <button
+              onClick={generateInstallments} disabled={busy || !startDate || !endDate || !budgetNum}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-50 rounded-lg transition-colors"
+            >
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              Auto-Generate
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Existing installments */}
+      {project.installments.length > 0 ? (
+        <div className="space-y-2 mb-4">
+          {project.installments.map((inst) => (
+            <div key={inst.id} className="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <span className="w-6 h-6 rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f] text-xs font-bold flex items-center justify-center shrink-0">
+                {inst.installmentNo}
+              </span>
+              <span className="text-gray-900 font-semibold">{fmtMoney(Number(inst.amount), project.currency ?? 'PKR')}</span>
+              <span className="text-xs text-gray-400">Due {fmtDate(inst.dueDate)}</span>
+              {inst.note && <span className="text-xs text-gray-400 italic">{inst.note}</span>}
+              <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${inst.status === 'RELEASED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                {inst.status === 'RELEASED' ? `Released ${fmtDate(inst.releaseDate)}` : 'Pending'}
+              </span>
+              <button onClick={() => toggleInstallment(inst)} disabled={busy} className="text-xs font-medium text-[#2d6a4f] hover:underline disabled:opacity-60">
+                {inst.status === 'RELEASED' ? 'Mark Pending' : 'Release'}
+              </button>
+              <button onClick={() => deleteInstallment(inst)} disabled={busy} className="text-red-400 hover:text-red-600 disabled:opacity-60">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 mb-3">No installments scheduled yet.</p>
+      )}
+
+      {/* Manual add */}
+      {scheduleType === 'MANUAL' && (
+        <div className="flex flex-wrap items-end gap-2 bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Amount</label>
+            <input type="number" min="0" value={instAmount} onChange={(e) => setInstAmount(e.target.value)}
+              placeholder="e.g. 500000"
+              className="w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Due Date</label>
+            <input type="date" value={instDue} onChange={(e) => setInstDue(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+          </div>
+          <div className="flex-1 min-w-[120px]">
+            <label className="block text-xs text-gray-500 mb-1">Note (optional)</label>
+            <input value={instNote} onChange={(e) => setInstNote(e.target.value)} placeholder="e.g. 1st tranche"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+          </div>
+          <button onClick={addManualInstallment} disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 rounded-lg">
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Project Row (in list) ──────────────────────────────────────────────────
+function ProjectRow({
+  project,
+  onChanged,
+  flash,
+}: {
+  project: AdminProject;
+  onChanged: () => void;
+  flash: (t: 'ok' | 'err', m: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // Editable fields
+  const [budget, setBudget] = useState(project.budgetAmount ?? '');
+  const [currency, setCurrency] = useState(project.currency ?? 'PKR');
+  const [agency, setAgency] = useState(project.fundingAgency ?? '');
+  const [status, setStatus] = useState(project.status);
+  const [overhead, setOverhead] = useState(project.oricOverheadAmount ?? '');
+  const [overheadStatus, setOverheadStatus] = useState(project.overheadStatus ?? 'Approved');
+  const [awardLetterDate, setAwardLetterDate] = useState(project.awardLetterDate ? project.awardLetterDate.split('T')[0] : '');
+  const [agencyRefNo, setAgencyRefNo] = useState(project.fundingAgencyRefNo ?? '');
+  const [specialConditions, setSpecialConditions] = useState(project.specialConditions ?? '');
+  const [reportsStatus, setReportsStatus] = useState(project.reportsStatus ?? 'No Report Due');
+  const [fileStatus, setFileStatus] = useState(project.fileStatus ?? 'File Received');
+  const [remarks, setRemarks] = useState(project.remarks ?? '');
+  const [reports, setReports] = useState<ProjectReportItem[]>(project.reports ?? []);
+  const [newReport, setNewReport] = useState({ reportType: 'Progress', dueDate: '', status: 'Due' });
+
+  const verify = async (action: 'VERIFIED' | 'REJECTED', reason?: string) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/verifications/project/${project.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) return flash('err', data.error || 'Action failed');
+      flash('ok', action === 'VERIFIED' ? 'Project approved — now Ongoing.' : 'Project rejected.');
+      setDetailOpen(false);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveProject = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          budgetAmount: budget === '' ? null : budget,
+          currency,
+          fundingAgency: agency,
+          status,
+          oricOverheadAmount: overhead === '' ? null : overhead,
+          overheadStatus,
+          awardLetterDate: awardLetterDate || null,
+          fundingAgencyRefNo: agencyRefNo.trim() || null,
+          specialConditions: specialConditions.trim() || null,
+          reportsStatus,
+          fileStatus,
+          remarks: remarks.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return flash('err', data.error || 'Save failed');
+      flash('ok', 'Project updated.');
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const addReport = async () => {
-    if (!newReport.reportType) return flash('err', 'Select a report type.');
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/projects/${project.id}/reports`, {
@@ -792,31 +853,22 @@ function ProjectRow({
     }
   };
 
-  const released = project.installments.filter((i) => i.status === 'RELEASED').reduce((s, i) => s + Number(i.amount), 0);
-  const scheduled = project.installments.reduce((s, i) => s + Number(i.amount), 0);
-
-  const verifBadge = {
+  const verifBadgeCls = {
     PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
     VERIFIED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     REJECTED: 'bg-red-50 text-red-700 border-red-200',
   }[project.verificationStatus];
 
-  const statusBadge: Record<string, string> = {
-    SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
-    ONGOING: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    COMPLETED: 'bg-gray-100 text-gray-600 border-gray-200',
-    PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-  };
-
   return (
+    <>
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-5">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="font-bold text-gray-900">{project.title}</h3>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${verifBadge}`}>{project.verificationStatus}</span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusBadge[project.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>{project.status}</span>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${verifBadgeCls}`}>{project.verificationStatus}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{project.status}</span>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
               <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5" /> {project.staff.name} · {project.staff.department?.name ?? '—'}</span>
@@ -827,11 +879,8 @@ function ProjectRow({
               <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {fmtDate(project.startDate)} → {fmtDate(project.endDate)}</span>
             </div>
             {project.budgetAmount && (
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-gray-600 mt-1.5">
                 Budget: <span className="font-semibold text-[#c9a961]">{fmtMoney(Number(project.budgetAmount), project.currency ?? 'PKR')}</span>
-                {project.installments.length > 0 && (
-                  <> · Released {fmtMoney(released, project.currency ?? 'PKR')} of {fmtMoney(scheduled, project.currency ?? 'PKR')}</>
-                )}
               </p>
             )}
             {project.rejectionReason && (
@@ -839,133 +888,65 @@ function ProjectRow({
             )}
           </div>
 
-          {/* Approve / Reject for pending */}
-          {project.verificationStatus === 'PENDING' && !rejecting && (
-            <div className="flex gap-2">
-              <button onClick={() => verify('VERIFIED')} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 rounded-lg">
-                <CheckCircle2 className="w-4 h-4" /> Approve
-              </button>
-              <button onClick={() => setRejecting(true)} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-60 rounded-lg">
-                <XCircle className="w-4 h-4" /> Reject
-              </button>
-            </div>
-          )}
-          {project.verificationStatus !== 'PENDING' && (
-            <button onClick={() => setExpanded((v) => !v)} className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
-              {expanded ? 'Close' : 'Manage'}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* View Details button always visible */}
+            <button
+              onClick={() => setDetailOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#2d6a4f] bg-[#2d6a4f]/10 hover:bg-[#2d6a4f]/20 rounded-lg transition-colors"
+            >
+              <Eye className="w-4 h-4" /> View Details
             </button>
-          )}
-        </div>
-
-        {/* Reject reason box */}
-        {rejecting && (
-          <div className="mt-3 flex flex-col sm:flex-row gap-2">
-            <input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Reason for rejection (min 5 chars)"
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
-            />
-            <div className="flex gap-2">
-              <button onClick={() => verify('REJECTED')} disabled={busy} className="px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 rounded-lg">Confirm Reject</button>
-              <button onClick={() => { setRejecting(false); setReason(''); }} className="px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg">Cancel</button>
-            </div>
+            {project.verificationStatus !== 'PENDING' && (
+              <button onClick={() => setExpanded((v) => !v)}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {expanded ? 'Close' : 'Manage'}
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Management panel — for approved projects */}
       {expanded && project.verificationStatus !== 'PENDING' && (
-        <div className="border-t border-gray-100 bg-gray-50/60 p-5 space-y-5">
-          {/* Title + Description */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Project Details</h4>
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Title</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Description</label>
-                <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
-              </div>
-            </div>
-          </div>
-
+        <div className="border-t border-gray-100 bg-gray-50/60 p-5 space-y-6">
           {/* Budget + status */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Budget &amp; Status</h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Total Budget</label>
-                <input type="number" min="0" value={budget} onChange={(e) => setBudget(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input type="number" min="0" value={budget} onChange={(e) => setBudget(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Currency</label>
-                <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Funding Agency</label>
-                <input value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="e.g. HEC" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="e.g. HEC"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as AdminProject['status'])} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                <select value={status} onChange={(e) => setStatus(e.target.value as AdminProject['status'])}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
                   <option value="ONGOING">Ongoing</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="PENDING">Pending</option>
                 </select>
               </div>
             </div>
-            <button onClick={saveProject} disabled={busy} className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-lg">
+            <button onClick={saveProject} disabled={busy}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-lg">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Save Changes
             </button>
           </div>
 
-          {/* Installments */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Installment Schedule</h4>
-            {project.installments.length > 0 ? (
-              <div className="space-y-2 mb-3">
-                {project.installments.map((inst) => (
-                  <div key={inst.id} className="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                    <span className="font-semibold text-gray-700">#{inst.installmentNo}</span>
-                    <span className="text-gray-900">{fmtMoney(Number(inst.amount), project.currency ?? 'PKR')}</span>
-                    <span className="text-xs text-gray-400">Due {fmtDate(inst.dueDate)}</span>
-                    {inst.note && <span className="text-xs text-gray-400 italic">{inst.note}</span>}
-                    <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${inst.status === 'RELEASED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {inst.status === 'RELEASED' ? `Released ${fmtDate(inst.releaseDate)}` : 'Pending'}
-                    </span>
-                    <button onClick={() => toggleInstallment(inst)} disabled={busy} className="text-xs font-medium text-[#2d6a4f] hover:underline disabled:opacity-60">
-                      {inst.status === 'RELEASED' ? 'Mark Pending' : 'Mark Released'}
-                    </button>
-                    <button onClick={() => deleteInstallment(inst)} disabled={busy} className="text-red-500 hover:text-red-700 disabled:opacity-60">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 mb-3">No installments scheduled yet.</p>
-            )}
-            <div className="flex flex-wrap items-end gap-2">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Amount</label>
-                <input type="number" min="0" value={instAmount} onChange={(e) => setInstAmount(e.target.value)} className="w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Due Date</label>
-                <input type="date" value={instDue} onChange={(e) => setInstDue(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
-              </div>
-              <div className="flex-1 min-w-[120px]">
-                <label className="block text-xs text-gray-500 mb-1">Note (optional)</label>
-                <input value={instNote} onChange={(e) => setInstNote(e.target.value)} placeholder="e.g. 1st tranche" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
-              </div>
-              <button onClick={addInstallment} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 rounded-lg">
-                <Plus className="w-4 h-4" /> Add
-              </button>
-            </div>
-          </div>
+          {/* Smart installment scheduler */}
+          <InstallmentScheduler project={project} onChanged={onChanged} flash={flash} busy={busy} setBusy={setBusy} />
 
           {/* Post-Award Details */}
           <div>
@@ -973,109 +954,54 @@ function ProjectRow({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Award Letter Date</label>
-                <input type="date" value={awardLetterDate} onChange={(e) => setAwardLetterDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input type="date" value={awardLetterDate} onChange={(e) => setAwardLetterDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Funding Agency Ref No</label>
-                <input value={agencyRefNo} onChange={(e) => setAgencyRefNo(e.target.value)} placeholder="e.g. HEC/R&D/2024/001" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input value={agencyRefNo} onChange={(e) => setAgencyRefNo(e.target.value)} placeholder="e.g. HEC/R&D/2024/001"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">ORIC Overhead Amount</label>
-                <input type="number" min="0" value={overhead} onChange={(e) => setOverhead(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input type="number" min="0" value={overhead} onChange={(e) => setOverhead(e.target.value)} placeholder="0.00"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Overhead Status</label>
-                <select value={overheadStatus} onChange={(e) => setOverheadStatus(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
-                  <option>Approved</option>
-                  <option>Pending</option>
-                  <option>Waived</option>
+                <select value={overheadStatus} onChange={(e) => setOverheadStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                  <option>Approved</option><option>Pending</option><option>Waived</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Reports Status</label>
-                <select value={reportsStatus} onChange={(e) => setReportsStatus(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
-                  <option>No Report Due</option>
-                  <option>Report Due</option>
-                  <option>Report Submitted</option>
-                  <option>Report Reviewed</option>
+                <select value={reportsStatus} onChange={(e) => setReportsStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                  <option>No Report Due</option><option>Report Due</option><option>Report Submitted</option><option>Report Reviewed</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">File Status</label>
-                <select value={fileStatus} onChange={(e) => setFileStatus(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
-                  <option>File Received</option>
-                  <option>File Pending</option>
-                  <option>File Incomplete</option>
-                  <option>File Closed</option>
+                <select value={fileStatus} onChange={(e) => setFileStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                  <option>File Received</option><option>File Pending</option><option>File Incomplete</option><option>File Closed</option>
                 </select>
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs text-gray-500 mb-1">Special Conditions</label>
-                <textarea rows={2} value={specialConditions} onChange={(e) => setSpecialConditions(e.target.value)} placeholder="Any special conditions imposed by funder…" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
+                <textarea rows={2} value={specialConditions} onChange={(e) => setSpecialConditions(e.target.value)}
+                  placeholder="Any special conditions imposed by funder…"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs text-gray-500 mb-1">Remarks</label>
-                <textarea rows={2} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Internal ORIC remarks…" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
+                <textarea rows={2} value={remarks} onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="Internal ORIC remarks…"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
               </div>
             </div>
           </div>
-
-          {/* Submission Info (read-only) */}
-          {(project.thematicArea || project.projectCategory || project.funderType || project.sponsoringAgency || project.coPIs.length > 0 || project.teamMembers.length > 0) && (
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Submission Info</h4>
-              <div className="bg-white border border-gray-100 rounded-xl p-4 space-y-3 text-sm">
-                {(project.thematicArea || project.projectCategory || project.projectType || project.funderType) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    {project.thematicArea && <div><span className="text-gray-400">Thematic Area</span><p className="font-medium text-gray-800 mt-0.5">{project.thematicArea}</p></div>}
-                    {project.projectCategory && <div><span className="text-gray-400">Category</span><p className="font-medium text-gray-800 mt-0.5">{project.projectCategory}</p></div>}
-                    {project.projectType && <div><span className="text-gray-400">Type</span><p className="font-medium text-gray-800 mt-0.5">{project.projectType}</p></div>}
-                    {project.funderType && <div><span className="text-gray-400">Funder Type</span><p className="font-medium text-gray-800 mt-0.5">{project.funderType}{project.funderLocation ? ` · ${project.funderLocation}` : ''}</p></div>}
-                  </div>
-                )}
-                {(project.sponsoringAgency || project.sponsorCountry || project.counterpartName) && (
-                  <div className="text-xs">
-                    <span className="text-gray-400">Sponsoring Agency</span>
-                    <p className="font-medium text-gray-800 mt-0.5">
-                      {project.sponsoringAgency}{project.sponsorCountry ? ` (${project.sponsorCountry})` : ''}
-                      {project.counterpartName ? ` · Counterpart: ${project.counterpartName}` : ''}
-                    </p>
-                  </div>
-                )}
-                {project.coPIs.length > 0 && (
-                  <div>
-                    <span className="text-xs text-gray-400 block mb-1.5">Co-PIs ({project.coPIs.length})</span>
-                    <div className="space-y-1">
-                      {project.coPIs.map((c) => (
-                        <div key={c.id} className="flex flex-wrap gap-x-3 text-xs bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="font-medium text-gray-800">{c.name}</span>
-                          {c.designation && <span className="text-gray-500">{c.designation}</span>}
-                          {c.organization && <span className="text-gray-400">{c.organization}</span>}
-                          {c.email && <span className="text-gray-400">{c.email}</span>}
-                          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${c.type === 'External' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}`}>{c.type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {project.teamMembers.length > 0 && (
-                  <div>
-                    <span className="text-xs text-gray-400 block mb-1.5">Team Members ({project.teamMembers.length})</span>
-                    <div className="space-y-1">
-                      {project.teamMembers.map((m) => (
-                        <div key={m.id} className="flex flex-wrap gap-x-3 text-xs bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="font-medium text-gray-800">{m.name}</span>
-                          {m.designation && <span className="text-gray-500">{m.designation}</span>}
-                          {m.department && <span className="text-gray-400">{m.department}</span>}
-                          {m.role && <span className="text-[#2d6a4f] font-medium">{m.role}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Reports */}
           <div>
@@ -1086,13 +1012,12 @@ function ProjectRow({
                   <div key={r.id} className="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
                     <span className="font-medium text-gray-700">{r.reportType}</span>
                     {r.dueDate && <span className="text-xs text-gray-400">Due {fmtDate(r.dueDate)}</span>}
-                    {r.submissionDate && <span className="text-xs text-gray-400">Submitted {fmtDate(r.submissionDate)}</span>}
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                       r.status === 'Submitted' ? 'bg-emerald-50 text-emerald-700' :
                       r.status === 'Reviewed' ? 'bg-blue-50 text-blue-700' :
                       'bg-amber-50 text-amber-700'
                     }`}>{r.status}</span>
-                    <button onClick={() => deleteReport(r.id)} disabled={busy} className="ml-auto text-red-500 hover:text-red-700 disabled:opacity-60">
+                    <button onClick={() => deleteReport(r.id)} disabled={busy} className="ml-auto text-red-400 hover:text-red-600 disabled:opacity-60">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -1104,34 +1029,185 @@ function ProjectRow({
             <div className="flex flex-wrap items-end gap-2">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Type</label>
-                <select value={newReport.reportType} onChange={(e) => setNewReport((p) => ({ ...p, reportType: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
-                  <option>Progress</option>
-                  <option>Mid-Term</option>
-                  <option>Final</option>
-                  <option>Financial</option>
-                  <option>Annual</option>
+                <select value={newReport.reportType} onChange={(e) => setNewReport((p) => ({ ...p, reportType: e.target.value }))}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                  <option>Progress</option><option>Mid-Term</option><option>Final</option><option>Financial</option><option>Annual</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Due Date</label>
-                <input type="date" value={newReport.dueDate} onChange={(e) => setNewReport((p) => ({ ...p, dueDate: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
+                <input type="date" value={newReport.dueDate} onChange={(e) => setNewReport((p) => ({ ...p, dueDate: e.target.value }))}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Status</label>
-                <select value={newReport.status} onChange={(e) => setNewReport((p) => ({ ...p, status: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
-                  <option>Due</option>
-                  <option>Submitted</option>
-                  <option>Reviewed</option>
-                  <option>Overdue</option>
+                <select value={newReport.status} onChange={(e) => setNewReport((p) => ({ ...p, status: e.target.value }))}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30">
+                  <option>Due</option><option>Submitted</option><option>Reviewed</option><option>Overdue</option>
                 </select>
               </div>
-              <button onClick={addReport} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 rounded-lg">
+              <button onClick={addReport} disabled={busy}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 rounded-lg">
                 <Plus className="w-4 h-4" /> Add Report
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+
+    {detailOpen && (
+      <ProjectDetailModal
+        project={project}
+        onClose={() => setDetailOpen(false)}
+        onApprove={project.verificationStatus === 'PENDING' ? () => verify('VERIFIED') : undefined}
+        onReject={project.verificationStatus === 'PENDING' ? (r) => verify('REJECTED', r) : undefined}
+        busy={busy}
+        onSaved={onChanged}
+      />
+    )}
+    </>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+export default function OricPage() {
+  const [projects, setProjects] = useState<AdminProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>('pending');
+  const [banner, setBanner] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+
+  const loadProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/projects');
+      const data = await res.json();
+      if (res.ok) setProjects(data.projects ?? []);
+      else setBanner({ type: 'err', msg: data.error || 'Failed to load projects' });
+    } catch {
+      setBanner({ type: 'err', msg: 'Network error loading projects' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadProjects(); }, [loadProjects]);
+
+  const flash = (type: 'ok' | 'err', msg: string) => {
+    setBanner({ type, msg });
+    setTimeout(() => setBanner(null), 4000);
+  };
+
+  const counts = useMemo(() => ({
+    pending:   projects.filter((p) => p.verificationStatus === 'PENDING').length,
+    approved:  projects.filter((p) => p.verificationStatus === 'VERIFIED').length,
+    ongoing:   projects.filter((p) => p.status === 'ONGOING' && p.verificationStatus === 'VERIFIED').length,
+    completed: projects.filter((p) => p.status === 'COMPLETED').length,
+    all:       projects.length,
+  }), [projects]);
+
+  const filtered = useMemo(() => {
+    switch (tab) {
+      case 'pending':   return projects.filter((p) => p.verificationStatus === 'PENDING');
+      case 'approved':  return projects.filter((p) => p.verificationStatus === 'VERIFIED');
+      case 'ongoing':   return projects.filter((p) => p.status === 'ONGOING' && p.verificationStatus === 'VERIFIED');
+      case 'completed': return projects.filter((p) => p.status === 'COMPLETED');
+      default:          return projects;
+    }
+  }, [projects, tab]);
+
+  const tabs: { key: Tab; label: string; urgent?: boolean }[] = [
+    { key: 'pending',   label: 'Pending Approval', urgent: true },
+    { key: 'approved',  label: 'Approved' },
+    { key: 'ongoing',   label: 'Ongoing' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'all',       label: 'All Projects' },
+  ];
+
+  return (
+    <div className="min-h-screen">
+      <main className="px-6 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-[#c9a961]/15 flex items-center justify-center">
+            <Wallet className="w-6 h-6 text-[#c9a961]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">ORIC — Project Management</h1>
+            <p className="text-sm text-gray-500">Office of Research, Innovation &amp; Commercialization · review and approve research projects, manage budgets &amp; installments</p>
+          </div>
+          <button
+            onClick={loadProjects}
+            className="ml-auto inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        </div>
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Pending Review', value: counts.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
+            { label: 'Approved', value: counts.approved, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
+            { label: 'Ongoing', value: counts.ongoing, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
+            { label: 'Completed', value: counts.completed, color: 'text-gray-700', bg: 'bg-gray-50 border-gray-100' },
+          ].map(s => (
+            <div key={s.label} className={`rounded-2xl border p-4 ${s.bg} flex items-center gap-3`}>
+              <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-gray-500">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {banner && (
+          <div className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-4 border ${banner.type === 'ok' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'}`}>
+            {banner.type === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {banner.msg}
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                tab === t.key ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {t.label}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                tab === t.key
+                  ? 'bg-white/20 text-white'
+                  : counts[t.key] > 0 && t.urgent
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                {counts[t.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Project list */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-gray-400">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-400 bg-white rounded-2xl border border-gray-100">
+            <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No projects in this view.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map((p) => (
+              <ProjectRow key={p.id} project={p} onChanged={loadProjects} flash={flash} />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

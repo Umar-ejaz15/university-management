@@ -4,6 +4,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import {
   FlaskConical,
@@ -30,37 +31,7 @@ import {
 import { useProjects, useInvalidateProjects, type Project } from '@/lib/queries/projects';
 import { useCurrentUser } from '@/lib/queries/auth';
 import { useProjectsFilterStore } from '@/lib/store/projectsFilterStore';
-
-// ─── Status helpers ───────────────────────────────────────────────────────────
-
-function statusStyle(s: string) {
-  switch (s) {
-    case 'SUBMITTED': return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'ONGOING':   return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'COMPLETED': return 'bg-gray-100 text-gray-600 border-gray-200';
-    case 'PENDING':   return 'bg-amber-50 text-amber-700 border-amber-200';
-    default:          return 'bg-gray-100 text-gray-500 border-gray-200';
-  }
-}
-
-function statusDot(s: string) {
-  switch (s) {
-    case 'SUBMITTED': return 'bg-blue-500';
-    case 'ONGOING':   return 'bg-emerald-500';
-    case 'COMPLETED': return 'bg-gray-400';
-    default:          return 'bg-amber-400';
-  }
-}
-
-function statusLabel(s: string) {
-  switch (s) {
-    case 'SUBMITTED': return 'Under Review';
-    case 'ONGOING':   return 'Ongoing';
-    case 'COMPLETED': return 'Completed';
-    case 'PENDING':   return 'Pending';
-    default:          return s;
-  }
-}
+import { statusLabel, statusBadge as statusStyle, statusDot } from '@/lib/projectStatus';
 
 function kindStyle(k: string) {
   return k === 'INDUSTRY'
@@ -272,12 +243,13 @@ function SubmitProjectModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 // ─── Project Card ─────────────────────────────────────────────────────────────
 
 function ProjectCard({ project }: { project: Project }) {
+  const router = useRouter();
   const budget = project.budgetAmount
     ? `${project.currency ?? 'PKR'} ${parseFloat(project.budgetAmount).toLocaleString()}`
     : project.fundingAmount ?? null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2d6a4f]/20 transition-all overflow-hidden group flex flex-col">
+    <Link href={`/uni-dashboard/project/${project.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2d6a4f]/20 transition-all overflow-hidden group flex flex-col cursor-pointer">
       {/* Image / Hero */}
       <div className="relative h-40 overflow-hidden bg-linear-to-br from-[#1a3d2b] to-[#2d6a4f] shrink-0">
         {project.imageUrl ? (
@@ -353,27 +325,29 @@ function ProjectCard({ project }: { project: Project }) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <Link href={`/faculty/${project.staff.id}`}
-              className="text-xs font-semibold text-gray-800 hover:text-[#2d6a4f] truncate block transition-colors">
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/faculty/${project.staff.id}`); }}
+              className="text-xs font-semibold text-gray-800 hover:text-[#2d6a4f] truncate block transition-colors text-left w-full"
+            >
               {project.staff.name}
-            </Link>
+            </button>
             <p className="text-[10px] text-gray-400 truncate">{project.staff.department.name}</p>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#2d6a4f] transition-colors shrink-0" />
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 // ─── Filter Sidebar ───────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: 'all',       label: 'All Statuses',  icon: null },
-  { value: 'SUBMITTED', label: 'Under Review',  icon: Clock      },
-  { value: 'ONGOING',   label: 'Ongoing',       icon: TrendingUp },
-  { value: 'COMPLETED', label: 'Completed',     icon: CheckCircle2 },
-  { value: 'PENDING',   label: 'Pending',       icon: AlertCircle },
+  { value: 'all',       label: 'All Statuses', icon: null },
+  { value: 'SUBMITTED', label: 'Submitted',    icon: Clock      },
+  { value: 'ONGOING',   label: 'Ongoing',      icon: TrendingUp },
+  { value: 'COMPLETED', label: 'Completed',    icon: CheckCircle2 },
+  { value: 'PENDING',   label: 'Pending',      icon: AlertCircle },
 ];
 
 const KIND_OPTIONS = [
@@ -388,6 +362,19 @@ const SCOPE_OPTIONS = [
   { value: 'INTERNATIONAL', label: 'International' },
 ];
 
+const FUNDING_TYPE_OPTIONS = [
+  'HEC', 'PSF', 'International', 'Industry', 'Government', 'MNSUAM Self-Funded',
+];
+
+const THEMATIC_AREA_OPTIONS = [
+  'Agriculture & Food Security', 'Water & Environment', 'Health & Biotechnology',
+  'Engineering & Technology', 'Social Sciences', 'Climate Change', 'Other',
+];
+
+const FINANCIAL_YEAR_OPTIONS = [
+  '2024-25', '2023-24', '2022-23', '2021-22', '2020-21',
+];
+
 function FilterSidebar({
   departments,
   counts,
@@ -399,21 +386,29 @@ function FilterSidebar({
 }) {
   const {
     statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo,
+    fundingTypeFilter, funderFilter, thematicAreaFilter, financialYearFilter,
     setStatusFilter, setKindFilter, setScopeFilter, setDeptFilter, setDateFrom, setDateTo,
+    setFundingTypeFilter, setFunderFilter, setThematicAreaFilter, setFinancialYearFilter,
     clearFilters,
   } = useProjectsFilterStore();
 
   const hasFilters = statusFilter !== 'all' || kindFilter !== 'all' || scopeFilter !== 'all'
-    || deptFilter !== 'all' || dateFrom !== '' || dateTo !== '';
+    || deptFilter !== 'all' || dateFrom !== '' || dateTo !== ''
+    || fundingTypeFilter !== 'all' || funderFilter !== 'all'
+    || thematicAreaFilter !== 'all' || financialYearFilter !== 'all';
 
   const labelCls = 'block text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2';
   const inputCls = 'w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition bg-white';
+  const chipCls = (active: boolean) =>
+    `px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
+      active ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30 hover:text-[#2d6a4f]'
+    }`;
 
   return (
     <aside className="w-64 shrink-0">
-      <div className="sticky top-4 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="sticky top-4 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-[#2d6a4f]" />
             <span className="text-sm font-semibold text-gray-900">Filters</span>
@@ -422,7 +417,7 @@ function FilterSidebar({
             <span className="text-xs text-gray-500 font-medium">{totalFiltered} results</span>
             {hasFilters && (
               <button onClick={clearFilters} className="text-xs text-[#2d6a4f] font-semibold hover:underline">
-                Clear
+                Clear all
               </button>
             )}
           </div>
@@ -448,6 +443,15 @@ function FilterSidebar({
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Financial Year */}
+          <div>
+            <p className={labelCls}>Financial Year</p>
+            <select value={financialYearFilter} onChange={(e) => setFinancialYearFilter(e.target.value)} className={inputCls}>
+              <option value="all">All Years</option>
+              {FINANCIAL_YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
           </div>
 
           {/* Status */}
@@ -478,17 +482,12 @@ function FilterSidebar({
             </div>
           </div>
 
-          {/* Project Type */}
+          {/* Project Kind */}
           <div>
             <p className={labelCls}>Project Type</p>
             <div className="flex flex-wrap gap-1.5">
               {KIND_OPTIONS.map((opt) => (
-                <button key={opt.value} onClick={() => setKindFilter(opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                    kindFilter === opt.value
-                      ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30 hover:text-[#2d6a4f]'
-                  }`}>
+                <button key={opt.value} onClick={() => setKindFilter(opt.value)} className={chipCls(kindFilter === opt.value)}>
                   {opt.label}
                 </button>
               ))}
@@ -500,16 +499,46 @@ function FilterSidebar({
             <p className={labelCls}>Scope</p>
             <div className="flex flex-wrap gap-1.5">
               {SCOPE_OPTIONS.map((opt) => (
-                <button key={opt.value} onClick={() => setScopeFilter(opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                    scopeFilter === opt.value
-                      ? 'bg-[#2d6a4f] text-white border-[#2d6a4f]'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#2d6a4f]/30 hover:text-[#2d6a4f]'
-                  }`}>
+                <button key={opt.value} onClick={() => setScopeFilter(opt.value)} className={chipCls(scopeFilter === opt.value)}>
                   {opt.label}
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Funding Type */}
+          <div>
+            <p className={labelCls}>Funding Type</p>
+            <select value={fundingTypeFilter} onChange={(e) => setFundingTypeFilter(e.target.value)} className={inputCls}>
+              <option value="all">All Funding Types</option>
+              {FUNDING_TYPE_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+
+          {/* Funder / Agency */}
+          <div>
+            <p className={labelCls}>Funder / Agency</p>
+            <input
+              type="text"
+              value={funderFilter === 'all' ? '' : funderFilter}
+              onChange={(e) => setFunderFilter(e.target.value.trim() || 'all')}
+              placeholder="e.g. HEC, PSF, USDA…"
+              className={inputCls}
+            />
+            {funderFilter !== 'all' && (
+              <button onClick={() => setFunderFilter('all')} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600 mt-1">
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+
+          {/* Thematic Area */}
+          <div>
+            <p className={labelCls}>Thematic Area</p>
+            <select value={thematicAreaFilter} onChange={(e) => setThematicAreaFilter(e.target.value)} className={inputCls}>
+              <option value="all">All Areas</option>
+              {THEMATIC_AREA_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
 
           {/* Department */}
@@ -540,6 +569,7 @@ export default function PublicProjectsPage() {
 
   const {
     search, statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo,
+    fundingTypeFilter, funderFilter, thematicAreaFilter, financialYearFilter,
     setSearch, clearFilters,
   } = useProjectsFilterStore();
 
@@ -560,17 +590,42 @@ export default function PublicProjectsPage() {
       const to = new Date(dateTo + 'T23:59:59');
       list = list.filter((p) => p.startDate && new Date(p.startDate) <= to);
     }
+    if (fundingTypeFilter !== 'all') {
+      const q = fundingTypeFilter.toLowerCase();
+      list = list.filter((p) =>
+        p.funderType?.toLowerCase().includes(q) ||
+        p.fundingAgency?.toLowerCase().includes(q)
+      );
+    }
+    if (funderFilter !== 'all' && funderFilter.trim()) {
+      const q = funderFilter.toLowerCase();
+      list = list.filter((p) =>
+        p.fundingAgency?.toLowerCase().includes(q) ||
+        p.sponsoringAgency?.toLowerCase().includes(q)
+      );
+    }
+    if (thematicAreaFilter !== 'all') {
+      list = list.filter((p) =>
+        p.thematicArea?.toLowerCase().includes(thematicAreaFilter.toLowerCase())
+      );
+    }
+    if (financialYearFilter !== 'all') {
+      list = list.filter((p) => p.financialYear === financialYearFilter);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((p) =>
         p.title.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
         p.staff.name.toLowerCase().includes(q) ||
-        p.staff.department.name.toLowerCase().includes(q)
+        p.staff.department.name.toLowerCase().includes(q) ||
+        p.fundingAgency?.toLowerCase().includes(q) ||
+        p.thematicArea?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [projects, statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo, search]);
+  }, [projects, statusFilter, kindFilter, scopeFilter, deptFilter, dateFrom, dateTo,
+      fundingTypeFilter, funderFilter, thematicAreaFilter, financialYearFilter, search]);
 
   const counts = useMemo(() => ({
     all:       projects.length,
@@ -581,7 +636,9 @@ export default function PublicProjectsPage() {
   }), [projects]);
 
   const hasFilters = statusFilter !== 'all' || kindFilter !== 'all' || scopeFilter !== 'all'
-    || deptFilter !== 'all' || search.trim() !== '' || dateFrom !== '' || dateTo !== '';
+    || deptFilter !== 'all' || search.trim() !== '' || dateFrom !== '' || dateTo !== ''
+    || fundingTypeFilter !== 'all' || funderFilter !== 'all'
+    || thematicAreaFilter !== 'all' || financialYearFilter !== 'all';
 
   return (
     <div className="min-h-screen bg-gray-50">
