@@ -1029,10 +1029,6 @@ function ProjectRow({
                 </select>
               </div>
             </div>
-            <button onClick={saveProject} disabled={busy}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-lg">
-              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Save Changes
-            </button>
           </div>
 
           {/* Smart installment scheduler */}
@@ -1091,6 +1087,10 @@ function ProjectRow({
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 resize-none" />
               </div>
             </div>
+            <button onClick={saveProject} disabled={busy}
+              className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#2d6a4f] hover:bg-[#235a40] disabled:opacity-60 rounded-xl">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Save Changes
+            </button>
           </div>
 
           {/* Reports */}
