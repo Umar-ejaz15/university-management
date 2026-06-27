@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/session';
-import { requireAdmin } from '@/lib/authorization';
+import { requireRole } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
 
 export type MonitoringHealth = 'GREEN' | 'YELLOW' | 'RED';
@@ -67,7 +67,7 @@ function computeHealth(project: {
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const authResult = await requireAdmin(user);
+  const authResult = await requireRole(user, ['ADMIN', 'ORIC']);
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
 
   const projects = await prisma.project.findMany({

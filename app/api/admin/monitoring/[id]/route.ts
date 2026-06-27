@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/session';
-import { requireAdmin } from '@/lib/authorization';
+import { requireRole } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -21,7 +21,7 @@ const PROJECT_INCLUDE = {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const authResult = await requireAdmin(user);
+  const authResult = await requireRole(user, ['ADMIN', 'ORIC']);
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
   const { id } = await params;
   const project = await prisma.project.findUnique({ where: { id }, include: PROJECT_INCLUDE });
@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const authResult = await requireAdmin(user);
+  const authResult = await requireRole(user, ['ADMIN', 'ORIC']);
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
   const { id } = await params;
   const body = await req.json();

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/session';
-import { requireAdmin } from '@/lib/authorization';
+import { requireRole } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
 
 type RouteParams = { params: Promise<{ id: string; mid: string }> };
@@ -8,7 +8,7 @@ type RouteParams = { params: Promise<{ id: string; mid: string }> };
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const authResult = await requireAdmin(user);
+  const authResult = await requireRole(user, ['ADMIN', 'ORIC']);
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
   const { mid } = await params;
   const { status, completedDate, title, description, targetDate } = await req.json();
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const authResult = await requireAdmin(user);
+  const authResult = await requireRole(user, ['ADMIN', 'ORIC']);
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
   const { mid } = await params;
   await prisma.projectMilestone.delete({ where: { id: mid } });
