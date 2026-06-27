@@ -55,7 +55,7 @@ export default function GlobalTextareaAutoGrow() {
           if (node.nodeType !== 1) return;
           const el = node as HTMLElement;
           if (el.tagName === 'TEXTAREA') attach(el as HTMLTextAreaElement);
-          else if (el.querySelector) process(el);
+          else process(el);
         });
         // Also re-grow textareas whose value/attributes changed externally
         if (m.type === 'attributes' && m.target instanceof HTMLTextAreaElement) {

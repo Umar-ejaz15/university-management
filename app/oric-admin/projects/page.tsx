@@ -340,7 +340,7 @@ function ProjectDetailModal({ project, onClose, onApprove, onReject, busy, onSav
           <section className="space-y-4">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Project Information</h3>
             <TF label="Title" k="title" />
-            <TA label="Description" k="description" rows={3} />
+            <TA label="Description" k="description" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TF label="Start Date" k="startDate" type="date" />
               <TF label="End Date" k="endDate" type="date" />
@@ -350,11 +350,11 @@ function ProjectDetailModal({ project, onClose, onApprove, onReject, busy, onSav
           {/* ── Research Content ── */}
           <section className="space-y-4">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#1a3d2b] border-b border-[#1a3d2b]/10 pb-1.5">Research Content</h3>
-            <TA label="Objectives" k="objectives" rows={3} />
-            <TA label="Methodology" k="methodology" rows={3} />
-            <TA label="Expected Outcomes" k="outcomes" rows={2} />
-            <TA label="Deliverables" k="deliverables" rows={2} />
-            <TA label="Target Beneficiaries" k="targetBeneficiaries" rows={2} />
+            <TA label="Objectives" k="objectives" />
+            <TA label="Methodology" k="methodology" />
+            <TA label="Expected Outcomes" k="outcomes" />
+            <TA label="Deliverables" k="deliverables" />
+            <TA label="Target Beneficiaries" k="targetBeneficiaries" />
           </section>
 
           {/* ── Classification ── */}
@@ -411,8 +411,8 @@ function ProjectDetailModal({ project, onClose, onApprove, onReject, busy, onSav
               <TF label="Overhead Status" k="overheadStatus" />
               <TF label="Project File No." k="projectFileNo" />
             </div>
-            <TA label="Special Conditions" k="specialConditions" rows={2} />
-            <TA label="Remarks" k="remarks" rows={2} />
+            <TA label="Special Conditions" k="specialConditions" />
+            <TA label="Remarks" k="remarks" />
           </section>
 
           {/* ── Sponsor / Industry Partner ── */}
