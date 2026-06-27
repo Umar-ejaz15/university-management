@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/cls/stats
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error fetching CLS stats:', error);
+    logError('Error fetching CLS stats:', error);
     return NextResponse.json(
       { error: 'Failed to fetch CLS statistics' },
       { status: 500 }

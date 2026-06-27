@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * PUT /api/admin/faculties/[id]
@@ -54,7 +55,7 @@ export async function PUT(
 
     return NextResponse.json({ message: 'Faculty updated successfully', faculty });
   } catch (error: unknown) {
-    console.error('Error updating faculty:', error);
+    logError('Error updating faculty:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Faculty not found' }, { status: 404 });
@@ -113,7 +114,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Faculty deleted successfully' });
   } catch (error: unknown) {
-    console.error('Error deleting faculty:', error);
+    logError('Error deleting faculty:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2003') {
       return NextResponse.json(

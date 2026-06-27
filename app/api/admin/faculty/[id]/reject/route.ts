@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { adminActionLimiter, ADMIN_ACTION_LIMIT } from '@/lib/rate-limit';
 import { validateFacultyId, validateRejectionReason } from '@/lib/validation';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
+import { parseBody, isParsed } from '@/lib/api';
+import { RejectFacultySchema } from '@/lib/schemas';
 
 /**
  * PUT /api/admin/faculty/[id]/reject
@@ -70,18 +73,13 @@ export async function PUT(
       );
     }
 
-    // Get rejection reason from request body
-    const body = await request.json().catch(() => null);
+    // Get rejection reason from request body — validated by Zod
+    const body = await parseBody(request, RejectFacultySchema);
+    if (!isParsed(body)) return body;
+    const reason = body.reason;
 
-    if (!body || !body.reason) {
-      return NextResponse.json(
-        { error: 'Rejection reason is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate rejection reason
-    const reasonValidation = validateRejectionReason(body.reason);
+    // Validate rejection reason (defense-in-depth; Zod already validated)
+    const reasonValidation = validateRejectionReason(reason);
     if (!reasonValidation.valid) {
       return NextResponse.json(
         { error: 'Invalid rejection reason', details: reasonValidation.errors },
@@ -132,7 +130,7 @@ export async function PUT(
       metadata: {
         facultyName: staff.name,
         facultyEmail: staff.email,
-        rejectionReason: body.reason,
+        rejectionReason: reason,
         previousStatus: staff.status,
       },
       ipAddress: request.headers.get('x-forwarded-for') || undefined,
@@ -149,7 +147,7 @@ export async function PUT(
       },
     });
   } catch (error) {
-    console.error('Error rejecting faculty:', error);
+    logError('Error rejecting faculty:', error);
     return NextResponse.json(
       { error: 'Failed to reject faculty' },
       { status: 500 }

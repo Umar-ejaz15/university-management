@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
+import RichTextEditor from '@/components/RichTextEditor';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface CoPI {
@@ -104,7 +105,7 @@ export default function IndustryProjectPage() {
           title: title.trim(),
           projectKind: 'INDUSTRY',
           scope: scope === 'International' ? 'INTERNATIONAL' : 'NATIONAL',
-          funderType: 'Industry',
+          fundingAgency: 'Industry',
           funderLocation: scope,
           projectFileNo: projectFileNo.trim() || null,
           financialYear: financialYear.trim() || null,
@@ -287,12 +288,12 @@ export default function IndustryProjectPage() {
           {/* ── Section E: Deliverables & Documents ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <SectionHeader letter="E" title="Deliverables, Reports &amp; Documents" color="purple" />
-            <div className="space-y-4">
+            <div className="space-y-5">
               <Field label="Project Expected Deliverables and Outcomes">
-                <textarea rows={4} value={deliverables} onChange={(e) => setDeliverables(e.target.value)} placeholder="List expected deliverables, milestones, and outcomes…" className={textarea} />
+                <RichTextEditor value={deliverables} onChange={setDeliverables} placeholder="List expected deliverables, milestones, and outcomes…" minHeight={120} />
               </Field>
               <Field label="Monitoring Plan">
-                <textarea rows={3} value={monitoringPlan} onChange={(e) => setMonitoringPlan(e.target.value)} placeholder="How will progress be monitored and reported?" className={textarea} />
+                <RichTextEditor value={monitoringPlan} onChange={setMonitoringPlan} placeholder="How will progress be monitored and reported?" minHeight={100} />
               </Field>
               <Field label="Remarks">
                 <textarea rows={2} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Any additional remarks or special instructions…" className={textarea} />

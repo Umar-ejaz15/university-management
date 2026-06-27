@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/cls/history
@@ -72,7 +73,7 @@ export async function GET() {
 
     return NextResponse.json({ history, totalRequests: requests.length }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching request history:', error);
+    logError('Error fetching request history:', error);
     return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
   }
 }

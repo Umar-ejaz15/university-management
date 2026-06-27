@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -32,7 +33,7 @@ export async function GET() {
 
     return NextResponse.json({ staff }, { status: 200 });
   } catch (error) {
-    console.error('Get profile error:', error);
+    logError('Get profile error:', error);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
 }
@@ -93,7 +94,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ message: 'Profile updated', staff: updated }, { status: 200 });
   } catch (error) {
-    console.error('Update profile error:', error);
+    logError('Update profile error:', error);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

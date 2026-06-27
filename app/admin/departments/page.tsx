@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Plus, Edit2, Trash2, RefreshCw, BookOpen, Users, Building2, X } from 'lucide-react';
+import { GraduationCap, Plus, RefreshCw, BookOpen, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useAdminDepartments, type AdminDepartment } from '@/lib/queries/admin/departments';
 import { useAdminFaculties } from '@/lib/queries/admin/faculties';
+import { ActionButtons } from '@/components/admin/ActionButtons';
+import { toast } from '@/lib/store/uiStore';
+import { logError } from '@/lib/logger';
 
 type Department = AdminDepartment;
 
@@ -62,13 +65,13 @@ export default function AdminDepartmentsPage() {
           facultyId: '',
         });
         queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] });
+        toast.success(editingDepartment ? 'Department updated.' : 'Department added.');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to save department');
+        toast.error(data.error || 'Failed to save department');
       }
-    } catch (error) {
-      console.error('Error saving department:', error);
-      alert('Failed to save department');
+    } catch {
+      toast.error('Failed to save department');
     }
   };
 
@@ -91,7 +94,7 @@ export default function AdminDepartmentsPage() {
         setPrograms(data.department.programs?.map((p: any) => p.name) || []);
       }
     } catch (error) {
-      console.error('Error fetching department programs:', error);
+      logError('Error fetching department programs:', error);
       setPrograms([]);
     }
 
@@ -110,23 +113,20 @@ export default function AdminDepartmentsPage() {
 
       if (response.ok) {
         queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] });
+        toast.success('Department deleted.');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to delete department');
+        toast.error(data.error || 'Failed to delete department');
       }
-    } catch (error) {
-      console.error('Error deleting department:', error);
-      alert('Failed to delete department');
+    } catch {
+      toast.error('Failed to delete department');
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6a4f] mx-auto"></div>
-          <p className="mt-4 text-gray-500 font-medium">Loading departments...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-4 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin" />
       </div>
     );
   }
@@ -134,56 +134,40 @@ export default function AdminDepartmentsPage() {
   return (
     <div className="min-h-screen">
 
-      {/* Hero Header */}
-      <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] text-white">
-        <div className="px-6 py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-[#c9a961]" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight">Manage Departments</h1>
-              </div>
-              <p className="text-white/60 text-sm pl-13 ml-0">
-                Add, edit, or remove departments across MNSUAM
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] })}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-medium transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-              <button
-                onClick={() => {
-                  setEditingDepartment(null);
-                  setFormData({
-                    name: '',
-                    head: '',
-                    establishedYear: new Date().getFullYear(),
-                    totalStudents: 0,
-                    description: '',
-                    facultyId: '',
-                  });
-                  setPrograms([]);
-                  setNewProgram('');
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#c9a961] hover:bg-[#b8954f] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Department
-              </button>
-            </div>
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Departments</h1>
+            <p className="text-xs text-gray-400 mt-0.5">Add, edit, or remove departments across MNSUAM</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] })}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                setEditingDepartment(null);
+                setFormData({ name: '', head: '', establishedYear: new Date().getFullYear(), totalStudents: 0, description: '', facultyId: '' });
+                setPrograms([]);
+                setNewProgram('');
+                setShowModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Department
+            </button>
           </div>
         </div>
       </div>
 
       {/* Stats Strip */}
-      <div className="px-6 -mt-5">
+      <div className="px-6 mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center gap-4">
             <div className="w-11 h-11 bg-[#2d6a4f]/10 rounded-xl flex items-center justify-center shrink-0">
@@ -276,7 +260,10 @@ export default function AdminDepartmentsPage() {
                       <GraduationCap className="w-5 h-5 text-[#2d6a4f]" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{department.name}</p>
+                      <Link href={`/admin/departments/${department.id}`}
+                        className="font-semibold text-gray-900 hover:text-[#2d6a4f] transition-colors truncate block">
+                        {department.name}
+                      </Link>
                       {department.description && (
                         <p className="text-xs text-gray-400 truncate mt-0.5">{department.description}</p>
                       )}
@@ -313,25 +300,12 @@ export default function AdminDepartmentsPage() {
                   <div className="col-span-3 sm:col-span-2 flex items-center justify-end gap-1">
                     <Link
                       href={`/admin/departments/${department.id}/programs`}
-                      className="p-2 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 rounded-xl transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-[#2d6a4f] hover:bg-[#2d6a4f]/8 rounded-lg transition-colors"
                       title="Manage Programs"
                     >
-                      <BookOpen className="w-4 h-4" />
+                      <BookOpen className="w-3.5 h-3.5" />
                     </Link>
-                    <button
-                      onClick={() => handleEdit(department)}
-                      title="Edit Department"
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(department.id)}
-                      title="Delete Department"
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ActionButtons onEdit={() => handleEdit(department)} onDelete={() => handleDelete(department.id)} />
                   </div>
                 </div>
               ))
@@ -342,27 +316,20 @@ export default function AdminDepartmentsPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => {
-              setShowModal(false);
-              setEditingDepartment(null);
-              setPrograms([]);
-              setNewProgram('');
-            }}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="bg-linear-to-br from-[#1a3d2b] via-[#2d6a4f] to-[#1e4d38] px-6 py-5 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4 text-[#c9a961]" />
-                </div>
-                <h3 className="text-lg font-bold text-white">
-                  {editingDepartment ? 'Edit Department' : 'Add New Department'}
-                </h3>
-              </div>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">
+                {editingDepartment ? 'Edit Department' : 'Add Department'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setShowModal(false); setEditingDepartment(null); setPrograms([]); setNewProgram(''); }}
+                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
             </div>
 
             {/* Modal Body — scrollable */}
@@ -465,7 +432,7 @@ export default function AdminDepartmentsPage() {
                     rows={3}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none transition-colors resize-none"
+                    className="desc-word-like w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none transition-colors resize-none"
                     placeholder="Brief description of the department..."
                   />
                 </div>

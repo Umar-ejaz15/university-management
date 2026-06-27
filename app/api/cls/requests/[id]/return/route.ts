@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireRole } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * PUT /api/cls/requests/[id]/return
@@ -103,7 +104,7 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error returning equipment request:', error);
+    logError('Error returning equipment request:', error);
     return NextResponse.json(
       { error: 'Failed to process return' },
       { status: 500 }

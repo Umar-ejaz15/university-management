@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { getAuditLogs } from '@/lib/audit';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/audit-logs
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching audit logs:', error);
+    logError('Error fetching audit logs:', error);
     return NextResponse.json(
       { error: 'Failed to fetch audit logs' },
       { status: 500 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/stats
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching admin stats:', error);
+    logError('Error fetching admin stats:', error);
     return NextResponse.json(
       { error: 'Failed to fetch statistics' },
       { status: 500 }

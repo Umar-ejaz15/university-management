@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   UserCheck,
-  UserX,
   Clock,
   RefreshCw,
   Building2,
@@ -13,9 +12,6 @@ import {
   ArrowRight,
   FlaskConical,
   Briefcase,
-  Calendar,
-  Sparkles,
-  Shield,
   Globe,
   CalendarDays,
 } from 'lucide-react';
@@ -34,15 +30,39 @@ interface PendingFaculty {
   createdAt: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+function StatCard({
+  icon, count, label, sub, accent,
+}: {
+  icon: React.ReactNode;
+  count: number;
+  label: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className={`text-3xl font-bold ${accent ?? 'text-gray-900'}`}>{count}</p>
+          <p className="text-sm font-medium text-gray-700 mt-0.5">{label}</p>
+          {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Quick Action Card ────────────────────────────────────────────────────────
 
-function QuickActionCard({
-  icon, iconBg, title, description, href, badge,
+function ActionCard({
+  icon, title, description, href, badge,
 }: {
   icon: React.ReactNode;
-  iconBg: string;
   title: string;
   description: string;
   href: string;
@@ -52,58 +72,26 @@ function QuickActionCard({
   return (
     <button
       onClick={() => router.push(href)}
-      className="group bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-[#2d6a4f]/20 transition-all duration-200 text-left w-full"
+      className="group bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-[#2d6a4f]/20 transition-all text-left w-full"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4 flex-1">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#2d6a4f] transition-colors">
-                {title}
-              </h3>
-              {badge && (
-                <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded font-semibold">
-                  {badge}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
-          </div>
-        </div>
-        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#2d6a4f] group-hover:translate-x-0.5 transition-all mt-0.5 flex-shrink-0" />
-      </div>
-    </button>
-  );
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  icon, iconColor, bg, border, count, label, sub,
-}: {
-  icon: React.ReactNode;
-  iconColor: string;
-  bg: string;
-  border: string;
-  count: number;
-  label: string;
-  sub?: string;
-}) {
-  return (
-    <div className={`relative overflow-hidden bg-gradient-to-br ${bg} rounded-2xl border ${border} shadow-sm p-5`}>
-      <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full -translate-y-8 translate-x-8" />
-      <div className="relative">
-        <div className="w-10 h-10 bg-white/70 rounded-xl flex items-center justify-center mb-3 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
           {icon}
         </div>
-        <p className={`text-3xl font-bold ${iconColor}`}>{count}</p>
-        <p className={`text-sm font-medium mt-0.5 ${iconColor}`}>{label}</p>
-        {sub && <p className={`text-xs mt-1 ${iconColor}/60`}>{sub}</p>}
+        {badge && (
+          <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-semibold">
+            {badge}
+          </span>
+        )}
       </div>
-    </div>
+      <p className="text-sm font-semibold text-gray-900 group-hover:text-[#2d6a4f] transition-colors">
+        {title}
+      </p>
+      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+      <div className="mt-3 flex items-center gap-1 text-xs text-[#2d6a4f] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+        Open <ArrowRight className="w-3 h-3" />
+      </div>
+    </button>
   );
 }
 
@@ -123,208 +111,189 @@ export default function AdminDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin'] });
-  };
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-sm text-gray-500">Loading portal…</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-[#2d6a4f]/20 border-t-[#2d6a4f] rounded-full animate-spin" />
       </div>
     );
   }
 
+  const pending = (pendingFaculty as PendingFaculty[]).length;
+
   return (
-    <div className="min-h-screen">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
+    <div className="min-h-screen bg-gray-50/40">
+      {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-200 px-6 py-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-[#c9a961]" />
-              <span className="text-xs font-semibold text-[#c9a961] uppercase tracking-wider">
-                Administration Portal
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">MNSUAM Admin Dashboard</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Calendar className="w-3.5 h-3.5 text-gray-400" />
-              <p className="text-sm text-gray-500">
-                {now.toLocaleDateString('en-GB', {
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                })}
-                {' · '}
-                {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
+            <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {now.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {' · '}
+              {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
           <button
             onClick={refresh}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] transition-colors shadow-sm"
+            className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
             Refresh
           </button>
         </div>
       </div>
 
-      <div className="px-6 py-6 space-y-8">
+      <div className="px-6 py-6 space-y-6">
 
-        {/* ── Stat Row ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* ── Stats ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
           <StatCard
-            icon={<Clock className="w-5 h-5 text-amber-600" />}
-            iconColor="text-amber-700"
-            bg="from-amber-50 to-amber-100/60"
-            border="border-amber-100"
+            icon={<Clock className="w-5 h-5 text-amber-500" />}
             count={stats?.pendingCount ?? 0}
-            label="Pending Approvals"
-            sub={(stats?.pendingCount ?? 0) > 0 ? 'Requires attention' : undefined}
+            label="Pending Applications"
+            sub={(stats?.pendingCount ?? 0) > 0 ? 'Needs review' : 'All reviewed'}
+            accent={(stats?.pendingCount ?? 0) > 0 ? 'text-amber-600' : 'text-gray-900'}
           />
           <StatCard
             icon={<UserCheck className="w-5 h-5 text-[#2d6a4f]" />}
-            iconColor="text-[#2d6a4f]"
-            bg="from-[#2d6a4f]/5 to-[#2d6a4f]/10"
-            border="border-[#2d6a4f]/15"
             count={stats?.totalFaculty ?? 0}
-            label="Approved Faculty"
-            sub="Active members"
+            label="Active Faculty"
+            sub="Approved members"
           />
           <StatCard
-            icon={<UserX className="w-5 h-5 text-red-600" />}
-            iconColor="text-red-700"
-            bg="from-red-50 to-red-100/60"
-            border="border-red-100"
-            count={stats?.rejectedCount ?? 0}
-            label="Rejected"
-            sub="Applications denied"
-          />
-          <StatCard
-            icon={<Building2 className="w-5 h-5 text-blue-600" />}
-            iconColor="text-blue-700"
-            bg="from-blue-50 to-blue-100/60"
-            border="border-blue-100"
+            icon={<Building2 className="w-5 h-5 text-blue-500" />}
             count={stats?.totalDepartments ?? 0}
-            label="Total Departments"
+            label="Departments"
             sub="Across all faculties"
           />
         </div>
 
-        {/* ── Quick Actions ────────────────────────────────────────────── */}
+        {/* ── Quick Actions ─────────────────────────────────────────── */}
         <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-1">Quick Actions</h2>
-          <p className="text-xs text-gray-500 mb-4">Navigate to management sections</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            <QuickActionCard
-              icon={<Building2 className="w-5 h-5 text-[#2d6a4f]" />}
-              iconBg="bg-[#2d6a4f]/10"
-              title="Manage Faculties"
-              description="Add, edit, or remove faculties in the system"
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Management</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <ActionCard
+              icon={<Building2 className="w-4 h-4 text-[#2d6a4f]" />}
+              title="Faculties"
+              description="Add, edit, or remove faculties"
               href="/admin/faculties"
             />
-            <QuickActionCard
-              icon={<GraduationCap className="w-5 h-5 text-blue-600" />}
-              iconBg="bg-blue-50"
-              title="Manage Departments"
-              description="Add, edit, or remove departments across faculties"
+            <ActionCard
+              icon={<GraduationCap className="w-4 h-4 text-blue-600" />}
+              title="Departments"
+              description="Manage departments across faculties"
               href="/admin/departments"
             />
-            <QuickActionCard
-              icon={<FlaskConical className="w-5 h-5 text-purple-600" />}
-              iconBg="bg-purple-50"
-              title="CLS Equipment"
-              description="Review and manage lab equipment borrowing requests"
-              href="/admin/cls"
-            />
-            <QuickActionCard
-              icon={<Briefcase className="w-5 h-5 text-rose-600" />}
-              iconBg="bg-rose-50"
-              title="Faculty Applications"
-              description={`${stats?.pendingCount ?? 0} application${(stats?.pendingCount ?? 0) !== 1 ? 's' : ''} awaiting review`}
-              href="/admin/applications"
-              badge={(stats?.pendingCount ?? 0) > 0 ? `${stats?.pendingCount} pending` : undefined}
-            />
-            <QuickActionCard
-              icon={<Globe className="w-5 h-5 text-teal-600" />}
-              iconBg="bg-teal-50"
-              title="University Dashboard"
-              description="View the public university overview and statistics"
-              href="/uni-dashboard"
-            />
-            <QuickActionCard
-              icon={<FlaskConical className="w-5 h-5 text-emerald-600" />}
-              iconBg="bg-emerald-50"
-              title="Manage Labs"
-              description="Add, edit, or remove labs and their equipment"
+            <ActionCard
+              icon={<FlaskConical className="w-4 h-4 text-purple-600" />}
+              title="Labs"
+              description="Manage labs and equipment"
               href="/admin/labs"
             />
-            <QuickActionCard
-              icon={<Shield className="w-5 h-5 text-indigo-600" />}
-              iconBg="bg-indigo-50"
-              title="Content Verification"
-              description="Review teacher-submitted publications, projects, courses & profiles"
-              href="/admin/verifications"
-              badge={(stats?.pendingVerifications ?? 0) > 0 ? `${stats?.pendingVerifications} pending` : undefined}
+            <ActionCard
+              icon={<Briefcase className="w-4 h-4 text-amber-600" />}
+              title="Applications"
+              description="Review faculty membership applications"
+              href="/admin/applications"
+              badge={pending > 0 ? `${pending} pending` : undefined}
             />
-            <QuickActionCard
-              icon={<CalendarDays className="w-5 h-5 text-rose-600" />}
-              iconBg="bg-rose-50"
+            <ActionCard
+              icon={<FlaskConical className="w-4 h-4 text-teal-600" />}
+              title="CLS Requests"
+              description="Lab equipment borrowing requests"
+              href="/admin/cls"
+              badge={(stats?.pendingClsCount ?? 0) > 0 ? `${stats?.pendingClsCount} pending` : undefined}
+            />
+            <ActionCard
+              icon={<CalendarDays className="w-4 h-4 text-rose-600" />}
               title="Events"
-              description="Create and manage university-wide events, conferences, workshops, and fairs"
+              description="Create and manage university events"
               href="/admin/events"
+            />
+            <ActionCard
+              icon={<Globe className="w-4 h-4 text-gray-500" />}
+              title="University Dashboard"
+              description="View the public university overview"
+              href="/uni-dashboard"
             />
           </div>
         </div>
 
-        {/* ── Pending Applications Summary ──────────────────────────── */}
-        <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-1">Faculty Applications</h2>
-          <p className="text-xs text-gray-500 mb-4">Faculty members awaiting account approval</p>
-          <button
-            onClick={() => router.push('/admin/applications')}
-            className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-[#2d6a4f]/20 hover:shadow-md transition-all duration-200 text-left group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  (pendingFaculty as PendingFaculty[]).length > 0
-                    ? 'bg-amber-100'
-                    : 'bg-[#2d6a4f]/8'
-                }`}>
-                  <UserCheck className={`w-6 h-6 ${
-                    (pendingFaculty as PendingFaculty[]).length > 0
-                      ? 'text-amber-600'
-                      : 'text-[#2d6a4f]/60'
-                  }`} />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-gray-900">
-                    {(pendingFaculty as PendingFaculty[]).length === 0
-                      ? 'All caught up'
-                      : `${(pendingFaculty as PendingFaculty[]).length} application${(pendingFaculty as PendingFaculty[]).length !== 1 ? 's' : ''} pending`}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {(pendingFaculty as PendingFaculty[]).length === 0
-                      ? 'No pending faculty applications'
-                      : 'Click to review and approve'}
-                  </p>
-                </div>
+        {/* ── Pending Faculty ───────────────────────────────────────── */}
+        {pending > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Pending Faculty Applications</h2>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      {['Name', 'Email', 'Designation', 'Department', 'Applied'].map(h => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      ))}
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {(pendingFaculty as PendingFaculty[]).slice(0, 8).map((f) => (
+                      <tr key={f.id} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-900">{f.name}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{f.email}</td>
+                        <td className="px-4 py-3 text-gray-600">{f.designation}</td>
+                        <td className="px-4 py-3 text-gray-600">{f.department?.name ?? '—'}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
+                          {new Date(f.createdAt).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => router.push('/admin/applications')}
+                            className="text-xs text-[#2d6a4f] font-medium hover:underline"
+                          >
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex items-center gap-3">
-                {(pendingFaculty as PendingFaculty[]).length > 0 && (
-                  <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold">
-                    {(pendingFaculty as PendingFaculty[]).length} pending
-                  </span>
-                )}
-                <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#2d6a4f] group-hover:translate-x-0.5 transition-all" />
-              </div>
+              {pending > 8 && (
+                <div className="px-4 py-3 border-t border-gray-100">
+                  <button
+                    onClick={() => router.push('/admin/applications')}
+                    className="text-xs text-[#2d6a4f] font-medium hover:underline flex items-center gap-1"
+                  >
+                    View all {pending} applications <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
-          </button>
-        </div>
+          </div>
+        )}
+
+        {pending === 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#2d6a4f]/8 flex items-center justify-center">
+                <UserCheck className="w-4 h-4 text-[#2d6a4f]/60" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">No pending applications</p>
+                <p className="text-xs text-gray-400 mt-0.5">All faculty applications have been reviewed.</p>
+              </div>
+              <button
+                onClick={() => router.push('/admin/applications')}
+                className="ml-auto text-xs text-[#2d6a4f] font-medium hover:underline flex items-center gap-1"
+              >
+                View all <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

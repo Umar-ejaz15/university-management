@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get('dateFrom')  || '';
   const dateTo   = searchParams.get('dateTo')    || '';
 
-  const where: Prisma.ProjectWhereInput = {};
+  const where: Prisma.ProjectWhereInput = { verificationStatus: 'VERIFIED' };
 
   if (status !== 'all') where.status = status as Prisma.EnumProjectStatusFilter;
   if (kind   !== 'all') where.projectKind = kind as Prisma.EnumProjectKindFilter;

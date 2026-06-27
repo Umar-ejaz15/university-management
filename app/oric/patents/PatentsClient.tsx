@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useOricPatentsFilterStore } from '@/lib/store/oricFiltersStore';
 import Link from 'next/link';
 import { Award, FileSearch, Shield, ArrowLeft, Search, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
 import OricRecordCard from '@/components/oric/OricRecordCard';
@@ -109,15 +110,18 @@ export default function PatentsClient({ patents, disclosures, licensing, stats }
   stats: { granted: number; signed: number };
 }) {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as Tab | null) ?? 'patents';
-  const [tab, setTab] = useState<Tab>(['patents', 'disclosures', 'licensing'].includes(initialTab) ? initialTab : 'patents');
-  const [search, setSearch] = useState('');
-  const [active, setActive] = useState<Record<string, string[]>>({});
-  const [mobileSidebar, setMobileSidebar] = useState(false);
+  const { tab, search, active, mobileSidebar, setTab, setSearch, toggleFilter, setMobileSidebar, clearAll } = useOricPatentsFilterStore();
 
-  const toggle = (k: string, v: string) =>
-    setActive(p => ({ ...p, [k]: (p[k] ?? []).includes(v) ? (p[k] ?? []).filter(x => x !== v) : [...(p[k] ?? []), v] }));
-  const clearAll = () => { setActive({}); setSearch(''); };
+  // Sync initial tab from URL query param on first mount only
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as Tab | null;
+    if (urlTab && ['patents', 'disclosures', 'licensing'].includes(urlTab)) {
+      setTab(urlTab);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggle = (k: string, v: string) => toggleFilter(k, v);
 
   const q = search.toLowerCase();
 
@@ -214,7 +218,7 @@ export default function PatentsClient({ patents, disclosures, licensing, stats }
               { key: 'disclosures' as Tab, label: 'IP Disclosures', icon: FileSearch, count: disclosures.length },
               { key: 'licensing' as Tab, label: 'IP Licensing', icon: Shield, count: licensing.length },
             ]).map(t => (
-              <button key={t.key} onClick={() => { setTab(t.key); setActive({}); setSearch(''); }}
+              <button key={t.key} onClick={() => setTab(t.key)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === t.key ? 'bg-white text-[#1a3d2b] shadow' : 'text-white/70 hover:text-white'}`}>
                 <t.icon className="w-3.5 h-3.5" /> {t.label}
                 <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${tab === t.key ? 'bg-[#1a3d2b]/10 text-[#1a3d2b]' : 'bg-white/20 text-white'}`}>{t.count}</span>
@@ -228,7 +232,7 @@ export default function PatentsClient({ patents, disclosures, licensing, stats }
       <div className="px-6 sm:px-10 py-8">
         {/* Mobile filter toggle */}
         <div className="lg:hidden mb-4">
-          <button onClick={() => setMobileSidebar(p => !p)}
+          <button onClick={() => setMobileSidebar(!mobileSidebar)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
             <SlidersHorizontal className="w-4 h-4" /> Filters
             {activeCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-[#1a3d2b] text-white rounded-full text-[10px] font-bold">{activeCount}</span>}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BookOpen, Plus, Edit2, Trash2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { logError } from '@/lib/logger';
 
 interface Program {
   id: string;
@@ -59,7 +60,7 @@ export default function ManageDepartmentProgramsPage({ params }: PageProps) {
         router.push('/admin/departments');
       }
     } catch (error) {
-      console.error('Error fetching department:', error);
+      logError('Error fetching department:', error);
     } finally {
       setLoading(false);
     }
@@ -92,7 +93,7 @@ export default function ManageDepartmentProgramsPage({ params }: PageProps) {
         alert(data.error || 'Failed to add program');
       }
     } catch (error) {
-      console.error('Error adding program:', error);
+      logError('Error adding program:', error);
       alert('Failed to add program');
     } finally {
       setSubmitting(false);
@@ -126,7 +127,7 @@ export default function ManageDepartmentProgramsPage({ params }: PageProps) {
         alert(data.error || 'Failed to update program');
       }
     } catch (error) {
-      console.error('Error updating program:', error);
+      logError('Error updating program:', error);
       alert('Failed to update program');
     } finally {
       setSubmitting(false);
@@ -151,7 +152,7 @@ export default function ManageDepartmentProgramsPage({ params }: PageProps) {
         alert(data.error || 'Failed to delete program');
       }
     } catch (error) {
-      console.error('Error deleting program:', error);
+      logError('Error deleting program:', error);
       alert('Failed to delete program');
     }
   };

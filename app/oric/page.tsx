@@ -629,7 +629,7 @@ function SectionHeader({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-lg font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: title }} />
+          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
         </div>
         {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>

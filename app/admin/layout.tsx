@@ -1,22 +1,13 @@
-import AdminSidebar from '@/components/AdminSidebar';
-import AdminTopBar  from '@/components/AdminTopBar';
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/session';
+import AdminShell from '@/components/AdminShell';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Left sidebar */}
-      <AdminSidebar />
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
 
-      {/* Content column */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
-        {/* Notification bell + user — top-right of content area */}
-        <AdminTopBar />
+  if (!user || user.role !== 'ADMIN') {
+    redirect(user?.role === 'ORIC' ? '/oric-admin' : '/login');
+  }
 
-        {/* Page content */}
-        <main className="flex-1">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

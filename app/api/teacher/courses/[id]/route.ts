@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -39,7 +40,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: 'Course deleted' }, { status: 200 });
   } catch (error) {
-    console.error('Delete course error:', error);
+    logError('Delete course error:', error);
     return NextResponse.json({ error: 'Failed to delete course' }, { status: 500 });
   }
 }
@@ -86,7 +87,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ course }, { status: 200 });
   } catch (error) {
-    console.error('Update course error:', error);
+    logError('Update course error:', error);
     return NextResponse.json({ error: 'Failed to update course' }, { status: 500 });
   }
 }

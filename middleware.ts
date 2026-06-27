@@ -12,7 +12,7 @@ const protectedRoutes = [
 // Auth routes that should redirect to dashboard if already logged in
 const authRoutes = ['/login', '/signup'];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('auth-token')?.value;
 
@@ -47,6 +47,9 @@ export async function proxy(request: NextRequest) {
 
   // =================================================================
   // 2. ORIC ADMIN ROUTE PROTECTION
+  // ADMIN and ORIC are separate silos: neither may access the other's
+  // area, though they share the same underlying data. Only ORIC may enter
+  // /oric-admin; an ADMIN is redirected back to /admin.
   // =================================================================
   if (pathname.startsWith('/oric-admin')) {
     if (!token) {
@@ -58,8 +61,11 @@ export async function proxy(request: NextRequest) {
     try {
       const user = await verifyToken(token);
 
-      if (!user || (user.role !== 'ORIC' && user.role !== 'ADMIN')) {
-        return NextResponse.redirect(new URL('/uni-dashboard', request.url));
+      if (!user || user.role !== 'ORIC') {
+        const dest = user?.role === 'ADMIN'
+          ? new URL('/admin', request.url)
+          : new URL('/uni-dashboard', request.url);
+        return NextResponse.redirect(dest);
       }
     } catch (_error) {
       const loginUrl = new URL('/login', request.url);

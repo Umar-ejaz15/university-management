@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'ORIC' && user.role !== 'ADMIN')) {
+  if (!user || user.role !== 'ORIC') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -57,7 +58,7 @@ export async function GET() {
       totalConsultancyValue: Number(consultancyAgg._sum.contractValue ?? 0),
     });
   } catch (error) {
-    console.error('ORIC stats error:', error);
+    logError('ORIC stats error:', error);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }

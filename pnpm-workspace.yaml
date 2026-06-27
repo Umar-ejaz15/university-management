@@ -1,3 +1,11 @@
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
+
 # Approve native build scripts for these deps (pnpm 11+ requires explicit allow-list)
 onlyBuiltDependencies:
   - '@prisma/engines'

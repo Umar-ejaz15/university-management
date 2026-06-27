@@ -46,3 +46,41 @@ body {
 /* Scrollbar hide utility */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Rich text content (Tiptap output) */
+.rich-content p { margin-bottom: 0.5rem; line-height: 1.7; }
+.rich-content p:last-child { margin-bottom: 0; }
+.rich-content ol { list-style: decimal; padding-left: 1.4rem; margin-bottom: 0.5rem; }
+.rich-content ul { list-style: disc; padding-left: 1.4rem; margin-bottom: 0.5rem; }
+.rich-content li { margin-bottom: 0.25rem; line-height: 1.65; }
+.rich-content strong { font-weight: 700; color: inherit; }
+.rich-content em { font-style: italic; }
+.rich-content hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.75rem 0; }
+.rich-content h1,.rich-content h2,.rich-content h3 { font-weight: 700; margin-bottom: 0.4rem; margin-top: 0.75rem; }
+.rich-content h3 { font-size: 0.95rem; }
+
+/* Tiptap editor prose inside the editor area */
+.ProseMirror ol { list-style: decimal; padding-left: 1.4rem; margin-bottom: 0.4rem; }
+.ProseMirror ul { list-style: disc; padding-left: 1.4rem; margin-bottom: 0.4rem; }
+.ProseMirror li { margin-bottom: 0.2rem; line-height: 1.6; }
+.ProseMirror strong { font-weight: 700; }
+.ProseMirror em { font-style: italic; }
+.ProseMirror p { margin-bottom: 0.35rem; }
+.ProseMirror p:last-child { margin-bottom: 0; }
+.ProseMirror hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.5rem 0; }
+
+/* ── MS Word-like textarea for description / abstract fields ──────────────── */
+/* Applied via the `desc-word-like` class on <textarea>. Gives a document-page
+   feel: generous min-height, comfortable line-height, reading-width text. */
+textarea.desc-word-like {
+  min-height: 132px;
+  line-height: 1.75;
+  font-size: 0.95rem;
+  letter-spacing: 0.003em;
+}
+/* When read-only / disabled, keep the document look without harsh grey */
+textarea.desc-word-like:disabled,
+textarea.desc-word-like[readonly] {
+  background: #fafaf9;
+  color: #1f2937;
+}

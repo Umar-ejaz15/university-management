@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
+import { logError } from '@/lib/logger';
+import { parseBody, isParsed } from '@/lib/api';
+import { OnboardingSchema } from '@/lib/schemas';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,16 +29,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await parseBody(request, OnboardingSchema);
+    if (!isParsed(body)) return body;
     const { designation, departmentId, specialization, experienceYears, qualifications } = body;
-
-    // Validate required fields
-    if (!designation || !departmentId) {
-      return NextResponse.json(
-        { error: 'Designation and department are required' },
-        { status: 400 }
-      );
-    }
 
     // Verify department exists
     const department = await prisma.department.findUnique({
@@ -97,7 +93,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Onboarding error:', error);
+    logError('Onboarding error:', error);
     return NextResponse.json(
       { error: 'An error occurred during onboarding' },
       { status: 500 }

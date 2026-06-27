@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
       query,
     });
   } catch (error) {
-    console.error('Search error:', error);
+    logError('Search error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

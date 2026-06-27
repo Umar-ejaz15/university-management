@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, createToken, isValidEmail, sanitizeInput } from '@/lib/auth';
+import { authLimiter, AUTH_LIMIT } from '@/lib/rate-limit';
+import { parseBody, isParsed } from '@/lib/api';
+import { LoginSchema } from '@/lib/schemas';
+import { logError } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
-
-    // Validate required fields
-    if (!email || !password) {
+    // Rate limit by IP to mitigate brute-force / credential stuffing.
+    // NOTE: in-memory limiter is per-instance; use Upstash Redis for multi-instance.
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = await authLimiter.check(`login:${ip}`, AUTH_LIMIT);
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
+        { error: 'Too many login attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 900) } }
       );
     }
 
-    // Sanitize email
+    const body = await parseBody(request, LoginSchema);
+    if (!isParsed(body)) return body;
+    const { email, password } = body;
+
+    // Sanitize email (Zod already validated format; sanitize for DB lookup)
     const sanitizedEmail = sanitizeInput(email).toLowerCase();
 
-    // Validate email format
+    // Validate email format (defense-in-depth)
     if (!isValidEmail(sanitizedEmail)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
@@ -103,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Login error:', error);
+    logError('Login error:', error);
     return NextResponse.json(
       { error: 'An error occurred during login' },
       { status: 500 }

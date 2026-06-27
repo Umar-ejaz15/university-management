@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import BarChart from '@/components/charts/BarChart';
 import PieChart from '@/components/charts/PieChart';
 import PublicationsChart from '@/components/charts/PublicationsChart';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
 import {
   BookOpen,
@@ -36,19 +36,19 @@ export default async function FacultyPage({ params }: PageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  const [staff, totalPublications, totalProjects, totalCourses, allProjectStats, allPubYears] = await Promise.all([
+  const [staff, totalPublications, totalProjects, totalCourses, allProjectStats, allPubYears, oricData] = await Promise.all([
     prisma.staff.findUnique({
-      where: { id },
+      where: { id, status: 'APPROVED' },
       include: {
         department: { include: { faculty: true } },
-        publications: { orderBy: { year: 'desc' }, take: 4 },
+        publications: { where: { verificationStatus: 'VERIFIED' }, orderBy: { year: 'desc' }, take: 4 },
         projects:     { where: { verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, take: 4 },
-        courses:      { orderBy: { name: 'asc' }, take: 4 },
+        courses:      { where: { verificationStatus: 'VERIFIED' }, orderBy: { name: 'asc' }, take: 4 },
       },
     }),
-    prisma.publication.count({ where: { staffId: id } }),
+    prisma.publication.count({ where: { staffId: id, verificationStatus: 'VERIFIED' } }),
     prisma.project.count({ where: { staffId: id, verificationStatus: 'VERIFIED' } }),
-    prisma.course.count({ where: { staffId: id } }),
+    prisma.course.count({ where: { staffId: id, verificationStatus: 'VERIFIED' } }),
     // Lightweight full project list for analytics only
     prisma.project.findMany({
       where: { staffId: id, verificationStatus: 'VERIFIED' },
@@ -56,9 +56,22 @@ export default async function FacultyPage({ params }: PageProps) {
     }),
     // All publication years for the trend chart
     prisma.publication.findMany({
-      where: { staffId: id },
+      where: { staffId: id, verificationStatus: 'VERIFIED' },
       select: { year: true },
     }),
+    // ORIC records for this faculty member
+    Promise.all([
+      prisma.mou.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, partyName: true, linkageType: true, partyType: true, scope: true, country: true, establishmentDate: true, duration: true, status: true } }),
+      prisma.consultancy.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, title: true, clientName: true, clientCountry: true, serviceType: true, contractValue: true, startDate: true, endDate: true, status: true } }),
+      prisma.patent.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, title: true, leadInventor: true, ipCategory: true, patentStatus: true, filingDate: true, scope: true, applicationNumber: true } }),
+      prisma.iPDisclosure.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, title: true, leadInventor: true, ipCategory: true, developmentStatus: true, scope: true } }),
+      prisma.iPLicensing.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, title: true, leadInventor: true, ipCategory: true, negotiationStatus: true, licenseeName: true, scope: true } }),
+      prisma.event.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { eventDate: 'desc' }, select: { id: true, title: true, category: true, eventDate: true, venue: true, scope: true, arrangedOrParticipated: true, participants: true } }),
+      prisma.industrialVisit.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { visitDate: 'desc' }, select: { id: true, visitorName: true, visitorOrg: true, visitDate: true, agenda: true, departmentVisited: true, visitType: true } }),
+      prisma.policyAdvocacy.findMany({ where: { staffId: id, verificationStatus: 'VERIFIED' }, orderBy: { createdAt: 'desc' }, select: { id: true, govtBody: true, areaAdvocated: true, brief: true, coalitionPartners: true, advocacyTools: true } }),
+    ]).then(([mous, consultancies, patents, disclosures, licensing, events, visits, policies]) => ({
+      mous, consultancies, patents, disclosures, licensing, events, visits, policies,
+    })),
   ]);
 
   if (!staff) notFound();
@@ -110,14 +123,14 @@ export default async function FacultyPage({ params }: PageProps) {
   // teachingLoad can be JSON array of strings, or a plain string
   let teachingLoadItems: string[] = [];
   if (staff.teachingLoad) {
+    const load = staff.teachingLoad;
     try {
-      const parsed = JSON.parse(JSON.stringify(staff.teachingLoad));
-      if (Array.isArray(parsed)) {
-        teachingLoadItems = parsed.map(String).filter(Boolean);
-      } else if (typeof parsed === 'string') {
-        teachingLoadItems = parsed.split('\n').map((l: string) => l.trim()).filter(Boolean);
-      } else if (typeof parsed === 'object') {
-        teachingLoadItems = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`);
+      if (Array.isArray(load)) {
+        teachingLoadItems = load.map((v) => String(v)).filter(Boolean);
+      } else if (typeof load === 'string') {
+        teachingLoadItems = load.split('\n').map((l: string) => l.trim()).filter(Boolean);
+      } else if (typeof load === 'object') {
+        teachingLoadItems = Object.entries(load).map(([k, v]) => `${k}: ${String(v)}`);
       }
     } catch {
       teachingLoadItems = [];
@@ -160,6 +173,8 @@ export default async function FacultyPage({ params }: PageProps) {
   const hasCharts = totalProjects > 0 || totalPublications > 0;
   const hasTeaching = totalCourses > 0 || teachingLoadItems.length > 0;
 
+  const totalIpRecords = oricData.patents.length + oricData.disclosures.length + oricData.licensing.length;
+
   // ── Nav items — only show sections that have data ──────────────────────────
   const navItems = [
     { label: 'Profile',       href: '#profile'       },
@@ -168,6 +183,12 @@ export default async function FacultyPage({ params }: PageProps) {
     ...(totalProjects > 0     ? [{ label: 'Projects',     href: '#projects'     }] : []),
     ...(hasTeaching           ? [{ label: 'Teaching',     href: '#teaching'      }] : []),
     ...(administrativeDuties.length > 0 ? [{ label: 'Admin Duties', href: '#admin-duties' }] : []),
+    ...(oricData.mous.length > 0         ? [{ label: 'MoUs',          href: '#mous'          }] : []),
+    ...(oricData.consultancies.length > 0 ? [{ label: 'Consultancies', href: '#consultancies' }] : []),
+    ...(totalIpRecords > 0               ? [{ label: 'IP & Patents',   href: '#ip-patents'    }] : []),
+    ...(oricData.events.length > 0       ? [{ label: 'Events',         href: '#events'        }] : []),
+    ...(oricData.visits.length > 0       ? [{ label: 'Ind. Visits',    href: '#visits'        }] : []),
+    ...(oricData.policies.length > 0     ? [{ label: 'Policy',         href: '#policy'        }] : []),
     ...(hasCharts             ? [{ label: 'Analytics',    href: '#analytics'     }] : []),
   ];
 
@@ -523,9 +544,9 @@ export default async function FacultyPage({ params }: PageProps) {
                             {project.endDate && new Date(project.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                           </span>
                         )}
-                        {(project as { studentCount?: number | null }).studentCount ? (
+                        {project.studentCount ? (
                           <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" /> {(project as { studentCount?: number | null }).studentCount} students
+                            <Users className="w-3 h-3" /> {project.studentCount} students
                           </span>
                         ) : null}
                       </div>
@@ -651,6 +672,241 @@ export default async function FacultyPage({ params }: PageProps) {
                 </ul>
               </div>
             )}
+
+            {/* ── MoUs ── */}
+            {oricData.mous.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="mous">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-teal-500 rounded-full" />
+                    MoUs &amp; Linkages
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-teal-50 text-teal-700">{oricData.mous.length} total</span>
+                </div>
+                <div className="space-y-3">
+                  {oricData.mous.map((m) => (
+                    <div key={m.id} className="p-4 rounded-xl border border-gray-100 hover:border-teal-100 hover:bg-teal-50/20 transition-all">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="font-semibold text-gray-900 text-sm">{m.partyName}</p>
+                        <div className="flex flex-wrap gap-1 shrink-0">
+                          {m.status && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : m.status === 'Expired' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>{m.status}</span>}
+                          {m.scope && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">{m.scope}</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                        {m.linkageType && <span>{m.linkageType}</span>}
+                        {m.partyType && <span>{m.partyType}</span>}
+                        {m.country && <span>{m.country}</span>}
+                        {m.establishmentDate && <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{new Date(m.establishmentDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>}
+                        {m.duration && <span>Duration: {m.duration}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Consultancies ── */}
+            {oricData.consultancies.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="consultancies">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-sky-500 rounded-full" />
+                    Consultancies
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-sky-50 text-sky-700">{oricData.consultancies.length} total</span>
+                </div>
+                <div className="space-y-3">
+                  {oricData.consultancies.map((c) => (
+                    <div key={c.id} className="p-4 rounded-xl border border-gray-100 hover:border-sky-100 hover:bg-sky-50/20 transition-all">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="font-semibold text-gray-900 text-sm">{c.title}</p>
+                        {c.status && <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${c.status === 'Ongoing' ? 'bg-emerald-100 text-emerald-700' : c.status === 'Completed' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'}`}>{c.status}</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                        {c.clientName && <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{c.clientName}{c.clientCountry ? ` · ${c.clientCountry}` : ''}</span>}
+                        {c.serviceType && <span>{c.serviceType}</span>}
+                        {c.contractValue && <span className="font-semibold text-gray-600">PKR {Number(c.contractValue).toLocaleString()}</span>}
+                        {(c.startDate || c.endDate) && (
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3" />
+                            {c.startDate && new Date(c.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                            {c.startDate && c.endDate && ' → '}
+                            {c.endDate && new Date(c.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── IP & Patents ── */}
+            {totalIpRecords > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="ip-patents">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
+                    IP &amp; Patents
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-amber-50 text-amber-700">{totalIpRecords} total</span>
+                </div>
+                {oricData.patents.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Patents ({oricData.patents.length})</p>
+                    <div className="space-y-3">
+                      {oricData.patents.map((p) => (
+                        <div key={p.id} className="p-4 rounded-xl border border-gray-100 hover:border-amber-100 hover:bg-amber-50/20 transition-all">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <p className="font-semibold text-gray-900 text-sm">{p.title}</p>
+                            <div className="flex gap-1 shrink-0">
+                              {p.patentStatus && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.patentStatus === 'Granted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.patentStatus}</span>}
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">{p.scope}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                            {p.leadInventor && <span>Inventor: {p.leadInventor}</span>}
+                            {p.ipCategory && <span>{p.ipCategory}</span>}
+                            {p.applicationNumber && <span>App #{p.applicationNumber}</span>}
+                            {p.filingDate && <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Filed {new Date(p.filingDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {oricData.disclosures.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">IP Disclosures ({oricData.disclosures.length})</p>
+                    <div className="space-y-3">
+                      {oricData.disclosures.map((d) => (
+                        <div key={d.id} className="p-4 rounded-xl border border-gray-100 hover:border-amber-100 hover:bg-amber-50/20 transition-all">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <p className="font-semibold text-gray-900 text-sm">{d.title}</p>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 shrink-0">{d.scope}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                            {d.leadInventor && <span>Inventor: {d.leadInventor}</span>}
+                            {d.ipCategory && <span>{d.ipCategory}</span>}
+                            {d.developmentStatus && <span>{d.developmentStatus}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {oricData.licensing.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">IP Licensing ({oricData.licensing.length})</p>
+                    <div className="space-y-3">
+                      {oricData.licensing.map((l) => (
+                        <div key={l.id} className="p-4 rounded-xl border border-gray-100 hover:border-amber-100 hover:bg-amber-50/20 transition-all">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <p className="font-semibold text-gray-900 text-sm">{l.title}</p>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 shrink-0">{l.scope}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                            {l.leadInventor && <span>Inventor: {l.leadInventor}</span>}
+                            {l.ipCategory && <span>{l.ipCategory}</span>}
+                            {l.licenseeName && <span>Licensee: {l.licenseeName}</span>}
+                            {l.negotiationStatus && <span>{l.negotiationStatus}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Events ── */}
+            {oricData.events.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="events">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-rose-500 rounded-full" />
+                    Events &amp; Outreach
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-rose-50 text-rose-700">{oricData.events.length} total</span>
+                </div>
+                <div className="space-y-3">
+                  {oricData.events.map((ev) => (
+                    <div key={ev.id} className="p-4 rounded-xl border border-gray-100 hover:border-rose-100 hover:bg-rose-50/20 transition-all">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="font-semibold text-gray-900 text-sm">{ev.title}</p>
+                        <div className="flex gap-1 shrink-0">
+                          {ev.category && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">{ev.category}</span>}
+                          {ev.arrangedOrParticipated && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{ev.arrangedOrParticipated}</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                        {ev.venue && <span>{ev.venue}</span>}
+                        {ev.eventDate && <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{new Date(ev.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                        {ev.participants && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{ev.participants} participants</span>}
+                        <span>{ev.scope}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Industrial Visits ── */}
+            {oricData.visits.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="visits">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+                    Industrial Visits
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-indigo-50 text-indigo-700">{oricData.visits.length} total</span>
+                </div>
+                <div className="space-y-3">
+                  {oricData.visits.map((v) => (
+                    <div key={v.id} className="p-4 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/20 transition-all">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="font-semibold text-gray-900 text-sm">{v.visitorName}</p>
+                        {v.visitType && <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">{v.visitType}</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                        {v.visitorOrg && <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{v.visitorOrg}</span>}
+                        {v.visitDate && <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{new Date(v.visitDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                        {v.departmentVisited && <span>{v.departmentVisited}</span>}
+                        {v.agenda && <span className="line-clamp-1">{v.agenda}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Policy Advocacy ── */}
+            {oricData.policies.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="policy">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900">
+                    <div className="w-1.5 h-6 bg-violet-500 rounded-full" />
+                    Policy Advocacy
+                  </h2>
+                  <span className="text-xs font-semibold rounded-full px-3 py-1 bg-violet-50 text-violet-700">{oricData.policies.length} total</span>
+                </div>
+                <div className="space-y-3">
+                  {oricData.policies.map((p) => (
+                    <div key={p.id} className="p-4 rounded-xl border border-gray-100 hover:border-violet-100 hover:bg-violet-50/20 transition-all">
+                      <p className="font-semibold text-gray-900 text-sm mb-1">{p.govtBody}</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+                        {p.areaAdvocated && <span>{p.areaAdvocated}</span>}
+                        {p.coalitionPartners && <span>Partners: {p.coalitionPartners}</span>}
+                        {p.advocacyTools && <span>{p.advocacyTools}</span>}
+                      </div>
+                      {p.brief && <p className="text-xs text-gray-500 mt-1.5 line-clamp-2">{p.brief}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
 

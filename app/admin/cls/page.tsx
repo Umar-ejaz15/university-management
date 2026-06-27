@@ -22,6 +22,7 @@ import {
   CalendarRange,
   ChevronDown,
 } from 'lucide-react';
+import { toast } from '@/lib/store/uiStore';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -79,9 +80,9 @@ function ApproveModal({ request, onClose, onConfirm, processing }: ApproveModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] px-6 py-4">
-          <h3 className="text-lg font-bold text-white">Approve Equipment Request</h3>
-          <p className="text-sm text-white/80 mt-0.5">Confirm loan approval for this request</p>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900">Approve Equipment Request</h3>
+          <p className="text-xs text-gray-400 mt-0.5">Confirm loan approval for this request</p>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
@@ -147,9 +148,9 @@ function RejectModal({ request, onClose, onConfirm, processing }: RejectModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4">
-          <h3 className="text-lg font-bold text-white">Reject Equipment Request</h3>
-          <p className="text-sm text-white/80 mt-0.5">Provide a reason for the teacher</p>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900">Reject Equipment Request</h3>
+          <p className="text-xs text-gray-400 mt-0.5">Provide a reason for the teacher</p>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 text-sm">
@@ -206,16 +207,13 @@ function ViewModal({ request, onClose }: { request: CLSRequest; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] px-6 py-4 flex items-start justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-lg font-bold text-white">Request Details</h3>
-            <p className="text-sm text-white/80 mt-0.5">Full information for this loan request</p>
+            <h3 className="text-base font-semibold text-gray-900">Request Details</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Full information for this loan request</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white mt-0.5 transition-colors"
-          >
-            <XCircle className="w-5 h-5" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <XCircle className="w-4 h-4 text-gray-500" />
           </button>
         </div>
         <div className="px-6 py-5 space-y-5">
@@ -322,11 +320,12 @@ export default function AdminCLSPage() {
       if (res.ok) {
         setApproveModal(null);
         invalidateCls();
+        toast.success('Request approved.');
       } else {
         const d = await res.json();
-        alert(d.error ?? 'Failed to approve request');
+        toast.error(d.error ?? 'Failed to approve request');
       }
-    } catch { alert('Failed to approve request'); }
+    } catch { toast.error('Failed to approve request'); }
     finally { setProcessing(null); }
   };
 
@@ -341,11 +340,12 @@ export default function AdminCLSPage() {
       if (res.ok) {
         setRejectModal(null);
         invalidateCls();
+        toast.success('Request rejected.');
       } else {
         const d = await res.json();
-        alert(d.error ?? 'Failed to reject request');
+        toast.error(d.error ?? 'Failed to reject request');
       }
-    } catch { alert('Failed to reject request'); }
+    } catch { toast.error('Failed to reject request'); }
     finally { setProcessing(null); }
   };
 
@@ -386,8 +386,8 @@ export default function AdminCLSPage() {
         <div className="px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2d6a4f] to-[#40916c] flex items-center justify-center shadow-lg shadow-[#2d6a4f]/20">
-                <FlaskConical className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center">
+                <FlaskConical className="w-5 h-5 text-[#2d6a4f]" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">CLS Management</h1>

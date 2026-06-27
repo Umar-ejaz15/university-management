@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * DELETE /api/admin/programs/[programId]
@@ -61,7 +62,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Program deleted successfully' });
   } catch (error) {
-    console.error('Error deleting program:', error);
+    logError('Error deleting program:', error);
     return NextResponse.json({ error: 'Failed to delete program' }, { status: 500 });
   }
 }
@@ -126,7 +127,7 @@ export async function PUT(
 
     return NextResponse.json({ message: 'Program updated successfully', program });
   } catch (error: any) {
-    console.error('Error updating program:', error);
+    logError('Error updating program:', error);
 
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Program not found' }, { status: 404 });

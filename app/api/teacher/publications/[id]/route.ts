@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -39,7 +40,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: 'Publication deleted' }, { status: 200 });
   } catch (error) {
-    console.error('Delete publication error:', error);
+    logError('Delete publication error:', error);
     return NextResponse.json({ error: 'Failed to delete publication' }, { status: 500 });
   }
 }
@@ -87,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ publication }, { status: 200 });
   } catch (error) {
-    console.error('Update publication error:', error);
+    logError('Update publication error:', error);
     return NextResponse.json({ error: 'Failed to update publication' }, { status: 500 });
   }
 }

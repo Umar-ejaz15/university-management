@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { adminActionLimiter, ADMIN_ACTION_LIMIT } from '@/lib/rate-limit';
 import { validateFacultyId } from '@/lib/validation';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
+import { parseBody, isParsed } from '@/lib/api';
+import { ApproveFacultySchema } from '@/lib/schemas';
 
 /**
  * PUT /api/admin/faculty/[id]/approve
@@ -69,9 +72,9 @@ export async function PUT(
       );
     }
 
-    // Get request body (optional notes)
-    const body = await request.json().catch(() => ({}));
-    const notes = body.notes || '';
+    // Get request body (optional notes) — validated by Zod
+    const body = await parseBody(request, ApproveFacultySchema).catch(() => null);
+    const notes = (body && isParsed(body) ? body.notes : '') || '';
 
     // Check if faculty exists
     const staff = await prisma.staff.findUnique({
@@ -133,7 +136,7 @@ export async function PUT(
       },
     });
   } catch (error) {
-    console.error('Error approving faculty:', error);
+    logError('Error approving faculty:', error);
     return NextResponse.json(
       { error: 'Failed to approve faculty' },
       { status: 500 }

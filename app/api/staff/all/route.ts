@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/staff/all
@@ -49,7 +50,7 @@ export async function GET() {
       total: staff.length,
     });
   } catch (error) {
-    console.error('Error fetching staff:', error);
+    logError('Error fetching staff:', error);
     return NextResponse.json(
       { error: 'Failed to fetch staff' },
       { status: 500 }

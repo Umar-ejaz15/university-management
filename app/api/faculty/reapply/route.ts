@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * POST /api/faculty/reapply
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error processing reapply:', error);
+    logError('Error processing reapply:', error);
     return NextResponse.json(
       { error: 'Failed to process reapplication' },
       { status: 500 }

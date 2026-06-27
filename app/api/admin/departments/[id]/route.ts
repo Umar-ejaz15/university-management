@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/departments/[id]
@@ -55,7 +56,7 @@ export async function GET(
 
     return NextResponse.json({ department });
   } catch (error) {
-    console.error('Error fetching department:', error);
+    logError('Error fetching department:', error);
     return NextResponse.json({ error: 'Failed to fetch department' }, { status: 500 });
   }
 }
@@ -154,7 +155,7 @@ export async function PUT(
 
     return NextResponse.json({ message: 'Department updated successfully', department });
   } catch (error: unknown) {
-    console.error('Error updating department:', error);
+    logError('Error updating department:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Department not found' }, { status: 404 });
@@ -230,7 +231,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Department deleted successfully' });
   } catch (error: unknown) {
-    console.error('Error deleting department:', error);
+    logError('Error deleting department:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2003') {
       return NextResponse.json(

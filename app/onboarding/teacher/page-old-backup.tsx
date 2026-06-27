@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Loader2, Check } from 'lucide-react';
+import { logError } from '@/lib/logger';
 
 interface Department {
   id: string;
@@ -67,7 +68,7 @@ export default function TeacherOnboarding() {
         setDepartments(data.departments);
       }
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      logError('Error fetching departments:', error);
     } finally {
       setLoading(false);
     }

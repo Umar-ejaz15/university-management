@@ -1,10 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret-change-in-production'
-);
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('JWT_SECRET environment variable is not set. Refusing to start with an insecure fallback.');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 const SALT_ROUNDS = 12;
 
@@ -50,18 +51,6 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   } catch {
     return null;
   }
-}
-
-/**
- * Get the current user from cookies (server-side)
- */
-export async function getCurrentUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('auth-token')?.value;
-
-  if (!token) return null;
-
-  return verifyToken(token);
 }
 
 /**

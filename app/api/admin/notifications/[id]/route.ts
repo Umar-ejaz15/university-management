@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function PATCH(
   _req: NextRequest,
@@ -17,7 +18,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Notification PATCH error:', error);
+    logError('Notification PATCH error:', error);
     return NextResponse.json({ error: 'Failed to mark notification' }, { status: 500 });
   }
 }

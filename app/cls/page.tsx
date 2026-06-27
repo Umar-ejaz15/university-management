@@ -240,7 +240,7 @@ function RequestModal({ form: initialForm, onClose, onSubmit, submitting }: Requ
               placeholder="Describe why you need this equipment and how it will be used…"
               value={form.purpose}
               onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] resize-none transition"
+              className="desc-word-like w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] resize-none transition"
             />
           </div>
 

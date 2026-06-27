@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/faculties
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ faculties: facultiesWithStats });
   } catch (error) {
-    console.error('Error fetching faculties:', error);
+    logError('Error fetching faculties:', error);
     return NextResponse.json({ error: 'Failed to fetch faculties' }, { status: 500 });
   }
 }
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Faculty created successfully', faculty }, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error creating faculty:', error);
+    logError('Error creating faculty:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(

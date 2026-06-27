@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json({ courses }, { status: 200 });
   } catch (error) {
-    console.error('Get courses error:', error);
+    logError('Get courses error:', error);
     return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 });
   }
 }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ course }, { status: 201 });
   } catch (error) {
-    console.error('Create course error:', error);
+    logError('Create course error:', error);
     return NextResponse.json({ error: 'Failed to create course' }, { status: 500 });
   }
 }

@@ -176,7 +176,7 @@ function SubmitProjectModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
             <textarea rows={3} placeholder="Brief overview of the project..."
               value={form.description} onChange={(e) => patch({ description: e.target.value })}
-              className={`${inputCls} resize-none`} />
+              className={`desc-word-like ${inputCls} resize-none`} />
           </div>
 
           <div>
@@ -363,7 +363,7 @@ const SCOPE_OPTIONS = [
 ];
 
 const FUNDING_TYPE_OPTIONS = [
-  'HEC', 'PSF', 'International', 'Industry', 'Government', 'MNSUAM Self-Funded',
+  'HEC', 'PSF', 'PSRP', 'MNSUAM Funded', 'Industry', 'USAID', 'EU', 'Other International',
 ];
 
 const THEMATIC_AREA_OPTIONS = [
@@ -592,10 +592,7 @@ export default function PublicProjectsPage() {
     }
     if (fundingTypeFilter !== 'all') {
       const q = fundingTypeFilter.toLowerCase();
-      list = list.filter((p) =>
-        p.funderType?.toLowerCase().includes(q) ||
-        p.fundingAgency?.toLowerCase().includes(q)
-      );
+      list = list.filter((p) => p.fundingAgency?.toLowerCase().includes(q));
     }
     if (funderFilter !== 'all' && funderFilter.trim()) {
       const q = funderFilter.toLowerCase();

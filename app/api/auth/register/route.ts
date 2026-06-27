@@ -1,25 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword, isValidEmail, isStrongPassword, sanitizeInput } from '@/lib/auth';
+import { authLimiter, AUTH_LIMIT } from '@/lib/rate-limit';
+import { parseBody, isParsed } from '@/lib/api';
+import { RegisterSchema } from '@/lib/schemas';
+import { logError } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password, name, confirmPassword } = body;
-
-    // Validate required fields
-    if (!email || !password || !name || !confirmPassword) {
+    // Rate limit by IP to mitigate automated account creation.
+    // NOTE: in-memory limiter is per-instance; use Upstash Redis for multi-instance.
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = await authLimiter.check(`register:${ip}`, AUTH_LIMIT);
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 900) } }
       );
     }
+
+    const body = await parseBody(request, RegisterSchema);
+    if (!isParsed(body)) return body;
+    const { email, password, name } = body;
 
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email).toLowerCase();
     const sanitizedName = sanitizeInput(name);
 
-    // Validate email format
+    // Validate email format (defense-in-depth; Zod already validated)
     if (!isValidEmail(sanitizedEmail)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
@@ -27,15 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password match
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
+    // Validate password strength (Zod checks length+match; this adds complexity rules)
     const passwordCheck = isStrongPassword(password);
     if (!passwordCheck.valid) {
       return NextResponse.json(
@@ -56,20 +56,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent creation of additional admin accounts
-    // Admin accounts can only be created via seed script
-    if (body.role === 'ADMIN') {
-      const adminCount = await prisma.user.count({
-        where: { role: 'ADMIN' },
-      });
-
-      if (adminCount > 0) {
-        return NextResponse.json(
-          { error: 'Admin account already exists. Contact system administrator.' },
-          { status: 403 }
-        );
-      }
-    }
+    // Public registration always creates FACULTY accounts.
+    // (The original `body.role === 'ADMIN'` guard is removed because
+    //  RegisterSchema intentionally excludes role — it cannot be 'ADMIN'.)
 
     // Hash password with bcrypt
     const hashedPassword = await hashPassword(password);
@@ -96,7 +85,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Registration error:', error);
+    logError('Registration error:', error);
     return NextResponse.json(
       { error: 'An error occurred during registration' },
       { status: 500 }

@@ -12,8 +12,8 @@ import {
   ChevronRight,
   Briefcase,
   UserCheck,
-  Shield,
   CalendarDays,
+  Users,
 } from 'lucide-react';
 import { useLogout, useCurrentUser } from '@/lib/queries/auth';
 import { usePendingFaculty, useAdminStats } from '@/lib/queries/admin/stats';
@@ -39,8 +39,9 @@ function getNavItems(
       icon: UserCheck,
       badge: pendingApplications > 0 ? pendingApplications : undefined,
     },
-    { label: 'Faculty Members', href: '/admin/faculties',       icon: GraduationCap   },
+    { label: 'Faculties',        href: '/admin/faculties',       icon: GraduationCap   },
     { label: 'Departments',     href: '/admin/departments',     icon: Building2       },
+    { label: 'Faculty Members', href: '/admin/staff',           icon: Users           },
     { label: 'Labs',            href: '/admin/labs',            icon: FlaskConical    },
     {
       label: 'CLS Requests',
@@ -48,7 +49,6 @@ function getNavItems(
       icon: Briefcase,
       badge: pendingCls > 0 ? pendingCls : undefined,
     },
-    { label: 'Verifications',   href: '/admin/verifications',  icon: Shield          },
     { label: 'Events',          href: '/admin/events',          icon: CalendarDays    },
   ];
 }

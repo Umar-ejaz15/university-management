@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/departments
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ departments: departmentsWithStats });
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    logError('Error fetching departments:', error);
     return NextResponse.json({ error: 'Failed to fetch departments' }, { status: 500 });
   }
 }
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Department created successfully', department }, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error creating department:', error);
+    logError('Error creating department:', error);
 
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{
@@ -125,7 +126,7 @@ export async function GET(
 
     return NextResponse.json({ department: departmentData });
   } catch (error) {
-    console.error('Error fetching department:', error);
+    logError('Error fetching department:', error);
     return NextResponse.json(
       { error: 'Failed to fetch department' },
       { status: 500 }

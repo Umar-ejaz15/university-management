@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import RichTextEditor from '@/components/RichTextEditor';
 import {
   ArrowLeft, Plus, Trash2, Loader2, CheckCircle2, AlertCircle,
   BookOpen, Users, FlaskConical, Target, Calendar, Globe,
@@ -123,9 +124,11 @@ export default function ResearchProjectSubmitPage() {
   const [dateOfCirculation, setDateOfCirculation] = useState('');
   const [projectCategory, setProjectCategory] = useState('Research');
   const [projectType, setProjectType] = useState('Individual');
-  const [funderType, setFunderType] = useState('HEC');
+  const [fundingAgency, setFundingAgency] = useState('HEC');
+  const [fundingAgencyCustom, setFundingAgencyCustom] = useState('');
   const [funderLocation, setFunderLocation] = useState('National');
   const [funderCountry, setFunderCountry] = useState('');
+  const resolvedFundingAgency = fundingAgency === 'Other' ? fundingAgencyCustom.trim() : fundingAgency;
   const [submissionDeadline, setSubmissionDeadline] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -162,7 +165,7 @@ export default function ResearchProjectSubmitPage() {
           thematicArea: thematicArea.trim() || null,
           projectCategory,
           projectType,
-          funderType,
+          fundingAgency: resolvedFundingAgency || null,
           funderLocation,
           funderCountry: funderCountry.trim() || null,
           fundingCallTitle: fundingCallTitle.trim() || null,
@@ -255,10 +258,13 @@ export default function ResearchProjectSubmitPage() {
                   {['Individual', 'Group', 'Joint', 'International Collaboration'].map((o) => <option key={o}>{o}</option>)}
                 </select>
               </Field>
-              <Field label="Funder Type">
-                <select value={funderType} onChange={(e) => setFunderType(e.target.value)} className={select}>
-                  {['HEC', 'MNSUAM Funded', 'Industry', 'PSRP', 'PSF', 'USAID', 'EU', 'Other International', 'Other'].map((o) => <option key={o}>{o}</option>)}
+              <Field label="Funding Agency">
+                <select value={fundingAgency} onChange={(e) => setFundingAgency(e.target.value)} className={select}>
+                  {['HEC', 'PSF', 'PSRP', 'MNSUAM Funded', 'Industry', 'USAID', 'EU', 'Other International', 'Other'].map((o) => <option key={o}>{o}</option>)}
                 </select>
+                {fundingAgency === 'Other' && (
+                  <input value={fundingAgencyCustom} onChange={(e) => setFundingAgencyCustom(e.target.value)} placeholder="Enter funding agency name…" className={`${input} mt-2`} />
+                )}
               </Field>
               <Field label="Funder Location">
                 <select value={funderLocation} onChange={(e) => setFunderLocation(e.target.value)} className={select}>
@@ -317,22 +323,22 @@ export default function ResearchProjectSubmitPage() {
 
           {/* ── Section 12: Objectives & Work Plan ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <SectionHeader no="12" title="Project Objectives &amp; Work Plan" subtitle="Academic content — what the project will achieve and how" />
-            <div className="space-y-4">
+            <SectionHeader no="12" title="Project Objectives &amp; Work Plan" subtitle="Use the toolbar to add bold text, numbered lists, and bullet points" />
+            <div className="space-y-5">
               <Field label="Project Objectives" required>
-                <textarea rows={4} value={objectives} onChange={(e) => setObjectives(e.target.value)} placeholder="List the specific, measurable objectives of the project…" className={textarea} />
+                <RichTextEditor value={objectives} onChange={setObjectives} placeholder="List the specific, measurable objectives…  (tip: use 1. 2. 3. numbered list)" minHeight={130} />
               </Field>
               <Field label="Methodology / Work Plan">
-                <textarea rows={4} value={methodology} onChange={(e) => setMethodology(e.target.value)} placeholder="Describe the research methodology and work plan…" className={textarea} />
+                <RichTextEditor value={methodology} onChange={setMethodology} placeholder="Describe research phases, methods, and timeline…" minHeight={130} />
               </Field>
-              <Field label="Expected Outcomes &amp; Deliverables">
-                <textarea rows={3} value={outcomes} onChange={(e) => setOutcomes(e.target.value)} placeholder="Publications, patents, prototypes, trained human resources…" className={textarea} />
+              <Field label="Expected Outcomes">
+                <RichTextEditor value={outcomes} onChange={setOutcomes} placeholder="Publications, patents, prototypes, trained human resources…" minHeight={100} />
               </Field>
               <Field label="Target Beneficiaries">
-                <input value={targetBeneficiaries} onChange={(e) => setTargetBeneficiaries(e.target.value)} placeholder="Who will benefit from this research?" className={input} />
+                <RichTextEditor value={targetBeneficiaries} onChange={setTargetBeneficiaries} placeholder="Who will benefit from this research?" minHeight={80} />
               </Field>
               <Field label="Project Deliverables">
-                <textarea rows={2} value={deliverables} onChange={(e) => setDeliverables(e.target.value)} placeholder="List key deliverables…" className={textarea} />
+                <RichTextEditor value={deliverables} onChange={setDeliverables} placeholder="List key deliverables…" minHeight={100} />
               </Field>
             </div>
           </div>

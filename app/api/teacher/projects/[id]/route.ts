@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { parseBody, isParsed } from '@/lib/api';
+import { UpdateProjectSchema } from '@/lib/schemas';
+import { logError } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -39,7 +42,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: 'Project deleted' }, { status: 200 });
   } catch (error) {
-    console.error('Delete project error:', error);
+    logError('Delete project error:', error);
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 }
@@ -61,8 +64,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const body = await request.json();
-    const { title, description, startDate, endDate, studentCount } = body;
+    const body = await parseBody(request, UpdateProjectSchema);
+    if (!isParsed(body)) return body;
+    const data = body;
 
     // Verify ownership
     const existing = await prisma.project.findUnique({
@@ -76,19 +80,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const project = await prisma.project.update({
       where: { id },
       data: {
-        title: title?.trim() ?? existing.title,
-        description: description?.trim() ?? existing.description,
-        objectives: body.objectives !== undefined ? (body.objectives?.trim() || null) : existing.objectives,
-        methodology: body.methodology !== undefined ? (body.methodology?.trim() || null) : existing.methodology,
-        outcomes: body.outcomes !== undefined ? (body.outcomes?.trim() || null) : existing.outcomes,
-        collaborators: body.collaborators !== undefined ? (body.collaborators?.trim() || null) : existing.collaborators,
-        projectUrl: body.projectUrl !== undefined ? (body.projectUrl?.trim() || null) : existing.projectUrl,
-        projectKind: body.projectKind === 'INDUSTRY' || body.projectKind === 'RESEARCH' ? body.projectKind : existing.projectKind,
-        scope: body.scope === 'INTERNATIONAL' || body.scope === 'NATIONAL' ? body.scope : existing.scope,
-        startDate: startDate ? new Date(startDate) : existing.startDate,
-        endDate: endDate ? new Date(endDate) : existing.endDate,
-        studentCount: typeof studentCount === 'number' ? studentCount : existing.studentCount,
-        imageUrl: body.imageUrl !== undefined ? (body.imageUrl?.trim() || null) : existing.imageUrl,
+        title: data.title ?? existing.title,
+        description: data.description !== undefined ? (data.description ?? null) : existing.description,
+        objectives: data.objectives !== undefined ? (data.objectives ?? null) : existing.objectives,
+        methodology: data.methodology !== undefined ? (data.methodology ?? null) : existing.methodology,
+        outcomes: data.outcomes !== undefined ? (data.outcomes ?? null) : existing.outcomes,
+        collaborators: data.collaborators !== undefined ? (data.collaborators ?? null) : existing.collaborators,
+        projectUrl: data.projectUrl !== undefined ? (data.projectUrl ?? null) : existing.projectUrl,
+        projectKind: data.projectKind ?? existing.projectKind,
+        scope: data.scope ?? existing.scope,
+        startDate: data.startDate ? new Date(data.startDate) : existing.startDate,
+        endDate: data.endDate ? new Date(data.endDate) : existing.endDate,
+        studentCount: data.studentCount ?? existing.studentCount,
+        imageUrl: data.imageUrl !== undefined ? (data.imageUrl ?? null) : existing.imageUrl,
         // Editing a project sends it back through ORIC review.
         // Budget/funding fields are intentionally NOT writable here (admin-only).
         status: 'SUBMITTED',
@@ -99,7 +103,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ project }, { status: 200 });
   } catch (error) {
-    console.error('Update project error:', error);
+    logError('Update project error:', error);
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
 }

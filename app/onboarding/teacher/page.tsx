@@ -356,7 +356,7 @@ export default function TeacherOnboarding() {
               value={formData.specialization}
               onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
               rows={5}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm resize-none"
+              className="desc-word-like w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#2d6a4f] focus:ring-4 focus:ring-[#2d6a4f]/10 outline-none transition-all text-gray-800 placeholder:text-gray-400 text-sm resize-none"
               placeholder="e.g., Machine Learning, Artificial Intelligence, Data Science..."
             />
 

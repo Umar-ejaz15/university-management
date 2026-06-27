@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json({ publications }, { status: 200 });
   } catch (error) {
-    console.error('Get publications error:', error);
+    logError('Get publications error:', error);
     return NextResponse.json({ error: 'Failed to fetch publications' }, { status: 500 });
   }
 }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ publication }, { status: 201 });
   } catch (error) {
-    console.error('Create publication error:', error);
+    logError('Create publication error:', error);
     return NextResponse.json({ error: 'Failed to create publication' }, { status: 500 });
   }
 }

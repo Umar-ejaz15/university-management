@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAdminLabs } from '@/lib/queries/admin/labs';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/lib/store/uiStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,13 +71,10 @@ function LabModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] px-6 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-white">{initial ? 'Edit Lab' : 'Add New Lab'}</h3>
-            <p className="text-sm text-white/70 mt-0.5">Fill in the lab details below</p>
-          </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900">{initial ? 'Edit Lab' : 'Add New Lab'}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
@@ -106,7 +104,7 @@ function LabModal({
               onChange={(e) => set('description', e.target.value)}
               rows={3}
               placeholder="Brief description of the lab and its purpose…"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] outline-none resize-none transition-colors"
+              className="desc-word-like w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#2d6a4f]/30 focus:border-[#2d6a4f] outline-none resize-none transition-colors"
             />
           </div>
         </div>
@@ -157,13 +155,13 @@ function EquipmentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-lg font-bold text-white">{initial ? 'Edit Equipment' : 'Add Equipment'}</h3>
-            <p className="text-sm text-white/70 mt-0.5">Lab: {labName}</p>
+            <h3 className="text-base font-semibold text-gray-900">{initial ? 'Edit Equipment' : 'Add Equipment'}</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Lab: {labName}</p>
           </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
@@ -279,11 +277,12 @@ export default function AdminLabsPage() {
       if (res.ok) {
         setLabModal({ open: false });
         queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
+        toast.success(labModal.lab ? 'Lab updated.' : 'Lab created.');
       } else {
         const d = await res.json();
-        alert(d.error || 'Failed to save lab');
+        toast.error(d.error || 'Failed to save lab');
       }
-    } catch { alert('Failed to save lab'); }
+    } catch { toast.error('Failed to save lab'); }
     finally { setSaving(false); }
   };
 
@@ -291,9 +290,9 @@ export default function AdminLabsPage() {
     if (!confirm(`Delete "${name}" and all its equipment? This cannot be undone.`)) return;
     try {
       const res = await fetch(`/api/admin/labs/${id}`, { method: 'DELETE' });
-      if (res.ok) queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
-      else alert('Failed to delete lab');
-    } catch { alert('Failed to delete lab'); }
+      if (res.ok) { queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] }); toast.success('Lab deleted.'); }
+      else toast.error('Failed to delete lab');
+    } catch { toast.error('Failed to delete lab'); }
   };
 
   // ── Equipment CRUD ────────────────────────────────────────────────────────
@@ -314,11 +313,12 @@ export default function AdminLabsPage() {
       if (res.ok) {
         setEqModal(null);
         queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
+        toast.success(eqModal.eq ? 'Equipment updated.' : 'Equipment added.');
       } else {
         const d = await res.json();
-        alert(d.error || 'Failed to save equipment');
+        toast.error(d.error || 'Failed to save equipment');
       }
-    } catch { alert('Failed to save equipment'); }
+    } catch { toast.error('Failed to save equipment'); }
     finally { setSaving(false); }
   };
 
@@ -326,9 +326,9 @@ export default function AdminLabsPage() {
     if (!confirm(`Delete "${eqName}"?`)) return;
     try {
       const res = await fetch(`/api/admin/labs/${labId}/equipment/${eqId}`, { method: 'DELETE' });
-      if (res.ok) queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] });
-      else alert('Failed to delete equipment');
-    } catch { alert('Failed to delete equipment'); }
+      if (res.ok) { queryClient.invalidateQueries({ queryKey: ['admin', 'labs'] }); toast.success('Equipment deleted.'); }
+      else toast.error('Failed to delete equipment');
+    } catch { toast.error('Failed to delete equipment'); }
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────
@@ -345,8 +345,8 @@ export default function AdminLabsPage() {
         <div className="px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2d6a4f] to-[#40916c] flex items-center justify-center shadow-lg shadow-[#2d6a4f]/20">
-                <FlaskConical className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center">
+                <FlaskConical className="w-5 h-5 text-[#2d6a4f]" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Labs Management</h1>
@@ -440,8 +440,8 @@ export default function AdminLabsPage() {
                 <div key={lab.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   {/* Lab header */}
                   <div className="p-5 flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2d6a4f] to-[#40916c] flex items-center justify-center flex-shrink-0 shadow-md shadow-[#2d6a4f]/20">
-                      <FlaskConical className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 rounded-xl bg-[#2d6a4f]/10 flex items-center justify-center flex-shrink-0">
+                      <FlaskConical className="w-6 h-6 text-[#2d6a4f]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-start gap-2">
@@ -455,7 +455,7 @@ export default function AdminLabsPage() {
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{lab.labInCharge}</span>
                       </div>
                       {lab.description && (
-                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{lab.description}</p>
+                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed whitespace-pre-wrap">{lab.description}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * POST /api/admin/departments/[id]/programs
@@ -87,7 +88,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating program:', error);
+    logError('Error creating program:', error);
     return NextResponse.json({ error: 'Failed to create program' }, { status: 500 });
   }
 }

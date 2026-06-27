@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * PUT /api/admin/cls/requests/[id]/reject
@@ -109,7 +110,7 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error rejecting equipment request:', error);
+    logError('Error rejecting equipment request:', error);
     return NextResponse.json(
       { error: 'Failed to reject equipment request' },
       { status: 500 }

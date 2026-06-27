@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/cls/labs
@@ -39,7 +40,7 @@ export async function GET() {
 
     return NextResponse.json({ labs: labsWithAvailability }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching labs:', error);
+    logError('Error fetching labs:', error);
     return NextResponse.json(
       { error: 'Failed to fetch labs' },
       { status: 500 }

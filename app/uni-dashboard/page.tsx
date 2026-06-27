@@ -39,6 +39,7 @@ export default async function UniDashboard() {
     pubCountByDept,
     projCountByDept,
     studentsByDeptRaw,
+    staffDeptMap,
   ] = await Promise.all([
     prisma.staff.count({ where: { status: 'APPROVED' } }),
     prisma.project.count(),
@@ -75,13 +76,15 @@ export default async function UniDashboard() {
       where: { status: 'APPROVED' },
       _sum: { studentsSupervised: true },
     }),
+    // Staff→department map for pub/proj aggregation (moved into Promise.all
+    // so it runs concurrently with the other queries instead of after them).
+    prisma.staff.findMany({
+      where: { status: 'APPROVED' },
+      select: { id: true, departmentId: true },
+    }),
   ]);
 
   // Build staffId → departmentId map for pub/proj aggregation
-  const staffDeptMap = await prisma.staff.findMany({
-    where: { status: 'APPROVED' },
-    select: { id: true, departmentId: true },
-  });
   const staffToDept: Record<string, string> = {};
   for (const s of staffDeptMap) staffToDept[s.id] = s.departmentId;
 

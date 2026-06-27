@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
+import { logError } from '@/lib/logger';
 import {
   Mail,
   Lock,
@@ -73,7 +74,7 @@ function LoginForm() {
         router.push("/uni-dashboard");
       }
     } catch (err) {
-      console.error(err);
+      logError('Login form error', err);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

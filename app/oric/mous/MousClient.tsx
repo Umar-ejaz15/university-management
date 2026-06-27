@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Handshake, ArrowLeft, MapPin, Search, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { useOricMousFilterStore } from '@/lib/store/oricFiltersStore';
 import OricRecordCard from '@/components/oric/OricRecordCard';
 
 type Mou = {
@@ -67,12 +68,9 @@ function Sidebar({ filters, active, toggle, search, setSearch, onClear, result, 
 }
 
 export default function MousClient({ mous }: { mous: Mou[] }) {
-  const [search, setSearch] = useState('');
-  const [active, setActive] = useState<Record<string, string[]>>({});
-  const [mob, setMob] = useState(false);
+  const { search, active, mob, setSearch, toggleFilter, setMob, clearAll } = useOricMousFilterStore();
 
-  const toggle = (k: string, v: string) => setActive(p => ({ ...p, [k]: (p[k] ?? []).includes(v) ? (p[k] ?? []).filter(x => x !== v) : [...(p[k] ?? []), v] }));
-  const clearAll = () => { setActive({}); setSearch(''); };
+  const toggle = (k: string, v: string) => toggleFilter(k, v);
   const q = search.toLowerCase();
   const uniq = (arr: (string | null | undefined)[]) => [...new Set(arr.filter(Boolean))] as string[];
 
@@ -134,7 +132,7 @@ export default function MousClient({ mous }: { mous: Mou[] }) {
 
       <div className="px-6 sm:px-10 py-8">
         <div className="lg:hidden mb-4">
-          <button onClick={() => setMob(p => !p)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
+          <button onClick={() => setMob(!mob)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
             <SlidersHorizontal className="w-4 h-4" /> Filters {active_count > 0 && <span className="ml-1 px-1.5 py-0.5 bg-[#1a3d2b] text-white rounded-full text-[10px]">{active_count}</span>}
           </button>
           {mob && <div className="mt-3 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm"><Sidebar filters={filters} active={active} toggle={toggle} search={search} setSearch={setSearch} onClear={clearAll} result={filtered.length} total={mous.length} /></div>}

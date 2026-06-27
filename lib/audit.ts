@@ -1,5 +1,6 @@
 import { prisma } from './db';
 import type { Prisma } from '@prisma/client';
+import { logError } from '@/lib/logger';
 
 export interface AuditLogEntry {
   action: string;
@@ -41,7 +42,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
     });
   } catch (error) {
     // Log error but don't throw - audit logging should not break main operations
-    console.error('Failed to create audit log:', error);
+    logError('Failed to create audit log:', error);
   }
 }
 

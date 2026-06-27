@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUIStore } from '@/lib/store/uiStore';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import GlobalTextareaAutoGrow from '@/components/GlobalTextareaAutoGrow';
 
 // ─── Toast Renderer ───────────────────────────────────────────────────────────
 
@@ -59,8 +60,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             staleTime: 2 * 60 * 1000,
             // Keep unused data in cache for 5 minutes
             gcTime: 5 * 60 * 1000,
-            // Don't hammer server on every tab switch
-            refetchOnWindowFocus: false,
+            // Refetch stale data when user returns to the tab
+            refetchOnWindowFocus: true,
             // One automatic retry on failure
             retry: 1,
           },
@@ -71,6 +72,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <GlobalTextareaAutoGrow />
       <ToastContainer />
     </QueryClientProvider>
   );

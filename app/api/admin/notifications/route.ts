@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
 
     return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    console.error('Notifications GET error:', error);
+    logError('Notifications GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
   }
 }
@@ -49,7 +50,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Notifications PATCH error:', error);
+    logError('Notifications PATCH error:', error);
     return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
   }
 }

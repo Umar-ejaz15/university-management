@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/db';
 import { RequestStatus } from '@prisma/client';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/cls/requests
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error fetching all equipment requests:', error);
+    logError('Error fetching all equipment requests:', error);
     return NextResponse.json(
       { error: 'Failed to fetch equipment requests' },
       { status: 500 }

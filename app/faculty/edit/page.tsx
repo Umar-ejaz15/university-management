@@ -7,6 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
+import AutoGrowTextarea from '@/components/oric/AutoGrowTextarea';
+import RichTextEditor from '@/components/RichTextEditor';
 import { useTeacherProfile } from '@/lib/queries/teacher/profile';
 import { useDepartments } from '@/lib/queries/departments';
 import {
@@ -193,20 +195,29 @@ function OricAdminOnlyBanner() {
   );
 }
 
+// Shared canonical initial state for project forms (maps 1-to-1 with Prisma Project fields)
+const BLANK_PROJECT = {
+  title: '', description: '', objectives: '', methodology: '', outcomes: '',
+  deliverables: '', targetBeneficiaries: '', collaborators: '',
+  projectType: '', thematicArea: '', projectCategory: '',
+  funderLocation: '', financialYear: '',
+  scope: 'NATIONAL', startDate: '', endDate: '',
+  budgetAmount: '', currency: 'PKR',
+  fundingAgency: '', fundingAgencyCustom: '',
+  sponsoringAgency: '', sponsorCountry: '', counterpartName: '',
+};
+
 function OricResearchForm({ inputCls, labelCls: _lc, setSuccess, setError }: OricFormProps) {
   const ic = inputCls;
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({
-    title: '', thematicArea: '', projectType: 'Research', scope: 'National',
-    startDate: '', endDate: '', financialYear: '', totalBudget: '',
-    description: '', objectives: '', methodology: '', outcomes: '',
-    sponsoringAgency: '', sponsorCountry: '', funderType: '',
-    collaborators: '', deliverables: '', targetBeneficiaries: '',
-  });
-  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({ ...BLANK_PROJECT });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = async () => {
-    if (!f.title.trim()) return setError('Project title is required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Project title is required.'); return; }
     setBusy(true);
     try {
       const res = await fetch('/api/teacher/projects', {
@@ -214,65 +225,147 @@ function OricResearchForm({ inputCls, labelCls: _lc, setSuccess, setError }: Ori
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: f.title, description: f.description, projectKind: 'RESEARCH',
-          scope: f.scope.toUpperCase(), objectives: f.objectives,
-          methodology: f.methodology, outcomes: f.outcomes,
+          scope: f.scope, objectives: f.objectives, methodology: f.methodology,
+          outcomes: f.outcomes, deliverables: f.deliverables,
+          targetBeneficiaries: f.targetBeneficiaries, collaborators: f.collaborators,
           startDate: f.startDate || null, endDate: f.endDate || null,
-          thematicArea: f.thematicArea, financialYear: f.financialYear,
+          thematicArea: f.thematicArea, projectType: f.projectType,
+          projectCategory: f.projectCategory,
+          funderLocation: f.funderLocation, financialYear: f.financialYear,
+          budgetAmount: f.budgetAmount || null, currency: f.currency,
+          fundingAgency: (f.fundingAgency === 'Other' ? f.fundingAgencyCustom : f.fundingAgency) || null,
           sponsoringAgency: f.sponsoringAgency, sponsorCountry: f.sponsorCountry,
-          funderType: f.funderType, deliverables: f.deliverables,
-          targetBeneficiaries: f.targetBeneficiaries, budgetAmount: f.totalBudget || null,
+          counterpartName: f.counterpartName,
         }),
       });
       const data = await res.json();
-      if (!res.ok) return setError(data.error || 'Submission failed');
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
       setSuccess('Research project submitted to ORIC for review.');
-    } catch { setError('Network error'); }
+      setF({ ...BLANK_PROJECT });
+    } catch { setFormError('Network error. Please try again.'); }
     finally { setBusy(false); }
   };
 
   return (
-    <div className="space-y-5">
-      {/* Submission outline */}
-      <OricSectionHeader title="Submission Outline" />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+
+      {/* ── Identification */}
+      <OricSectionHeader title="Project Identification" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2"><OricFieldRow label="Project Title" required><input value={f.title} onChange={e => set('title', e.target.value)} placeholder="Full project title" className={ic} /></OricFieldRow></div>
-        <OricFieldRow label="Thematic Area"><select value={f.thematicArea} onChange={e => set('thematicArea', e.target.value)} className={ic}><option value="">Select…</option>{['Agriculture & Food Security','Water & Environment','Health & Biotechnology','Engineering & Technology','Social Sciences','Climate Change','Other'].map(t=><option key={t}>{t}</option>)}</select></OricFieldRow>
-        <OricFieldRow label="Project Type"><select value={f.projectType} onChange={e => set('projectType', e.target.value)} className={ic}><option>Research</option><option>Development</option><option>Contracted Research</option><option>Collaborative</option></select></OricFieldRow>
-        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
-        <OricFieldRow label="Financial Year"><select value={f.financialYear} onChange={e => set('financialYear', e.target.value)} className={ic}><option value="">Select…</option>{['2024-25','2023-24','2022-23','2021-22'].map(y=><option key={y}>{y}</option>)}</select></OricFieldRow>
-        <OricFieldRow label="Start Date" required><input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="End Date"><input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Requested Budget (PKR)"><input type="number" min="0" value={f.totalBudget} onChange={e => set('totalBudget', e.target.value)} placeholder="e.g. 4200000" className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2">
+          <OricFieldRow label="Project Title" required>
+            <input value={f.title} onChange={e => set('title', e.target.value)} placeholder="Full project title" className={ic} />
+          </OricFieldRow>
+        </div>
+        <OricFieldRow label="Project Type">
+          <select value={f.projectType} onChange={e => set('projectType', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            <option>Research</option><option>Development</option>
+            <option>Contracted Research</option><option>Collaborative</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Project Category">
+          <input value={f.projectCategory} onChange={e => set('projectCategory', e.target.value)} placeholder="e.g. Interdisciplinary, Applied" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Thematic Area">
+          <select value={f.thematicArea} onChange={e => set('thematicArea', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['Agriculture & Food Security','Water & Environment','Health & Biotechnology','Engineering & Technology','Social Sciences','Climate Change','Other'].map(t => <option key={t}>{t}</option>)}
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Scope">
+          <select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}>
+            <option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Financial Year">
+          <select value={f.financialYear} onChange={e => set('financialYear', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['2025-26','2024-25','2023-24','2022-23','2021-22'].map(y => <option key={y}>{y}</option>)}
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Start Date" required>
+          <input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="End Date">
+          <input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} />
+        </OricFieldRow>
       </div>
 
-      {/* Description fields */}
+      {/* ── Project Content */}
       <OricSectionHeader title="Project Details" />
       <div className="space-y-4">
-        <OricFieldRow label="Description / Abstract" required><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Brief description of the project…" className={`${ic} resize-none`} /></OricFieldRow>
+        <OricFieldRow label="Description / Abstract" required>
+          <AutoGrowTextarea value={f.description} onChange={e => set('description', e.target.value)} placeholder="Brief description of the project…" className={ic} />
+        </OricFieldRow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <OricFieldRow label="Objectives"><textarea rows={3} value={f.objectives} onChange={e => set('objectives', e.target.value)} placeholder="List the key objectives…" className={`${ic} resize-none`} /></OricFieldRow>
-          <OricFieldRow label="Methodology"><textarea rows={3} value={f.methodology} onChange={e => set('methodology', e.target.value)} placeholder="Describe the methodology…" className={`${ic} resize-none`} /></OricFieldRow>
-          <OricFieldRow label="Expected Outcomes"><textarea rows={2} value={f.outcomes} onChange={e => set('outcomes', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow>
-          <OricFieldRow label="Deliverables"><textarea rows={2} value={f.deliverables} onChange={e => set('deliverables', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow>
-          <OricFieldRow label="Target Beneficiaries"><input value={f.targetBeneficiaries} onChange={e => set('targetBeneficiaries', e.target.value)} className={ic} /></OricFieldRow>
+          <OricFieldRow label="Objectives">
+            <RichTextEditor value={f.objectives} onChange={v => set('objectives', v)} placeholder="List the key objectives…" minHeight={110} />
+          </OricFieldRow>
+          <OricFieldRow label="Methodology">
+            <RichTextEditor value={f.methodology} onChange={v => set('methodology', v)} placeholder="Describe the methodology…" minHeight={110} />
+          </OricFieldRow>
+          <OricFieldRow label="Expected Outcomes">
+            <RichTextEditor value={f.outcomes} onChange={v => set('outcomes', v)} minHeight={100} />
+          </OricFieldRow>
+          <OricFieldRow label="Deliverables">
+            <RichTextEditor value={f.deliverables} onChange={v => set('deliverables', v)} minHeight={100} />
+          </OricFieldRow>
+          <div className="sm:col-span-2">
+            <OricFieldRow label="Target Beneficiaries">
+              <RichTextEditor value={f.targetBeneficiaries} onChange={v => set('targetBeneficiaries', v)} minHeight={80} />
+            </OricFieldRow>
+          </div>
         </div>
       </div>
 
-      {/* Sponsor / funder */}
-      <OricSectionHeader title="Sponsoring Agency / Funder" />
+      {/* ── Funding & Budget */}
+      <OricSectionHeader title="Funding & Budget" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <OricFieldRow label="Sponsoring Agency"><input value={f.sponsoringAgency} onChange={e => set('sponsoringAgency', e.target.value)} placeholder="e.g. HEC, PSF, USDA" className={ic} /></OricFieldRow>
-        <OricFieldRow label="Sponsor Country"><input value={f.sponsorCountry} onChange={e => set('sponsorCountry', e.target.value)} placeholder="e.g. Pakistan" className={ic} /></OricFieldRow>
-        <OricFieldRow label="Funder Type"><select value={f.funderType} onChange={e => set('funderType', e.target.value)} className={ic}><option value="">Select…</option><option>HEC</option><option>PSF</option><option>International</option><option>Industry</option><option>Government</option><option>MNSUAM</option></select></OricFieldRow>
+        <OricFieldRow label="Requested Budget">
+          <input type="number" min="0" value={f.budgetAmount} onChange={e => set('budgetAmount', e.target.value)} placeholder="e.g. 4200000" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Currency">
+          <select value={f.currency} onChange={e => set('currency', e.target.value)} className={ic}>
+            <option>PKR</option><option>USD</option><option>EUR</option><option>GBP</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Funding Agency">
+          <select value={f.fundingAgency} onChange={e => set('fundingAgency', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['HEC', 'PSF', 'PSRP', 'MNSUAM Funded', 'Industry', 'USAID', 'EU', 'Other International', 'Other'].map(o => <option key={o}>{o}</option>)}
+          </select>
+          {f.fundingAgency === 'Other' && (
+            <input value={f.fundingAgencyCustom ?? ''} onChange={e => set('fundingAgencyCustom', e.target.value)} placeholder="Enter funding agency name…" className={`${ic} mt-2`} />
+          )}
+        </OricFieldRow>
+        <OricFieldRow label="Funder Location / Country">
+          <input value={f.funderLocation} onChange={e => set('funderLocation', e.target.value)} className={ic} />
+        </OricFieldRow>
       </div>
 
-      {/* Collaborators */}
+      {/* ── Sponsor / Industry Partner */}
+      <OricSectionHeader title="Sponsor / Industry Partner" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <OricFieldRow label="Sponsoring Agency">
+          <input value={f.sponsoringAgency} onChange={e => set('sponsoringAgency', e.target.value)} placeholder="e.g. USDA, USAID" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Sponsor Country">
+          <input value={f.sponsorCountry} onChange={e => set('sponsorCountry', e.target.value)} placeholder="e.g. USA" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Counterpart Name">
+          <input value={f.counterpartName} onChange={e => set('counterpartName', e.target.value)} className={ic} />
+        </OricFieldRow>
+      </div>
+
+      {/* ── Collaborators */}
       <OricSectionHeader title="Collaborators" />
-      <OricFieldRow label="Collaborators / Co-Investigators (name, institution)">
-        <textarea rows={3} value={f.collaborators} onChange={e => set('collaborators', e.target.value)} placeholder="One per line: Dr. Name, University Name" className={`${ic} resize-none`} />
+      <OricFieldRow label="Collaborators / Co-Investigators">
+        <RichTextEditor value={f.collaborators} onChange={v => set('collaborators', v)} placeholder="One per line: Dr. Name, Institution" minHeight={90} />
       </OricFieldRow>
 
-      {/* Post-award — ORIC only */}
+      {/* ── Post-Award (ORIC only, read-only for faculty) */}
       <OricSectionHeader title="Post-Award Details" sub="Managed by ORIC after approval" />
       <OricAdminOnlyBanner />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-60 pointer-events-none">
@@ -280,147 +373,623 @@ function OricResearchForm({ inputCls, labelCls: _lc, setSuccess, setError }: Ori
         <OricFieldRow label="Funding Agency Ref No"><input disabled placeholder="e.g. HEC/R&D/2024/001" className={ic} /></OricFieldRow>
         <OricFieldRow label="ORIC Overhead Amount (PKR)"><input type="number" disabled placeholder="0.00" className={ic} /></OricFieldRow>
         <OricFieldRow label="Overhead Status"><input disabled value="Set by ORIC" readOnly className={ic} /></OricFieldRow>
+        <OricFieldRow label="Project File No."><input disabled placeholder="Set by ORIC" className={ic} /></OricFieldRow>
         <OricFieldRow label="Special Conditions"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
         <OricFieldRow label="Remarks"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
       </div>
 
       <div className="flex justify-end pt-4 border-t border-gray-100">
-        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {busy ? 'Submitting…' : 'Submit to ORIC'}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 
-function OricSimpleForm({ kind, inputCls, setSuccess, setError }: OricFormProps & { kind: string }) {
+function OricIndustryForm({ inputCls, setSuccess, setError }: OricFormProps) {
   const ic = inputCls;
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ title: '', organisation: '', startDate: '', endDate: '', description: '', value: '', outcomes: '' });
-  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({ ...BLANK_PROJECT });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = async () => {
-    if (!f.title.trim()) return setError('Title is required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Project title is required.'); return; }
     setBusy(true);
     try {
       const res = await fetch('/api/teacher/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: f.title, description: f.description, projectKind: 'INDUSTRY',
-          scope: 'NATIONAL', startDate: f.startDate || null, endDate: f.endDate || null,
-          outcomes: f.outcomes, fundingAgency: f.organisation, budgetAmount: f.value || null,
+          scope: f.scope, objectives: f.objectives, methodology: f.methodology,
+          outcomes: f.outcomes, deliverables: f.deliverables,
+          targetBeneficiaries: f.targetBeneficiaries, collaborators: f.collaborators,
+          startDate: f.startDate || null, endDate: f.endDate || null,
+          thematicArea: f.thematicArea, projectType: f.projectType,
+          projectCategory: f.projectCategory,
+          funderLocation: f.funderLocation, financialYear: f.financialYear,
+          budgetAmount: f.budgetAmount || null, currency: f.currency,
+          fundingAgency: (f.fundingAgency === 'Other' ? f.fundingAgencyCustom : f.fundingAgency) || null,
+          sponsoringAgency: f.sponsoringAgency, sponsorCountry: f.sponsorCountry,
+          counterpartName: f.counterpartName,
         }),
       });
       const data = await res.json();
-      if (!res.ok) return setError(data.error || 'Submission failed');
-      setSuccess(`${kind} submitted successfully.`);
-    } catch { setError('Network error'); }
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Industry project submitted successfully. Pending ORIC review.');
+      setF({ ...BLANK_PROJECT });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  // identical layout to OricResearchForm — same canonical fields, different projectKind
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+
+      <OricSectionHeader title="Project Identification" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
+          <OricFieldRow label="Project Title" required>
+            <input value={f.title} onChange={e => set('title', e.target.value)} placeholder="Industry / sponsored project title" className={ic} />
+          </OricFieldRow>
+        </div>
+        <OricFieldRow label="Project Type">
+          <select value={f.projectType} onChange={e => set('projectType', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            <option>Industry Sponsored</option><option>Contracted Research</option>
+            <option>Technology Transfer</option><option>Collaborative</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Project Category">
+          <input value={f.projectCategory} onChange={e => set('projectCategory', e.target.value)} placeholder="e.g. Applied, Consultancy" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Thematic Area">
+          <select value={f.thematicArea} onChange={e => set('thematicArea', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['Agriculture & Food Security','Water & Environment','Health & Biotechnology','Engineering & Technology','Social Sciences','Climate Change','Other'].map(t => <option key={t}>{t}</option>)}
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Scope">
+          <select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}>
+            <option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Financial Year">
+          <select value={f.financialYear} onChange={e => set('financialYear', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['2025-26','2024-25','2023-24','2022-23','2021-22'].map(y => <option key={y}>{y}</option>)}
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Start Date" required>
+          <input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="End Date">
+          <input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} />
+        </OricFieldRow>
+      </div>
+
+      <OricSectionHeader title="Project Details" />
+      <div className="space-y-4">
+        <OricFieldRow label="Description / Abstract" required>
+          <AutoGrowTextarea value={f.description} onChange={e => set('description', e.target.value)} placeholder="Brief description of the project…" className={ic} />
+        </OricFieldRow>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <OricFieldRow label="Objectives">
+            <RichTextEditor value={f.objectives} onChange={v => set('objectives', v)} minHeight={110} />
+          </OricFieldRow>
+          <OricFieldRow label="Methodology">
+            <RichTextEditor value={f.methodology} onChange={v => set('methodology', v)} minHeight={110} />
+          </OricFieldRow>
+          <OricFieldRow label="Expected Outcomes">
+            <RichTextEditor value={f.outcomes} onChange={v => set('outcomes', v)} minHeight={100} />
+          </OricFieldRow>
+          <OricFieldRow label="Deliverables">
+            <RichTextEditor value={f.deliverables} onChange={v => set('deliverables', v)} minHeight={100} />
+          </OricFieldRow>
+          <div className="sm:col-span-2">
+            <OricFieldRow label="Target Beneficiaries">
+              <RichTextEditor value={f.targetBeneficiaries} onChange={v => set('targetBeneficiaries', v)} minHeight={80} />
+            </OricFieldRow>
+          </div>
+        </div>
+      </div>
+
+      <OricSectionHeader title="Funding & Budget" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <OricFieldRow label="Budget Amount">
+          <input type="number" min="0" value={f.budgetAmount} onChange={e => set('budgetAmount', e.target.value)} placeholder="e.g. 5000000" className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Currency">
+          <select value={f.currency} onChange={e => set('currency', e.target.value)} className={ic}>
+            <option>PKR</option><option>USD</option><option>EUR</option><option>GBP</option>
+          </select>
+        </OricFieldRow>
+        <OricFieldRow label="Funding Agency">
+          <select value={f.fundingAgency} onChange={e => set('fundingAgency', e.target.value)} className={ic}>
+            <option value="">Select…</option>
+            {['HEC', 'PSF', 'PSRP', 'MNSUAM Funded', 'Industry', 'USAID', 'EU', 'Other International', 'Other'].map(o => <option key={o}>{o}</option>)}
+          </select>
+          {f.fundingAgency === 'Other' && (
+            <input value={f.fundingAgencyCustom ?? ''} onChange={e => set('fundingAgencyCustom', e.target.value)} placeholder="Enter funding agency name…" className={`${ic} mt-2`} />
+          )}
+        </OricFieldRow>
+        <OricFieldRow label="Funder Location / Country">
+          <input value={f.funderLocation} onChange={e => set('funderLocation', e.target.value)} className={ic} />
+        </OricFieldRow>
+      </div>
+
+      <OricSectionHeader title="Sponsor / Industry Partner" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <OricFieldRow label="Sponsoring Agency">
+          <input value={f.sponsoringAgency} onChange={e => set('sponsoringAgency', e.target.value)} className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Sponsor Country">
+          <input value={f.sponsorCountry} onChange={e => set('sponsorCountry', e.target.value)} className={ic} />
+        </OricFieldRow>
+        <OricFieldRow label="Counterpart Name">
+          <input value={f.counterpartName} onChange={e => set('counterpartName', e.target.value)} className={ic} />
+        </OricFieldRow>
+      </div>
+
+      <OricSectionHeader title="Collaborators" />
+      <OricFieldRow label="Collaborators / Co-Investigators">
+        <RichTextEditor value={f.collaborators} onChange={v => set('collaborators', v)} placeholder="One per line: Dr. Name, Institution" minHeight={90} />
+      </OricFieldRow>
+
+      <OricSectionHeader title="Post-Award Details" sub="Managed by ORIC after approval" />
+      <OricAdminOnlyBanner />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-60 pointer-events-none">
+        <OricFieldRow label="Award Letter Date"><input type="date" disabled className={ic} /></OricFieldRow>
+        <OricFieldRow label="Funding Agency Ref No"><input disabled placeholder="e.g. HEC/R&D/2024/001" className={ic} /></OricFieldRow>
+        <OricFieldRow label="ORIC Overhead Amount (PKR)"><input type="number" disabled placeholder="0.00" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Overhead Status"><input disabled value="Set by ORIC" readOnly className={ic} /></OricFieldRow>
+        <OricFieldRow label="Project File No."><input disabled placeholder="Set by ORIC" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Special Conditions"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
+        <OricFieldRow label="Remarks"><textarea rows={2} disabled className={`${ic} resize-none`} /></OricFieldRow>
+      </div>
+
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OricConsultancyForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    title: '', clientName: '', clientCountry: '', serviceType: '',
+    contractValue: '', startDate: '', endDate: '', status: '', deliverables: '', remarks: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Title is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/consultancy', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...f, contractValue: f.contractValue || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Consultancy submitted successfully. Pending ORIC review.');
+      setF({ title: '', clientName: '', clientCountry: '', serviceType: '', contractValue: '', startDate: '', endDate: '', status: '', deliverables: '', remarks: '' });
+    } catch { setFormError('Network error. Please try again.'); }
     finally { setBusy(false); }
   };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2"><OricFieldRow label="Title" required><input value={f.title} onChange={e => set('title', e.target.value)} placeholder={`${kind} title`} className={ic} /></OricFieldRow></div>
-        <OricFieldRow label="Organisation / Partner"><input value={f.organisation} onChange={e => set('organisation', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Value / Budget (PKR)"><input type="number" min="0" value={f.value} onChange={e => set('value', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Consultancy Title" required><input value={f.title} onChange={e => set('title', e.target.value)} placeholder="Title of consultancy engagement" className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Client / Organisation"><input value={f.clientName} onChange={e => set('clientName', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Client Country"><input value={f.clientCountry} onChange={e => set('clientCountry', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Service Type"><input value={f.serviceType} onChange={e => set('serviceType', e.target.value)} placeholder="e.g. Technical Advisory" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Contract Value (PKR)"><input type="number" min="0" value={f.contractValue} onChange={e => set('contractValue', e.target.value)} className={ic} /></OricFieldRow>
         <OricFieldRow label="Start Date"><input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={ic} /></OricFieldRow>
         <OricFieldRow label="End Date"><input type="date" value={f.endDate} onChange={e => set('endDate', e.target.value)} className={ic} /></OricFieldRow>
-        <div className="sm:col-span-2"><OricFieldRow label="Description"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
-        <div className="sm:col-span-2"><OricFieldRow label="Outcomes / Notes"><textarea rows={2} value={f.outcomes} onChange={e => set('outcomes', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option value="">Select…</option><option>Ongoing</option><option>Completed</option><option>Terminated</option></select></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Deliverables"><AutoGrowTextarea value={f.deliverables} onChange={e => set('deliverables', e.target.value)} className={ic} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Remarks"><AutoGrowTextarea value={f.remarks} onChange={e => set('remarks', e.target.value)} className={ic} /></OricFieldRow></div>
       </div>
       <div className="flex justify-end pt-4 border-t border-gray-100">
-        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {busy ? 'Saving…' : 'Save to Profile'}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
         </button>
       </div>
-    </div>
+    </form>
+  );
+}
+
+function OricIPDisclosureForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    title: '', leadInventor: '', designation: '', department: '', ipCategory: '',
+    developmentStatus: '', scope: 'NATIONAL', keyAspects: '', commercialPartner: '', financialSupport: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Title is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/patent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...f, type: 'disclosure' }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('IP Disclosure submitted successfully. Pending ORIC review.');
+      setF({ title: '', leadInventor: '', designation: '', department: '', ipCategory: '', developmentStatus: '', scope: 'NATIONAL', keyAspects: '', commercialPartner: '', financialSupport: '' });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Title of Invention / Disclosure" required><input value={f.title} onChange={e => set('title', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Lead Inventor"><input value={f.leadInventor} onChange={e => set('leadInventor', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Designation"><input value={f.designation} onChange={e => set('designation', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Department"><input value={f.department} onChange={e => set('department', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="IP Category"><select value={f.ipCategory} onChange={e => set('ipCategory', e.target.value)} className={ic}><option value="">Select…</option><option>Patent</option><option>Copyright</option><option>Trade Secret</option><option>Software</option></select></OricFieldRow>
+        <OricFieldRow label="Development Status"><input value={f.developmentStatus} onChange={e => set('developmentStatus', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option></select></OricFieldRow>
+        <OricFieldRow label="Commercial Partner"><input value={f.commercialPartner} onChange={e => set('commercialPartner', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Financial Support"><input value={f.financialSupport} onChange={e => set('financialSupport', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Key Aspects"><AutoGrowTextarea value={f.keyAspects} onChange={e => set('keyAspects', e.target.value)} className={ic} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OricIPLicensingForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    title: '', leadInventor: '', designationDept: '', ipCategory: '',
+    developmentStatus: '', scope: 'NATIONAL', keyAspects: '',
+    fieldOfUse: '', agreementDuration: '', negotiationStatus: '', licenseeName: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Title is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/patent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...f, type: 'licensing' }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('IP Licensing submitted successfully. Pending ORIC review.');
+      setF({ title: '', leadInventor: '', designationDept: '', ipCategory: '', developmentStatus: '', scope: 'NATIONAL', keyAspects: '', fieldOfUse: '', agreementDuration: '', negotiationStatus: '', licenseeName: '' });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Title of Licensed IP" required><input value={f.title} onChange={e => set('title', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Lead Inventor"><input value={f.leadInventor} onChange={e => set('leadInventor', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Designation / Dept"><input value={f.designationDept} onChange={e => set('designationDept', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="IP Category"><select value={f.ipCategory} onChange={e => set('ipCategory', e.target.value)} className={ic}><option value="">Select…</option><option>Patent</option><option>Copyright</option><option>Trade Secret</option><option>Software</option></select></OricFieldRow>
+        <OricFieldRow label="Development Status"><input value={f.developmentStatus} onChange={e => set('developmentStatus', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option></select></OricFieldRow>
+        <OricFieldRow label="Licensee Name"><input value={f.licenseeName} onChange={e => set('licenseeName', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Field of Use"><input value={f.fieldOfUse} onChange={e => set('fieldOfUse', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Agreement Duration"><input value={f.agreementDuration} onChange={e => set('agreementDuration', e.target.value)} placeholder="e.g. 3 years" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Negotiation Status"><input value={f.negotiationStatus} onChange={e => set('negotiationStatus', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Key Aspects"><AutoGrowTextarea value={f.keyAspects} onChange={e => set('keyAspects', e.target.value)} className={ic} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OricVisitForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    visitorName: '', visitorOrg: '', visitDate: '', agenda: '',
+    departmentVisited: '', visitType: '', outcome: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.visitorName.trim()) { setFormError('Visitor name is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/visit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(f),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Industrial visit submitted successfully. Pending ORIC review.');
+      setF({ visitorName: '', visitorOrg: '', visitDate: '', agenda: '', departmentVisited: '', visitType: '', outcome: '' });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <OricFieldRow label="Visitor / Delegate Name" required><input value={f.visitorName} onChange={e => set('visitorName', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Visitor Organisation"><input value={f.visitorOrg} onChange={e => set('visitorOrg', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Visit Date"><input type="date" value={f.visitDate} onChange={e => set('visitDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Department Visited"><input value={f.departmentVisited} onChange={e => set('departmentVisited', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Visit Type"><select value={f.visitType} onChange={e => set('visitType', e.target.value)} className={ic}><option value="">Select…</option><option>Incoming</option><option>Outgoing</option></select></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Agenda"><AutoGrowTextarea value={f.agenda} onChange={e => set('agenda', e.target.value)} className={ic} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Outcome"><AutoGrowTextarea value={f.outcome} onChange={e => set('outcome', e.target.value)} className={ic} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OricEventForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    title: '', category: '', eventDate: '', venue: '', leadOrganizer: '',
+    arrangedOrParticipated: '', scope: 'NATIONAL', participants: '',
+    subjectArea: '', outcome: '', sponsoringAgency: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Title is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/event', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...f, participants: f.participants || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Event submitted successfully. Pending ORIC review.');
+      setF({ title: '', category: '', eventDate: '', venue: '', leadOrganizer: '', arrangedOrParticipated: '', scope: 'NATIONAL', participants: '', subjectArea: '', outcome: '', sponsoringAgency: '' });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2"><OricFieldRow label="Event Title" required><input value={f.title} onChange={e => set('title', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Category"><select value={f.category} onChange={e => set('category', e.target.value)} className={ic}><option value="">Select…</option><option>Seminar</option><option>Workshop</option><option>Conference</option><option>Exhibition</option><option>Expo</option><option>Webinar</option></select></OricFieldRow>
+        <OricFieldRow label="Event Date"><input type="date" value={f.eventDate} onChange={e => set('eventDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Venue"><input value={f.venue} onChange={e => set('venue', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Lead Organizer"><input value={f.leadOrganizer} onChange={e => set('leadOrganizer', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Role"><select value={f.arrangedOrParticipated} onChange={e => set('arrangedOrParticipated', e.target.value)} className={ic}><option value="">Select…</option><option>Arranged</option><option>Participated</option></select></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option></select></OricFieldRow>
+        <OricFieldRow label="No. of Participants"><input type="number" min="0" value={f.participants} onChange={e => set('participants', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Subject Area"><input value={f.subjectArea} onChange={e => set('subjectArea', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Sponsoring Agency"><input value={f.sponsoringAgency} onChange={e => set('sponsoringAgency', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Outcome"><AutoGrowTextarea value={f.outcome} onChange={e => set('outcome', e.target.value)} className={ic} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OricPolicyForm({ inputCls, setSuccess, setError }: OricFormProps) {
+  const ic = inputCls;
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [f, setF] = useState({
+    govtBody: '', areaAdvocated: '', brief: '', coalitionPartners: '', advocacyTools: '', annexRef: '',
+  });
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.govtBody.trim()) { setFormError('Government body is required.'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/teacher/oric/policy', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(f),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Policy advocacy submitted successfully. Pending ORIC review.');
+      setF({ govtBody: '', areaAdvocated: '', brief: '', coalitionPartners: '', advocacyTools: '', annexRef: '' });
+    } catch { setFormError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <OricFieldRow label="Government Body / Institution" required><input value={f.govtBody} onChange={e => set('govtBody', e.target.value)} placeholder="e.g. HEC, PSDP, Ministry of Science" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Area Advocated"><input value={f.areaAdvocated} onChange={e => set('areaAdvocated', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Coalition Partners"><input value={f.coalitionPartners} onChange={e => set('coalitionPartners', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Advocacy Tools Used"><input value={f.advocacyTools} onChange={e => set('advocacyTools', e.target.value)} placeholder="e.g. Policy brief, Workshop, Media" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Annex Reference"><input value={f.annexRef} onChange={e => set('annexRef', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Brief Description"><AutoGrowTextarea value={f.brief} onChange={e => set('brief', e.target.value)} className={ic} /></OricFieldRow></div>
+      </div>
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
+        </button>
+      </div>
+    </form>
   );
 }
 
 function OricPatentForm({ inputCls, setSuccess, setError }: OricFormProps) {
   const ic = inputCls;
   const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
   const [f, setF] = useState({
-    title: '', inventors: '', category: 'Technology', filedWith: '', scope: 'National',
-    filingDate: '', grantDate: '', applicationNo: '', status: 'Filed', description: '',
+    title: '', leadInventor: '', designation: '', department: '', coInventors: '',
+    ipCategory: '', developmentStatus: '', keyAspects: '', filedWith: '', scope: 'NATIONAL',
+    filingDate: '', applicationNumber: '', patentStatus: '', financialSupport: '', commercialPartner: '',
   });
-  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = async () => {
-    if (!f.title.trim()) return setError('Patent title is required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.title.trim()) { setFormError('Title is required.'); return; }
     setBusy(true);
     try {
-      await new Promise(r => setTimeout(r, 500));
-      setSuccess('Patent/IP record saved to your ORIC profile.');
-    } catch { setError('Network error'); }
+      const res = await fetch('/api/teacher/oric/patent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...f, type: 'patent' }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('Patent submitted successfully. Pending ORIC review.');
+      setF({ title: '', leadInventor: '', designation: '', department: '', coInventors: '', ipCategory: '', developmentStatus: '', keyAspects: '', filedWith: '', scope: 'NATIONAL', filingDate: '', applicationNumber: '', patentStatus: '', financialSupport: '', commercialPartner: '' });
+    } catch { setFormError('Network error. Please try again.'); }
     finally { setBusy(false); }
   };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2"><OricFieldRow label="Title of Invention" required><input value={f.title} onChange={e => set('title', e.target.value)} className={ic} /></OricFieldRow></div>
-        <OricFieldRow label="Lead Inventor(s)"><input value={f.inventors} onChange={e => set('inventors', e.target.value)} placeholder="Dr. Name, Co-inventor Name" className={ic} /></OricFieldRow>
-        <OricFieldRow label="Category"><select value={f.category} onChange={e => set('category', e.target.value)} className={ic}><option>Technology</option><option>Variety</option><option>Process</option><option>Product</option><option>Software</option><option>Utility Model</option></select></OricFieldRow>
+        <OricFieldRow label="Lead Inventor"><input value={f.leadInventor} onChange={e => set('leadInventor', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Designation"><input value={f.designation} onChange={e => set('designation', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Department"><input value={f.department} onChange={e => set('department', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Co-Inventors"><input value={f.coInventors} onChange={e => set('coInventors', e.target.value)} placeholder="Name1, Name2" className={ic} /></OricFieldRow>
+        <OricFieldRow label="IP Category"><select value={f.ipCategory} onChange={e => set('ipCategory', e.target.value)} className={ic}><option value="">Select…</option><option>Technology</option><option>Variety</option><option>Process</option><option>Product</option><option>Software</option><option>Utility Model</option></select></OricFieldRow>
         <OricFieldRow label="Filed With"><select value={f.filedWith} onChange={e => set('filedWith', e.target.value)} className={ic}><option value="">Select…</option><option>IPO Pakistan</option><option>FSC&RD</option><option>USPTO</option><option>EPO</option><option>WIPO</option></select></OricFieldRow>
-        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option></select></OricFieldRow>
         <OricFieldRow label="Filing Date"><input type="date" value={f.filingDate} onChange={e => set('filingDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Grant Date (if granted)"><input type="date" value={f.grantDate} onChange={e => set('grantDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Application / Ref No"><input value={f.applicationNo} onChange={e => set('applicationNo', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option>Filed</option><option>Under Examination</option><option>Granted</option><option>Rejected</option><option>Withdrawn</option></select></OricFieldRow>
-        <div className="sm:col-span-2"><OricFieldRow label="Brief Description"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+        <OricFieldRow label="Application / Ref No"><input value={f.applicationNumber} onChange={e => set('applicationNumber', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Patent Status"><select value={f.patentStatus} onChange={e => set('patentStatus', e.target.value)} className={ic}><option value="">Select…</option><option>Filed</option><option>Under Examination</option><option>Granted</option><option>Rejected</option><option>Withdrawn</option></select></OricFieldRow>
+        <OricFieldRow label="Development Status"><input value={f.developmentStatus} onChange={e => set('developmentStatus', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Commercial Partner"><input value={f.commercialPartner} onChange={e => set('commercialPartner', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Financial Support"><input value={f.financialSupport} onChange={e => set('financialSupport', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Key Aspects"><AutoGrowTextarea value={f.keyAspects} onChange={e => set('keyAspects', e.target.value)} className={ic} /></OricFieldRow></div>
       </div>
       <div className="flex justify-end pt-4 border-t border-gray-100">
-        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {busy ? 'Saving…' : 'Save Patent Record'}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 
 function OricMouForm({ inputCls, setSuccess, setError }: OricFormProps) {
   const ic = inputCls;
   const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
   const [f, setF] = useState({
-    collaborator: '', type: 'Industry', scope: 'National',
-    signedDate: '', expiryDate: '', description: '', status: 'Active',
+    partyName: '', linkageType: '', partyType: '', establishmentDate: '', scope: 'NATIONAL',
+    country: '', duration: '', status: '', focalPersonMnsuam: '', focalPersonOther: '',
+    scopeOfCollaboration: '', activities: '', futureInitiatives: '',
   });
-  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = async () => {
-    if (!f.collaborator.trim()) return setError('Collaborator name is required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (!f.partyName.trim()) { setFormError('Party / collaborating organisation name is required.'); return; }
     setBusy(true);
     try {
-      await new Promise(r => setTimeout(r, 500));
-      setSuccess('MoU/AoC record saved to your ORIC profile.');
-    } catch { setError('Network error'); }
+      const res = await fetch('/api/teacher/oric/mou', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(f),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || 'Submission failed'); return; }
+      setSuccess('MoU / AoC submitted successfully. Pending ORIC review.');
+      setF({ partyName: '', linkageType: '', partyType: '', establishmentDate: '', scope: 'NATIONAL', country: '', duration: '', status: '', focalPersonMnsuam: '', focalPersonOther: '', scopeOfCollaboration: '', activities: '', futureInitiatives: '' });
+    } catch { setFormError('Network error. Please try again.'); }
     finally { setBusy(false); }
   };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{formError}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2"><OricFieldRow label="Collaborating Organisation" required><input value={f.collaborator} onChange={e => set('collaborator', e.target.value)} className={ic} /></OricFieldRow></div>
-        <OricFieldRow label="Agreement Type"><select value={f.type} onChange={e => set('type', e.target.value)} className={ic}><option>Industry</option><option>Academia</option><option>Government</option><option>International</option></select></OricFieldRow>
-        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option>National</option><option>International</option></select></OricFieldRow>
-        <OricFieldRow label="Signed Date"><input type="date" value={f.signedDate} onChange={e => set('signedDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e => set('expiryDate', e.target.value)} className={ic} /></OricFieldRow>
-        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option>Active</option><option>Under Renewal</option><option>Expired</option><option>Terminated</option></select></OricFieldRow>
-        <div className="sm:col-span-2"><OricFieldRow label="Description / Scope of Collaboration"><textarea rows={3} value={f.description} onChange={e => set('description', e.target.value)} className={`${ic} resize-none`} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Collaborating Organisation / Party" required><input value={f.partyName} onChange={e => set('partyName', e.target.value)} className={ic} /></OricFieldRow></div>
+        <OricFieldRow label="Linkage Type"><select value={f.linkageType} onChange={e => set('linkageType', e.target.value)} className={ic}><option value="">Select…</option><option>Industry</option><option>Academia</option><option>Government</option><option>International</option><option>NGO</option></select></OricFieldRow>
+        <OricFieldRow label="Party Type"><select value={f.partyType} onChange={e => set('partyType', e.target.value)} className={ic}><option value="">Select…</option><option>Public</option><option>Private</option><option>Semi-Government</option></select></OricFieldRow>
+        <OricFieldRow label="Establishment Date"><input type="date" value={f.establishmentDate} onChange={e => set('establishmentDate', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Scope"><select value={f.scope} onChange={e => set('scope', e.target.value)} className={ic}><option value="NATIONAL">National</option><option value="INTERNATIONAL">International</option></select></OricFieldRow>
+        <OricFieldRow label="Country"><input value={f.country} onChange={e => set('country', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Duration"><input value={f.duration} onChange={e => set('duration', e.target.value)} placeholder="e.g. 3 years" className={ic} /></OricFieldRow>
+        <OricFieldRow label="Status"><select value={f.status} onChange={e => set('status', e.target.value)} className={ic}><option value="">Select…</option><option>Active</option><option>Under Renewal</option><option>Expired</option><option>Terminated</option></select></OricFieldRow>
+        <OricFieldRow label="Focal Person (MNSUAM)"><input value={f.focalPersonMnsuam} onChange={e => set('focalPersonMnsuam', e.target.value)} className={ic} /></OricFieldRow>
+        <OricFieldRow label="Focal Person (Other Party)"><input value={f.focalPersonOther} onChange={e => set('focalPersonOther', e.target.value)} className={ic} /></OricFieldRow>
+        <div className="sm:col-span-2"><OricFieldRow label="Scope of Collaboration"><AutoGrowTextarea value={f.scopeOfCollaboration} onChange={e => set('scopeOfCollaboration', e.target.value)} className={ic} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Activities Conducted"><AutoGrowTextarea value={f.activities} onChange={e => set('activities', e.target.value)} className={ic} /></OricFieldRow></div>
+        <div className="sm:col-span-2"><OricFieldRow label="Future Initiatives"><AutoGrowTextarea value={f.futureInitiatives} onChange={e => set('futureInitiatives', e.target.value)} className={ic} /></OricFieldRow></div>
       </div>
       <div className="flex justify-end pt-4 border-t border-gray-100">
-        <button onClick={handleSubmit} disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" disabled={busy} className="flex items-center gap-2 px-6 py-3 bg-[#2d6a4f] text-white rounded-xl text-sm font-bold hover:bg-[#235a40] disabled:opacity-50 transition-colors shadow-sm">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {busy ? 'Saving…' : 'Save MoU / AoC'}
+          {busy ? 'Submitting…' : 'Submit to ORIC'}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -976,7 +1545,7 @@ export default function EditProfilePage() {
           <aside className="w-56 shrink-0 sticky top-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="bg-[#1a3d2b] px-4 py-3.5">
-                <p className="text-white font-bold text-sm">My ORIC Profile</p>
+                <p className="text-white font-bold text-sm">My Profile</p>
                 <p className="text-green-200/70 text-[10px] mt-0.5 leading-relaxed">Click a section to edit</p>
               </div>
               {navGroups.map((group) => (
@@ -1115,24 +1684,22 @@ export default function EditProfilePage() {
                 {/* Specialization */}
                 <div className="mb-6">
                   <label className={labelCls}>Specialization / Research Focus</label>
-                  <textarea
+                  <AutoGrowTextarea
                     value={form.specialization}
                     onChange={(e) => update('specialization', e.target.value)}
                     placeholder="e.g., Machine Learning, Organic Chemistry, Educational Psychology..."
-                    className={`${inputCls} resize-none`}
-                    rows={3}
+                    className={inputCls}
                   />
                 </div>
 
                 {/* Bio */}
                 <div className="mb-6">
                   <label className={labelCls}>Short Bio</label>
-                  <textarea
+                  <AutoGrowTextarea
                     value={form.bio}
                     onChange={(e) => update('bio', e.target.value)}
                     placeholder="Tell us about yourself, your research interests, and achievements..."
-                    className={`${inputCls} resize-none`}
-                    rows={4}
+                    className={inputCls}
                   />
                 </div>
 
@@ -1473,7 +2040,7 @@ export default function EditProfilePage() {
                               <option value="PENDING">Pending</option>
                             </select>
                           </div>
-                          <textarea
+                          <AutoGrowTextarea
                             value={editProjectData.description || ''}
                             onChange={(e) =>
                               setEditProjectData({
@@ -1481,8 +2048,7 @@ export default function EditProfilePage() {
                                 description: e.target.value,
                               })
                             }
-                            className={`${inputCls} resize-none`}
-                            rows={2}
+                            className={inputCls}
                             placeholder="Description"
                           />
                           <div className="grid grid-cols-3 gap-3">
@@ -1805,12 +2371,11 @@ export default function EditProfilePage() {
                 </p>
               </div>
             </div>
-            <textarea
+            <AutoGrowTextarea
               value={form.administrativeDuties}
               onChange={(e) => update('administrativeDuties', e.target.value)}
               placeholder={'- Head of Research Committee\n- Department Coordinator'}
-              className={`${inputCls} resize-none font-mono`}
-              rows={8}
+              className={`${inputCls} font-mono`}
             />
             <div className="flex justify-end pt-6 border-t border-gray-100 mt-6">
               <button
@@ -1985,16 +2550,20 @@ export default function EditProfilePage() {
               <span><strong>ORIC Approval Required.</strong> Industry / sponsored project details go to ORIC for review.</span>
             </div>
             <h2 className="text-lg font-bold text-gray-900">Industry / Sponsored Project</h2>
-            <OricSimpleForm kind="Industry Project" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricIndustryForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
         {/* ── ORIC CONSULTANCY ────────────────────────────────────────── */}
         {activeTab === 'oric-consultancy' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">Consultancy</h2>
-            <p className="text-xs text-gray-400">Record a consultancy engagement. No ORIC approval needed — saved directly to your portfolio.</p>
-            <OricSimpleForm kind="Consultancy" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <p className="text-xs text-gray-400">Record a consultancy engagement for ORIC approval.</p>
+            <OricConsultancyForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
@@ -2010,24 +2579,36 @@ export default function EditProfilePage() {
         {/* ── ORIC IP DISCLOSURE ──────────────────────────────────────── */}
         {activeTab === 'oric-ipdisclosure' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">IP Disclosure</h2>
             <p className="text-xs text-gray-400">Disclose a new invention or innovation for ORIC records.</p>
-            <OricSimpleForm kind="IP Disclosure" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricIPDisclosureForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
         {/* ── ORIC IP LICENSING ───────────────────────────────────────── */}
         {activeTab === 'oric-licensing' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">IP Licensing</h2>
             <p className="text-xs text-gray-400">Record an IP licensing agreement or technology transfer.</p>
-            <OricSimpleForm kind="IP Licensing" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricIPLicensingForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
         {/* ── ORIC MOU ────────────────────────────────────────────────── */}
         {activeTab === 'oric-mou' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">Agreement of Collaboration / MoU</h2>
             <p className="text-xs text-gray-400">Record an MoU, AoC or collaborative agreement with an external organisation.</p>
             <OricMouForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
@@ -2037,27 +2618,39 @@ export default function EditProfilePage() {
         {/* ── ORIC INDUSTRIAL VISIT ───────────────────────────────────── */}
         {activeTab === 'oric-visit' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">Industrial Visit</h2>
             <p className="text-xs text-gray-400">Record a university–industry visit (outgoing or incoming).</p>
-            <OricSimpleForm kind="Industrial Visit" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricVisitForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
         {/* ── ORIC EVENT ──────────────────────────────────────────────── */}
         {activeTab === 'oric-event' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">Event / Exhibition</h2>
             <p className="text-xs text-gray-400">Record an organised event, seminar, exhibition or expo.</p>
-            <OricSimpleForm kind="Event/Exhibition" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricEventForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
         {/* ── ORIC POLICY ADVOCACY ────────────────────────────────────── */}
         {activeTab === 'oric-policy' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 space-y-6">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span><strong>ORIC Approval Required.</strong> Your submission will be reviewed by ORIC before appearing on your profile.</span>
+            </div>
             <h2 className="text-lg font-bold text-gray-900">Policy Advocacy</h2>
             <p className="text-xs text-gray-400">Document participation in policy-making, advisory boards or advocacy activities.</p>
-            <OricSimpleForm kind="Policy Advocacy" inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
+            <OricPolicyForm inputCls={inputCls} labelCls={labelCls} setSuccess={setSuccess} setError={setError} />
           </div>
         )}
 
@@ -2180,14 +2773,13 @@ export default function EditProfilePage() {
 
               <div>
                 <label className={labelCls}>Abstract</label>
-                <textarea
+                <AutoGrowTextarea
                   placeholder="Brief abstract (optional)"
                   value={newPublication.abstract || ''}
                   onChange={(e) =>
                     setNewPublication({ ...newPublication, abstract: e.target.value })
                   }
-                  className={`${inputCls} resize-none`}
-                  rows={3}
+                  className={inputCls}
                 />
               </div>
 
@@ -2299,14 +2891,13 @@ export default function EditProfilePage() {
 
               <div>
                 <label className={labelCls}>Description</label>
-                <textarea
+                <AutoGrowTextarea
                   placeholder="Brief project description (optional)"
                   value={newProject.description}
                   onChange={(e) =>
                     setNewProject({ ...newProject, description: e.target.value })
                   }
-                  className={`${inputCls} resize-none`}
-                  rows={3}
+                  className={inputCls}
                 />
               </div>
 

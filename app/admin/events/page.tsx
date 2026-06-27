@@ -1,27 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, Plus, Sparkles, X } from 'lucide-react';
-
-interface OricEvent {
-  id: string;
-  title: string;
-  category?: string | null;
-  eventDate?: string | null;
-  venue?: string | null;
-  leadOrganizer?: string | null;
-  arrangedOrParticipated?: string | null;
-  participants?: number | null;
-  scope: string;
-  staff?: { name: string } | null;
-}
-
-async function fetchEvents() {
-  const res = await fetch('/api/oric/events');
-  if (!res.ok) throw new Error('Failed');
-  return res.json() as Promise<{ events: OricEvent[] }>;
-}
+import { useAdminEvents, type AdminEvent } from '@/lib/queries/admin/events';
+import { ActionButtons } from '@/components/admin/ActionButtons';
+import { toast } from '@/lib/store/uiStore';
 
 const EVENT_CATEGORIES = ['Innovation Fair', 'Seminar', 'Workshop', 'Conference', 'IP Showcasing', 'Linkage Meeting', 'Other'];
 
@@ -34,46 +18,175 @@ const catCls: Record<string, string> = {
   'Linkage Meeting': 'bg-sky-100 text-sky-700',
 };
 
-export default function AdminEventsPage() {
-  const qc = useQueryClient();
-  const { data, isLoading, error } = useQuery({ queryKey: ['admin', 'events'], queryFn: fetchEvents });
-  const list = data?.events ?? [];
+const BLANK = {
+  title: '',
+  category: 'Conference',
+  eventDate: '',
+  venue: '',
+  leadOrganizer: '',
+  participants: '',
+  arrangedOrParticipated: 'Arranged',
+};
 
-  const [showForm, setShowForm] = useState(false);
+// ─── Form Modal ───────────────────────────────────────────────────────────────
+
+function EventModal({ editing, onClose, onSaved }: {
+  editing: AdminEvent | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({
-    title: '',
-    category: 'Conference',
-    eventDate: '',
-    venue: '',
-    leadOrganizer: '',
-    participants: '',
-    arrangedOrParticipated: 'Arranged',
+    title:                editing?.title ?? '',
+    category:             editing?.category ?? 'Conference',
+    eventDate:            editing?.eventDate ? editing.eventDate.slice(0, 10) : '',
+    venue:                editing?.venue ?? '',
+    leadOrganizer:        editing?.leadOrganizer ?? '',
+    participants:         editing?.participants != null ? String(editing.participants) : '',
+    arrangedOrParticipated: editing?.arrangedOrParticipated ?? 'Arranged',
   });
+
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     setSubmitting(true);
     try {
-      const res = await fetch('/api/oric/events', {
-        method: 'POST',
+      const url    = editing ? `/api/admin/events/${editing.id}` : '/api/admin/events';
+      const method = editing ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? 'Failed to create event');
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? 'Failed');
       }
-      qc.invalidateQueries({ queryKey: ['admin', 'events'] });
-      setShowForm(false);
-      setForm({ title: '', category: 'Conference', eventDate: '', venue: '', leadOrganizer: '', participants: '', arrangedOrParticipated: 'Arranged' });
+      onSaved();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900">{editing ? 'Edit Event' : 'Create Event'}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {formError && (
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{formError}</div>
+          )}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Event Title *</label>
+            <input required value={form.title} onChange={e => set('title', e.target.value)}
+              placeholder="e.g. MNSUAM Annual Research Expo 2025"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category</label>
+              <select value={form.category} onChange={e => set('category', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]">
+                {EVENT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date *</label>
+              <input required type="date" value={form.eventDate} onChange={e => set('eventDate', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Venue</label>
+            <input value={form.venue} onChange={e => set('venue', e.target.value)}
+              placeholder="e.g. Main Auditorium, MNSUAM"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Lead Organizer</label>
+              <input value={form.leadOrganizer} onChange={e => set('leadOrganizer', e.target.value)}
+                placeholder="Name or department"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Participants</label>
+              <input type="number" min="0" value={form.participants} onChange={e => set('participants', e.target.value)}
+                placeholder="Expected count"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Type</label>
+            <div className="flex gap-4">
+              {['Arranged', 'Participated'].map(opt => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="arrangedOrParticipated" value={opt}
+                    checked={form.arrangedOrParticipated === opt}
+                    onChange={() => set('arrangedOrParticipated', opt)}
+                    className="accent-[#2d6a4f]" />
+                  <span className="text-sm text-gray-700">{opt}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={submitting}
+              className="px-4 py-2 rounded-xl bg-[#2d6a4f] text-white text-sm font-medium hover:bg-[#245a42] transition-colors disabled:opacity-50">
+              {submitting ? (editing ? 'Saving…' : 'Creating…') : (editing ? 'Save Changes' : 'Create Event')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function AdminEventsPage() {
+  const qc = useQueryClient();
+  const { data, isLoading, error } = useAdminEvents();
+  const list = data?.events ?? [];
+
+  const [modal, setModal]     = useState<{ open: boolean; editing: AdminEvent | null }>({ open: false, editing: null });
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'events'] });
+
+  const handleSaved = () => {
+    invalidate();
+    const msg = modal.editing ? 'Event updated.' : 'Event created.';
+    setModal({ open: false, editing: null });
+    toast.success(msg);
+  };
+
+  const handleDelete = async (ev: AdminEvent) => {
+    if (!confirm(`Delete "${ev.title}"? This cannot be undone.`)) return;
+    setDeleting(ev.id);
+    const res = await fetch(`/api/admin/events/${ev.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      toast.error(d.error ?? 'Delete failed');
+    } else {
+      invalidate();
+      toast.success('Event deleted.');
+    }
+    setDeleting(null);
   };
 
   return (
@@ -85,11 +198,11 @@ export default function AdminEventsPage() {
               <Sparkles className="w-4 h-4 text-[#c9a961]" />
               <span className="text-xs font-semibold text-[#c9a961] uppercase tracking-wider">Administration</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Manage Events</h1>
-            <p className="text-sm text-gray-500 mt-0.5">University events — conferences, workshops, fairs, and outreach activities</p>
+            <h1 className="text-xl font-bold text-gray-900">Manage Events</h1>
+            <p className="text-xs text-gray-400 mt-0.5">University events — conferences, workshops, fairs, and outreach activities</p>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => setModal({ open: true, editing: null })}
             className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 bg-[#2d6a4f] text-white rounded-xl text-sm font-medium hover:bg-[#245a42] transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -98,114 +211,12 @@ export default function AdminEventsPage() {
         </div>
       </div>
 
-      {/* Create modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-base font-semibold text-gray-900">Create Event</h3>
-              <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-              {formError && (
-                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{formError}</div>
-              )}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Event Title *</label>
-                <input
-                  required
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="e.g. MNSUAM Annual Research Expo 2025"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category</label>
-                  <select
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                  >
-                    {EVENT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date *</label>
-                  <input
-                    required
-                    type="date"
-                    value={form.eventDate}
-                    onChange={e => setForm(f => ({ ...f, eventDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Venue</label>
-                <input
-                  value={form.venue}
-                  onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
-                  placeholder="e.g. Main Auditorium, MNSUAM"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Lead Organizer</label>
-                  <input
-                    value={form.leadOrganizer}
-                    onChange={e => setForm(f => ({ ...f, leadOrganizer: e.target.value }))}
-                    placeholder="Name or department"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Participants</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.participants}
-                    onChange={e => setForm(f => ({ ...f, participants: e.target.value }))}
-                    placeholder="Expected count"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Type</label>
-                <div className="flex gap-3">
-                  {['Arranged', 'Participated'].map(opt => (
-                    <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="arrangedOrParticipated"
-                        value={opt}
-                        checked={form.arrangedOrParticipated === opt}
-                        onChange={() => setForm(f => ({ ...f, arrangedOrParticipated: opt }))}
-                        className="accent-[#2d6a4f]"
-                      />
-                      <span className="text-sm text-gray-700">{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-[#2d6a4f] text-white text-sm font-medium hover:bg-[#245a42] transition-colors disabled:opacity-50">
-                  {submitting ? 'Creating…' : 'Create Event'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {modal.open && (
+        <EventModal
+          editing={modal.editing}
+          onClose={() => setModal({ open: false, editing: null })}
+          onSaved={handleSaved}
+        />
       )}
 
       <div className="px-6 py-6">
@@ -229,7 +240,7 @@ export default function AdminEventsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    {['#', 'Title', 'Category', 'Date', 'Venue', 'Organizer', 'Type', 'Participants'].map(h => (
+                    {['#', 'Title', 'Category', 'Date', 'Venue', 'Organizer', 'Type', 'Participants', ''].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -237,7 +248,7 @@ export default function AdminEventsPage() {
                 <tbody className="divide-y divide-gray-50">
                   {list.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">
+                      <td colSpan={9} className="px-4 py-12 text-center text-sm text-gray-400">
                         No events yet. Click &ldquo;Create Event&rdquo; to add one.
                       </td>
                     </tr>
@@ -249,9 +260,9 @@ export default function AdminEventsPage() {
                         <div className="truncate">{ev.title}</div>
                       </td>
                       <td className="px-4 py-3">
-                        {ev.category ? (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${catCls[ev.category] ?? 'bg-gray-100 text-gray-600'}`}>{ev.category}</span>
-                        ) : <span className="text-gray-400 text-xs">—</span>}
+                        {ev.category
+                          ? <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${catCls[ev.category] ?? 'bg-gray-100 text-gray-600'}`}>{ev.category}</span>
+                          : <span className="text-gray-400 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                         {ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-GB') : '—'}
@@ -262,6 +273,13 @@ export default function AdminEventsPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{ev.arrangedOrParticipated ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{ev.participants ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <ActionButtons
+                          onEdit={() => setModal({ open: true, editing: ev })}
+                          onDelete={() => handleDelete(ev)}
+                          disabled={deleting === ev.id}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -72,7 +73,7 @@ export async function GET() {
       staff: staffData,
     }, { status: 200 });
   } catch (error) {
-    console.error('Auth check error:', error);
+    logError('Auth check error:', error);
     return NextResponse.json(
       { error: 'An error occurred' },
       { status: 500 }

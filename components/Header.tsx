@@ -32,8 +32,9 @@ const getAdditionalNavItems = (role: string): NavItem[] => {
     ];
   }
   if (role === 'ORIC') {
+    // ORIC has its own admin panel — no access to CLS or main Admin
     return [
-      { label: 'ORIC Admin Panel', href: '/oric-admin', match: '/oric-admin' },
+      { label: 'ORIC Admin', href: '/oric-admin', match: '/oric-admin' },
     ];
   }
   if (role === 'FACULTY') {
@@ -185,34 +186,54 @@ export default function Header() {
                           user.role === 'ADMIN'
                             ? 'bg-[#2d6a4f]/10 text-[#2d6a4f]'
                             : user.role === 'ORIC'
-                            ? 'bg-[#1a3d2b]/10 text-[#1a3d2b]'
+                            ? 'bg-blue-50 text-blue-700'
                             : 'bg-[#c9a961]/15 text-[#8a6b2e]'
                         }`}>
-                          {user.role}
+                          {user.role === 'ADMIN' ? 'Admin' : user.role === 'ORIC' ? 'ORIC Admin' : 'Faculty'}
                         </span>
                       </div>
 
                       {/* Menu items */}
                       <div className="py-1">
                         {user.role === 'FACULTY' && (
-                          <Link
-                            href="/faculty"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <UserCircle className="w-4 h-4 text-gray-400" />
-                            My Profile
-                          </Link>
+                          <>
+                            <Link
+                              href="/faculty"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <UserCircle className="w-4 h-4 text-gray-400" />
+                              My Profile
+                            </Link>
+                            <Link
+                              href="/cls"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <FlaskConical className="w-4 h-4 text-gray-400" />
+                              Central Lab System
+                            </Link>
+                          </>
                         )}
                         {user.role === 'ADMIN' && (
-                          <Link
-                            href="/admin"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Settings className="w-4 h-4 text-gray-400" />
-                            Admin Panel
-                          </Link>
+                          <>
+                            <Link
+                              href="/admin"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Settings className="w-4 h-4 text-gray-400" />
+                              Admin Panel
+                            </Link>
+                            <Link
+                              href="/cls"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <FlaskConical className="w-4 h-4 text-gray-400" />
+                              Central Lab System
+                            </Link>
+                          </>
                         )}
                         {user.role === 'ORIC' && (
                           <Link
@@ -220,18 +241,10 @@ export default function Header() {
                             onClick={() => setDropdownOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
-                            <FlaskConical className="w-4 h-4 text-gray-400" />
+                            <Settings className="w-4 h-4 text-gray-400" />
                             ORIC Admin Panel
                           </Link>
                         )}
-                        <Link
-                          href="/cls"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <FlaskConical className="w-4 h-4 text-gray-400" />
-                          Central Lab System
-                        </Link>
                       </div>
 
                       <div className="border-t border-gray-100 py-1">
