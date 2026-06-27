@@ -71,7 +71,7 @@ export async function GET() {
   if (!authResult.authorized) return NextResponse.json({ error: authResult.reason }, { status: 403 });
 
   const projects = await prisma.project.findMany({
-    where: { verificationStatus: 'VERIFIED', status: 'ONGOING' },
+    where: { verificationStatus: 'VERIFIED', status: { in: ['ONGOING', 'SUBMITTED'] } },
     include: {
       staff: { select: { id: true, name: true, designation: true, department: { select: { name: true } } } },
       installments: { select: { status: true, dueDate: true, amount: true, releaseDate: true } },
