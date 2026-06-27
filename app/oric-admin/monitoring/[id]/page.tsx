@@ -21,9 +21,7 @@ interface Report {
   id: string;
   reportType: string;
   dueDate: string | null;
-  submissionDate: string | null;
   status: string;
-  fileUrl: string | null;
 }
 interface Installment {
   id: string;
@@ -62,10 +60,9 @@ function computeHealth(p: Project): 'GREEN' | 'YELLOW' | 'RED' {
   const now = new Date();
   const daysRemaining = p.endDate ? Math.ceil((new Date(p.endDate).getTime() - now.getTime()) / 86_400_000) : null;
   const overdue = p.installments.filter(i => i.status === 'PENDING' && i.dueDate && new Date(i.dueDate) < now).length;
-  const lastSub = p.reports.filter(r => r.submissionDate).sort((a, b) => new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime())[0];
-  const daysSince = lastSub?.submissionDate ? Math.floor((now.getTime() - new Date(lastSub.submissionDate).getTime()) / 86_400_000) : null;
-  if ((daysRemaining !== null && daysRemaining < 0) || overdue >= 2 || (daysSince !== null && daysSince > 90)) return 'RED';
-  if ((daysRemaining !== null && daysRemaining <= 60) || overdue === 1 || (daysSince !== null && daysSince > 45)) return 'YELLOW';
+  const overdueReports = p.reports.filter(r => r.status === 'Due' && r.dueDate && new Date(r.dueDate) < now).length;
+  if ((daysRemaining !== null && daysRemaining < 0) || overdue >= 2 || overdueReports >= 2) return 'RED';
+  if ((daysRemaining !== null && daysRemaining <= 60) || overdue === 1 || overdueReports === 1) return 'YELLOW';
   return 'GREEN';
 }
 
@@ -255,36 +252,26 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
                     <tr className="bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-400">
                       <th className="text-left px-6 py-3">Type</th>
                       <th className="text-left px-4 py-3">Due Date</th>
-                      <th className="text-left px-4 py-3">Submitted</th>
                       <th className="text-left px-4 py-3">Status</th>
-                      <th className="px-4 py-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {project.reports.map((r, i) => {
-                      const isLate = r.dueDate && !r.submissionDate && new Date(r.dueDate) < now;
-                      const statusColor = r.submissionDate
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : isLate
-                        ? 'bg-red-50 text-red-700 border-red-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200';
-                      const statusLabel = r.submissionDate ? 'Submitted' : isLate ? 'Overdue' : r.status;
+                      const isLate = r.dueDate && new Date(r.dueDate) < now && r.status === 'Due';
+                      const statusColor =
+                        r.status === 'Submitted' || r.status === 'Reviewed'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : isLate
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200';
                       return (
                         <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-3.5 font-medium text-gray-800">#{i + 1} {r.reportType}</td>
                           <td className="px-4 py-3.5 text-gray-500">{fmtDate(r.dueDate)}</td>
-                          <td className="px-4 py-3.5 text-gray-500">{fmtDate(r.submissionDate)}</td>
                           <td className="px-4 py-3.5">
                             <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold border ${statusColor}`}>
-                              {statusLabel}
+                              {isLate ? 'Overdue' : r.status}
                             </span>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            {r.fileUrl && (
-                              <a href={r.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-[#1a3d2b] hover:underline font-medium">
-                                View file
-                              </a>
-                            )}
                           </td>
                         </tr>
                       );
