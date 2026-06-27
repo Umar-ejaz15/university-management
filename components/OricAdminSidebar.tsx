@@ -17,6 +17,7 @@ import {
   Shield,
   FileSearch,
   BarChart3,
+  Activity,
 } from 'lucide-react';
 import { useLogout, useCurrentUser } from '@/lib/queries/auth';
 
@@ -29,6 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard',         href: '/oric-admin',                    icon: LayoutDashboard },
   { label: 'Projects',          href: '/oric-admin/projects',           icon: FlaskConical    },
+  { label: 'Monitoring',        href: '/oric-admin/monitoring',         icon: Activity        },
   { label: 'Patents & IP',      href: '/oric-admin/patents',            icon: Award           },
   { label: 'IP Disclosures',    href: '/oric-admin/ip-disclosures',     icon: FileSearch      },
   { label: 'IP Licensing',      href: '/oric-admin/ip-licensing',       icon: Shield          },
