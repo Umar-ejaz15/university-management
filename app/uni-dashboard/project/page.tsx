@@ -683,12 +683,6 @@ export default function PublicProjectsPage() {
                   </div>
                 ))}
               </div>
-              {user?.role === 'FACULTY' && (
-                <button onClick={() => { setSubmitSuccess(''); setShowSubmitModal(true); }}
-                  className="flex items-center gap-2 bg-white text-[#2d6a4f] hover:bg-white/90 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shrink-0">
-                  <Plus className="w-4 h-4" /> Submit Project
-                </button>
-              )}
             </div>
           </div>
         </div>
