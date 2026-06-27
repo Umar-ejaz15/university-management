@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, CheckCircle2, AlertTriangle, XCircle, Clock,
   CalendarDays, Wallet, FileText, Plus, Trash2, Building2,
-  Mail, Target, Activity, ChevronRight, Loader2, Save,
+  Mail, Target, Activity, ChevronRight, Loader2, Save, RefreshCw,
 } from 'lucide-react';
 
 interface Milestone {
@@ -81,9 +81,11 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery<{ project: Project }>({
+  const { data, isLoading, refetch } = useQuery<{ project: Project }>({
     queryKey: ['monitoring', id],
     queryFn: () => fetch(`/api/admin/monitoring/${id}`).then(r => r.json()),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const project = data?.project;
@@ -258,6 +260,9 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
                   <FileText className="w-5 h-5 text-[#1a3d2b]" /> Progress Reports
                   <span className="text-sm font-normal text-gray-400">({project.reports.length})</span>
                 </h2>
+                <button onClick={() => refetch()} className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                </button>
               </div>
               {project.reports.length === 0 ? (
                 <div className="px-6 py-8 text-center text-sm text-gray-400">No reports scheduled yet.</div>
