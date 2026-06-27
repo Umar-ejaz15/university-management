@@ -119,5 +119,5 @@ export const ADMIN_ACTION_LIMIT: RateLimitConfig = {
 
 export const AUTH_LIMIT: RateLimitConfig = {
   windowMs: 900000, // 15 minutes
-  maxRequests: 5, // 5 login attempts per 15 minutes
+  maxRequests: 30, // 30 attempts per 15 min — in-memory only, per serverless instance
 };
