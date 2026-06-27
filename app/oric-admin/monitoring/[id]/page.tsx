@@ -4,9 +4,9 @@ import { useState, use } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
-  ArrowLeft, CheckCircle2, AlertTriangle, XCircle, Clock,
+  ArrowLeft, CheckCircle2, AlertTriangle, XCircle,
   CalendarDays, Wallet, FileText, Plus, Trash2, Building2,
-  Mail, Target, Activity, ChevronRight, Loader2, Save, RefreshCw,
+  Mail, Target, Activity, ChevronRight, Loader2, RefreshCw,
 } from 'lucide-react';
 
 interface Milestone {
@@ -75,7 +75,6 @@ const HEALTH_CONFIG = {
   RED:    { label: 'Overdue',   bg: 'from-red-800 to-red-600',         badge: 'bg-red-50 text-red-700 border-red-200',             icon: XCircle },
 };
 
-const FREQ_OPTIONS = ['Monthly', 'Bi-Monthly', 'Quarterly', 'Every 4 Months', 'Every 6 Months', 'Annual'];
 
 export default function ProjectMonitoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -94,11 +93,6 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
   const [mForm, setMForm] = useState({ title: '', description: '', targetDate: '' });
   const [mError, setMError] = useState('');
 
-  // Settings edit
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [freq, setFreq] = useState('');
-  const [monPlan, setMonPlan] = useState('');
-  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const addMilestone = useMutation({
     mutationFn: (body: typeof mForm) =>
@@ -127,17 +121,6 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
     onSuccess: () => qc.invalidateQueries({ queryKey: ['monitoring', id] }),
   });
 
-  const saveSettings = async () => {
-    setSettingsSaving(true);
-    await fetch(`/api/admin/monitoring/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reportingFrequency: freq, monitoringPlan: monPlan }),
-    });
-    await qc.invalidateQueries({ queryKey: ['monitoring', id] });
-    setSettingsSaving(false);
-    setSettingsOpen(false);
-  };
 
   if (isLoading || !project) {
     return (
@@ -200,7 +183,7 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
               <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-white/40" />{project.staff.department?.name ?? '—'}</span>
               <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-white/40" />{fmtDate(project.startDate)} → {fmtDate(project.endDate)}</span>
               {budgetTotal > 0 && <span className="flex items-center gap-1.5"><Wallet className="w-4 h-4 text-white/40" />{fmtCurrency(budgetTotal)}</span>}
-              {project.reportingFrequency && <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-white/40" />{project.reportingFrequency} reporting</span>}
+              {project.reportingFrequency && <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-white/40" />{project.reportingFrequency} reporting</span>}
             </div>
           </div>
 
@@ -485,72 +468,6 @@ export default function ProjectMonitoringPage({ params }: { params: Promise<{ id
                       })}
                     </div>
                   </div>
-                )}
-              </div>
-            </aside>
-
-            {/* Monitoring Settings */}
-            <aside className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#1a3d2b]" /> Monitoring Settings
-                </h3>
-                <button
-                  onClick={() => {
-                    setFreq(project.reportingFrequency ?? 'Quarterly');
-                    setMonPlan(project.monitoringPlan ?? '');
-                    setSettingsOpen(s => !s);
-                  }}
-                  className="text-xs font-semibold text-[#1a3d2b] hover:underline"
-                >
-                  {settingsOpen ? 'Cancel' : 'Edit'}
-                </button>
-              </div>
-              <div className="px-5 py-4 space-y-3">
-                {settingsOpen ? (
-                  <>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Reporting Frequency</p>
-                      <select
-                        value={freq}
-                        onChange={e => setFreq(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1a3d2b]/20 focus:border-[#1a3d2b]"
-                      >
-                        {FREQ_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Monitoring Plan</p>
-                      <textarea
-                        rows={3}
-                        value={monPlan}
-                        onChange={e => setMonPlan(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1a3d2b]/20 focus:border-[#1a3d2b] resize-none"
-                        placeholder="Describe how this project will be monitored…"
-                      />
-                    </div>
-                    <button
-                      onClick={saveSettings}
-                      disabled={settingsSaving}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#1a3d2b] text-white text-sm font-semibold rounded-xl hover:bg-[#0f2419] disabled:opacity-50 transition-colors"
-                    >
-                      {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      Save Settings
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Reporting Frequency</p>
-                      <p className="text-sm font-semibold text-gray-800">{project.reportingFrequency ?? 'Not set'}</p>
-                    </div>
-                    {project.monitoringPlan && (
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Monitoring Plan</p>
-                        <p className="text-sm text-gray-700 leading-relaxed">{project.monitoringPlan}</p>
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
             </aside>
