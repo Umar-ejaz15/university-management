@@ -48,8 +48,9 @@ export async function GET(request: Request) {
   ] = await Promise.all([
     want('projects') ? prisma.project.findMany({
       where: {
+        verificationStatus: 'VERIFIED',
         ...(dateRange ? { createdAt: dateRange } : {}),
-        ...(status ? { status: status as 'SUBMITTED' | 'ONGOING' | 'COMPLETED' } : {}),
+        ...(status ? { status: status as 'ONGOING' | 'COMPLETED' } : {}),
         ...(scope ? { scope: scope as 'NATIONAL' | 'INTERNATIONAL' } : {}),
         ...(funderType ? { funderType } : {}),
         ...(staffId ? { staffId } : {}),

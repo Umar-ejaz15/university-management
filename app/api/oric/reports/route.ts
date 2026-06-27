@@ -25,9 +25,9 @@ export async function GET() {
     totalPolicy,
     projectBudgetAgg,
   ] = await Promise.all([
-    prisma.project.count(),
-    prisma.project.count({ where: { status: 'ONGOING' } }),
-    prisma.project.count({ where: { status: 'COMPLETED' } }),
+    prisma.project.count({ where: { verificationStatus: 'VERIFIED' } }),
+    prisma.project.count({ where: { verificationStatus: 'VERIFIED', status: 'ONGOING' } }),
+    prisma.project.count({ where: { verificationStatus: 'VERIFIED', status: 'COMPLETED' } }),
     prisma.patent.count(),
     prisma.patent.count({ where: { patentStatus: 'Granted' } }),
     prisma.iPDisclosure.count(),
@@ -39,7 +39,7 @@ export async function GET() {
     prisma.industrialVisit.count(),
     prisma.event.count(),
     prisma.policyAdvocacy.count(),
-    prisma.project.aggregate({ _sum: { budgetAmount: true } }),
+    prisma.project.aggregate({ where: { verificationStatus: 'VERIFIED' }, _sum: { budgetAmount: true } }),
   ]);
 
   // HEC Scorecard KPIs (simplified scoring)
